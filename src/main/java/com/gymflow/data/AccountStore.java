@@ -76,19 +76,6 @@ public final class AccountStore {
         }
     }
 
-    /** Changes whether an account may authenticate. */
-    public void setActive(long accountId, boolean active) {
-        try (Connection connection = database.connect();
-                PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE accounts SET is_active = ? WHERE id = ?")) {
-            statement.setBoolean(1, active);
-            statement.setLong(2, accountId);
-            statement.executeUpdate();
-        } catch (SQLException exception) {
-            throw new IllegalStateException("Unable to update account", exception);
-        }
-    }
-
     private static StoredAccount read(ResultSet results) throws SQLException {
         Account account = new Account(
                 results.getLong("id"),

@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 
-import com.gymflow.data.AccountStore;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.model.Account;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,12 +20,13 @@ import org.junit.jupiter.api.io.TempDir;
 class AuthenticationServiceTest {
     @TempDir
     Path directory;
-    private GymFlowDatabase database;
+    private Path databaseFile;
     private AuthenticationService authentication;
 
     @BeforeEach
     void setUp() {
-        database = new GymFlowDatabase(directory.resolve("gymflow.db"));
+        databaseFile = directory.resolve("gymflow.db");
+        GymFlowDatabase database = new GymFlowDatabase(databaseFile);
         database.initialize();
         authentication = new AuthenticationService(database);
     }
@@ -67,12 +70,17 @@ class AuthenticationServiceTest {
     }
 
     @Test
-    void unknownIncorrectAndInactiveAccountsAllFailAuthentication() {
+    void unknownIncorrectAndInactiveAccountsAllFailAuthentication() throws Exception {
         Account owner = authentication.createOwner("owner@example.com", "correct password".toCharArray());
 
         assertFalse(authentication.authenticate("unknown@example.com", "correct password".toCharArray()).isPresent());
         assertFalse(authentication.authenticate("owner@example.com", "incorrect password".toCharArray()).isPresent());
-        new AccountStore(database).setActive(owner.id(), false);
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile);
+                PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE accounts SET is_active = 0 WHERE id = ?")) {
+            statement.setLong(1, owner.id());
+            statement.executeUpdate();
+        }
         assertFalse(authentication.authenticate("owner@example.com", "correct password".toCharArray()).isPresent());
     }
 }
