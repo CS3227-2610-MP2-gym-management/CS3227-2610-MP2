@@ -11,6 +11,7 @@ The current code is divided by responsibility:
 - `com.gymflow.auth`: password hashing and authentication rules.
 - `com.gymflow.data`: SQLite initialization and account persistence.
 - `com.gymflow.model`: shared account and role data.
+- `com.gymflow.member`: Owner-side Member onboarding and profile rules.
 
 Concrete classes are used instead of repository interfaces or factories because each responsibility currently has one
 implementation. New abstractions should be introduced only when a second implementation or a real testing boundary
@@ -38,6 +39,25 @@ connection. The current schema contains `accounts` with:
 
 Reset discovers all non-SQLite tables and recreates the centralized schema inside one transaction. If recreation
 fails, SQLite rolls back the operation rather than leaving a partially cleared database.
+
+Member onboarding adds `member_profiles`, `memberships`, and `payments`. `member_profiles.account_id` is both its
+primary key and a foreign key to a `MEMBER` account. Each initial Membership belongs to one profile, and its Payment is
+linked by a unique membership ID. Payment amounts are stored as integer SGD cents.
+
+`OwnerMemberStore` creates the account, generated member number, profile, initial Membership, and Payment in one SQLite
+transaction. `OwnerMemberService` validates input and clears the caller's password array. Member search escapes SQL
+wildcards and matches name or email without regard to case. Payment history is loaded through the Membership link:
+`member_profiles.account_id` to `memberships.member_account_id` to `payments.membership_id`.
+
+Member profile validation is centralized in `OwnerMemberService`. Phone numbers are limited to eight-digit Singapore
+numbers beginning with `3`, `6`, `8`, or `9` and normalized to `+65 XXXX XXXX`. An optional date of birth must make the
+Member at least 12 years old. JavaFX dialogs provide immediate input restrictions, but the service remains the
+authoritative boundary. Dialog submit events are consumed until asynchronous persistence succeeds, preserving input
+and displaying validation failures inline.
+
+Owner Member management uses a list-detail pattern. The Members list performs search and creation. Selecting a row opens
+an in-page profile view with read-only payment history, while profile editing happens in the same page instead of a
+separate edit dialog.
 
 ## Build, testing, and CI
 

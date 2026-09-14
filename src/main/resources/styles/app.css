@@ -1,5 +1,5 @@
 .root {
-    -fx-font-family: "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
+    -fx-font-family: "System";
     -fx-font-size: 14px;
     -fx-text-fill: #172033;
 }
@@ -29,7 +29,7 @@
     -fx-background-radius: 10px;
     -fx-text-fill: white;
     -fx-font-size: 16px;
-    -fx-font-weight: 800;
+    -fx-font-weight: bold;
     -fx-min-width: 42px;
     -fx-min-height: 42px;
 }
@@ -37,13 +37,14 @@
 .login-brand,
 .sidebar-brand {
     -fx-font-size: 22px;
-    -fx-font-weight: 800;
+    -fx-font-weight: bold;
     -fx-letter-spacing: 1.6px;
 }
 
 .login-title {
+    -fx-font-family: "Arial";
     -fx-font-size: 26px;
-    -fx-font-weight: 700;
+    -fx-font-weight: bold;
 }
 
 .text-field,
@@ -65,7 +66,7 @@
     -fx-cursor: hand;
     -fx-background-radius: 8px;
     -fx-padding: 10px 16px;
-    -fx-font-weight: 600;
+    -fx-font-weight: bold;
 }
 
 .primary-button {
@@ -97,7 +98,7 @@
 .preview-label,
 .role-label {
     -fx-font-size: 11px;
-    -fx-font-weight: 700;
+    -fx-font-weight: bold;
     -fx-letter-spacing: 1.2px;
 }
 
@@ -157,23 +158,29 @@
 }
 
 .page-title {
+    -fx-font-family: "Arial";
     -fx-font-size: 27px;
-    -fx-font-weight: 700;
+    -fx-font-weight: bold;
+    -fx-padding: 3px 0 4px 0;
 }
 
 .section-title {
+    -fx-font-family: "Arial";
     -fx-font-size: 17px;
-    -fx-font-weight: 700;
+    -fx-font-weight: bold;
+    -fx-padding: 2px 0 3px 0;
 }
 
 .stat-label {
+    -fx-font-family: "Arial";
     -fx-text-fill: #68758b;
-    -fx-font-weight: 600;
+    -fx-font-weight: bold;
+    -fx-padding: 2px 0 3px 0;
 }
 
 .stat-value {
     -fx-font-size: 28px;
-    -fx-font-weight: 700;
+    -fx-font-weight: bold;
 }
 
 .status-badge {
@@ -181,7 +188,7 @@
     -fx-background-radius: 12px;
     -fx-text-fill: #8a6210;
     -fx-font-size: 11px;
-    -fx-font-weight: 700;
+    -fx-font-weight: bold;
     -fx-padding: 5px 10px;
     -fx-max-width: 110px;
 }
@@ -208,4 +215,107 @@
 
 .table-view .placeholder .label {
     -fx-text-fill: #7a879b;
+}
+
+.gymflow-dialog {
+    -fx-background-color: #f4f6fa;
+    -fx-padding: 0;
+}
+
+.gymflow-dialog > .button-bar > .container {
+    -fx-background-color: white;
+    -fx-border-color: #e4e9f1 transparent transparent transparent;
+    -fx-padding: 16px 24px;
+}
+
+.dialog-content {
+    -fx-background-color: white;
+    -fx-padding: 30px 32px;
+    -fx-spacing: 12px;
+}
+
+.dialog-title {
+    -fx-font-family: "Arial";
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #172033;
+    -fx-padding: 3px 0 5px 0;
+}
+
+.dialog-subtitle {
+    -fx-text-fill: #68758b;
+    -fx-padding: 0 0 8px 0;
+}
+
+.dialog-error {
+    -fx-text-fill: #b42318;
+    -fx-font-weight: bold;
+    -fx-line-spacing: 2px;
+    -fx-min-height: 28px;
+}
+
+.dialog-form {
+    -fx-hgap: 14px;
+    -fx-vgap: 16px;
+    -fx-padding: 10px 0 4px 0;
+}
+
+.dialog-form-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #39465a;
+    -fx-min-width: 132px;
+    -fx-pref-width: 132px;
+    -fx-line-spacing: 2px;
+}
+
+.dialog-form .text-field,
+.dialog-form .password-field,
+.dialog-form .combo-box,
+.dialog-form .date-picker,
+.dialog-form .phone-prefix {
+    -fx-min-height: 40px;
+}
+
+.dialog-warning {
+    -fx-background-color: #fff1f0;
+    -fx-background-radius: 8px;
+    -fx-border-color: #f4c7c3;
+    -fx-border-radius: 8px;
+    -fx-padding: 12px;
+    -fx-text-fill: #8f2525;
+}
+
+.member-dialog {
+    -fx-pref-width: 620px;
+}
+
+.reset-dialog {
+    -fx-pref-width: 500px;
+}
+
+.content-scroll,
+.content-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.content-scroll {
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+
+.gymflow-dialog .combo-box,
+.gymflow-dialog .date-picker {
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 8px;
+    -fx-border-color: #d9e0ea;
+    -fx-border-radius: 8px;
+}
+
+.phone-prefix {
+    -fx-background-color: #eef4ff;
+    -fx-background-radius: 8px;
+    -fx-padding: 11px 12px;
+    -fx-text-fill: #1f55ba;
+    -fx-font-weight: bold;
 }

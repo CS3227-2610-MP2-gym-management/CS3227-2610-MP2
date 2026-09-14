@@ -26,7 +26,37 @@ public final class GymFlowDatabase {
             created_at TEXT NOT NULL
         )
         """,
-        "CREATE UNIQUE INDEX one_owner ON accounts(role) WHERE role = 'OWNER'"
+        "CREATE UNIQUE INDEX one_owner ON accounts(role) WHERE role = 'OWNER'",
+        """
+        CREATE TABLE member_profiles (
+            account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+            member_number TEXT NOT NULL UNIQUE,
+            full_name TEXT NOT NULL,
+            phone_number TEXT NOT NULL,
+            date_of_birth TEXT
+        )
+        """,
+        """
+        CREATE TABLE memberships (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            member_account_id INTEGER NOT NULL REFERENCES member_profiles(account_id) ON DELETE CASCADE,
+            start_date TEXT NOT NULL,
+            expiry_date TEXT NOT NULL,
+            is_active INTEGER NOT NULL CHECK (is_active IN (0, 1)),
+            CHECK (expiry_date >= start_date)
+        )
+        """,
+        """
+        CREATE TABLE payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            membership_id INTEGER NOT NULL UNIQUE REFERENCES memberships(id) ON DELETE CASCADE,
+            amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+            method TEXT NOT NULL CHECK (method IN ('CASH', 'CARD', 'TRANSFER')),
+            paid_at TEXT NOT NULL,
+            reference TEXT,
+            recorded_by_account_id INTEGER NOT NULL REFERENCES accounts(id)
+        )
+        """
     };
 
     private final Path file;
