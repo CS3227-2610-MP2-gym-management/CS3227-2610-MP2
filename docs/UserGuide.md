@@ -39,8 +39,39 @@ Select `Log out` in the Owner sidebar to clear the current session and return to
 
 ## Owner Home
 
-Owner Home currently displays placeholder overview cards and an empty member table. The Members, Memberships,
-Payments, and Visits navigation buttons are visible previews and are not yet functional.
+Owner Home currently displays placeholder overview cards. Select `Members` to open Member management. Select
+`Create Member` to open the creation form directly; after a successful creation, GymFlow opens the Members page.
+Memberships, Payments, and Visits remain visible previews and are not yet functional.
+
+## Managing Members
+
+The Members page lists each Member's number, name, email, and phone number. Enter all or part of a Member's name or
+email and select `Search`, or press Enter in the search field. A blank search displays every Member again.
+
+### Creating a Member
+
+1. Select `Create Member`.
+2. Enter the Member email, initial password, profile information, membership dates, and payment information.
+3. Re-enter the initial password and select `Create Member`.
+
+The password must contain 12–128 characters. GymFlow currently supports Singapore phone numbers only: enter eight
+digits beginning with `3`, `6`, `8`, or `9`; the fixed `+65` prefix is stored automatically. Date of birth is optional,
+but a supplied date must show that the Member is at least 12 years old. Membership expiry cannot precede its start, and
+the SGD payment must be positive with at most two decimal places.
+
+GymFlow assigns the next number such as `M000001`. Account, profile, Membership, and Payment creation succeed together;
+an error creates none of them. Validation and storage errors appear in the form without closing it or clearing entered
+values. Give the initial password to the Member securely outside GymFlow.
+
+### Editing a Member
+
+Select a Member row to open the Member profile page. The profile page shows the Member number, contact details, date of
+birth, and read-only payment history. Select `Back to Members` to return to the list.
+
+Select `Edit` on the profile page to update email, full name, phone number, and optional date of birth. The edit view
+keeps payment history visible but read-only. Select `Cancel` to discard changes or `Save Changes` to persist them.
+Phone numbers and dates of birth follow the same validation rules as creation. The Member number cannot be changed. A
+validation failure remains on the edit page for correction.
 
 ## Member dashboard preview
 
@@ -56,8 +87,9 @@ membership, visit, and profile information. Its entry and exit buttons do not re
 3. Enter the exact confirmation text `RESET`.
 4. Confirm the reset.
 
-Incorrect confirmation leaves the database unchanged. A successful reset returns to first-launch Owner setup. This
-operation is irreversible and does not create a backup.
+Incorrect confirmation or password leaves the database unchanged and keeps the confirmation window open for
+correction. A successful reset returns to first-launch Owner setup. This operation is irreversible and does not create
+a backup.
 
 ## Testing from source
 

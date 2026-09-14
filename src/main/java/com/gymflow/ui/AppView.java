@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.model.Account;
+import com.gymflow.member.OwnerMemberService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -12,6 +13,7 @@ import javafx.stage.Stage;
 public final class AppView {
     private final Scene scene;
     private final AuthenticationService authentication;
+    private final OwnerMemberService members;
     private Account session;
     private boolean ownerExists;
 
@@ -20,9 +22,11 @@ public final class AppView {
      *
      * @param stage stage that will display GymFlow
      */
-    public AppView(Stage stage, AuthenticationService authentication, boolean ownerExists) {
+    public AppView(Stage stage, AuthenticationService authentication,
+            OwnerMemberService members, boolean ownerExists) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
+        this.members = Objects.requireNonNull(members);
         this.ownerExists = ownerExists;
         scene = new Scene(createLogin(), 1280, 800);
         scene.getStylesheets().add(Objects.requireNonNull(
@@ -40,7 +44,11 @@ public final class AppView {
         case LOGIN -> createLogin();
         case OWNER_HOME -> session == null
                 ? createLogin()
-                : OwnerHomeView.create(authentication, session, this::logout, this::resetCompleted);
+                : OwnerHomeView.create(authentication, members, session,
+                        this::show, this::logout, this::resetCompleted);
+        case OWNER_MEMBERS -> session == null
+                ? createLogin()
+                : OwnerMembersView.create(members, session, this::show, this::logout);
         case MEMBER_HOME -> MemberHomeView.create(() -> show(Screen.LOGIN));
         };
         scene.setRoot(root);

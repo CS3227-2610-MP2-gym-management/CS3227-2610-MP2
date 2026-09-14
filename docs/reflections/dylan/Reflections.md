@@ -53,6 +53,14 @@ The cleanup removed both while preserving inactive-account testing through the t
 useful example of the agent creating extra work first and then using a focused review skill to remove it. A better
 initial instruction would explicitly prohibit production methods whose only caller is a test.
 
+The Member-management slice applied that lesson immediately: its integration test inspected Membership and Payment
+rows directly rather than adding count methods used only by tests.
+
+Manual UI review found that JavaFX dialogs did not inherit the application stylesheet and closed before asynchronous
+validation completed. The agent traced this to the dialog submission lifecycle, then reused one stylesheet hook and
+consumed submit events until success. This was more effective than adding a custom dialog framework and reinforced the
+need to include failure-state interaction checks, not only happy-path screenshots, in future agent instructions.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

@@ -4,6 +4,6 @@ package com.gymflow.ui;
 public enum Screen {
     LOGIN,
     OWNER_HOME,
+    OWNER_MEMBERS,
     MEMBER_HOME
 }
-
