@@ -1,0 +1,11 @@
+.gradle/
+build/
+out/
+release/
+data/
+work/
+*.log
+.DS_Store
+.idea/
+*.iml
+
