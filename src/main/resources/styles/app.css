@@ -80,6 +80,15 @@
     -fx-border-radius: 8px;
 }
 
+.danger-button {
+    -fx-background-color: #c93636;
+    -fx-text-fill: white;
+}
+
+.error-text {
+    -fx-text-fill: #b42318;
+}
+
 .button:disabled {
     -fx-cursor: default;
     -fx-opacity: 0.55;
@@ -200,4 +209,3 @@
 .table-view .placeholder .label {
     -fx-text-fill: #7a879b;
 }
-
