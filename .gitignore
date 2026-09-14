@@ -2,10 +2,9 @@
 build/
 out/
 release/
-data/
+/data/
 work/
 *.log
 .DS_Store
 .idea/
 *.iml
-

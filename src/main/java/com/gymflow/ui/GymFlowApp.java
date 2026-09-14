@@ -1,5 +1,9 @@
 package com.gymflow.ui;
 
+import java.nio.file.Path;
+
+import com.gymflow.auth.AuthenticationService;
+import com.gymflow.data.GymFlowDatabase;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
@@ -7,6 +11,17 @@ import javafx.stage.Stage;
 public final class GymFlowApp extends Application {
     private static final double MINIMUM_WIDTH = 1050;
     private static final double MINIMUM_HEIGHT = 700;
+    private AuthenticationService authentication;
+    private boolean ownerExists;
+
+    /** Initializes local storage before the JavaFX application thread starts. */
+    @Override
+    public void init() {
+        GymFlowDatabase database = new GymFlowDatabase(Path.of("data", "gymflow.db"));
+        database.initialize();
+        authentication = new AuthenticationService(database);
+        ownerExists = authentication.hasOwner();
+    }
 
     /**
      * Starts the application on the login screen.
@@ -19,7 +34,7 @@ public final class GymFlowApp extends Application {
         stage.setMinWidth(MINIMUM_WIDTH);
         stage.setMinHeight(MINIMUM_HEIGHT);
 
-        new AppView(stage);
+        new AppView(stage, authentication, ownerExists);
         stage.show();
     }
 

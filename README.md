@@ -1,10 +1,32 @@
 # GymFlow
 
-GymFlow is a JavaFX desktop application for a small gym. It will provide separate experiences for gym owners and
-gym members.
+GymFlow is a JavaFX desktop application for a small gym. It provides separate experiences for gym owners and gym
+members.
 
-This initial version contains static previews of the login, owner home, and member home screens. Authentication,
-data storage, and operational features will be added in later increments.
+The current version supports local Owner account setup and login. The dashboard content and Member dashboard remain
+development previews while operational features are added incrementally.
+
+## Owner setup and login
+
+On the first launch, GymFlow asks you to create the installation's single Owner account. Enter an email address and a
+password between 12 and 128 characters. GymFlow opens Owner Home after successful setup.
+
+On later launches, sign in with the same Owner email and password. Email matching is case-insensitive. Use `Log out`
+in the Owner sidebar to clear the current session and return to Login.
+
+Member authentication is not implemented yet. The Login screen therefore retains a clearly labelled Member dashboard
+preview temporarily.
+
+GymFlow stores local application data in `data/gymflow.db`, relative to the directory from which the application is
+launched. Passwords are salted and hashed; plain-text passwords are not stored.
+
+## Reset GymFlow
+
+Owner Home includes `Reset GymFlow` for returning the application to a clean testing state. Enter the current Owner
+password and the exact confirmation text `RESET`.
+
+This action is irreversible. It removes the Owner account and every database-backed gym record, including members,
+memberships, payments, visits, and workouts. After reset, GymFlow returns to first-launch Owner setup.
 
 ## Requirements
 
@@ -36,4 +58,3 @@ the operating system and processor architecture:
 ```shell
 java -jar release/GymFlow-macos-arm64.jar
 ```
-
