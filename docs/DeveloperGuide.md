@@ -1,0 +1,75 @@
+# GymFlow Developer Guide
+
+## Architecture
+
+GymFlow is a modular Java SE 25 and JavaFX 25 desktop application. It uses a single local SQLite database and one
+JavaFX `Scene`; `AppView` replaces the scene root when navigating so screen changes do not create extra windows.
+
+The current code is divided by responsibility:
+
+- `com.gymflow.ui`: application startup, navigation, and JavaFX views.
+- `com.gymflow.auth`: password hashing and authentication rules.
+- `com.gymflow.data`: SQLite initialization and account persistence.
+- `com.gymflow.model`: shared account and role data.
+
+Concrete classes are used instead of repository interfaces or factories because each responsibility currently has one
+implementation. New abstractions should be introduced only when a second implementation or a real testing boundary
+requires one.
+
+## Authentication
+
+An installation supports one Owner account. On first launch, `GymFlowApp` initializes `data/gymflow.db` and the Login
+screen switches to setup mode when no Owner exists.
+
+Passwords are hashed with PBKDF2-HMAC-SHA256 using 600,000 iterations, a random 16-byte salt, and a 32-byte derived
+hash. The database stores the Base64-encoded hash and salt, never the plain-text password. Verification uses a
+constant-time hash comparison. Authentication and reset database work run outside the JavaFX application thread.
+
+## Persistence
+
+`GymFlowDatabase` owns schema initialization and full reset. SQLite foreign-key enforcement is enabled for each
+connection. The current schema contains `accounts` with:
+
+- a case-insensitively unique normalized email;
+- password hash, salt, and iteration count;
+- `OWNER` or `MEMBER` role;
+- active flag and creation timestamp;
+- a partial unique index allowing only one Owner.
+
+Reset discovers all non-SQLite tables and recreates the centralized schema inside one transaction. If recreation
+fails, SQLite rolls back the operation rather than leaving a partially cleared database.
+
+## Build, testing, and CI
+
+Gradle compiles against Java 25 and runs JUnit 5 and Checkstyle:
+
+```shell
+./gradlew clean check
+```
+
+`releaseJars` produces Windows x64, Linux x64, macOS x64, and macOS ARM64 executable JARs. Each JAR includes the
+matching JavaFX and SQLite native libraries; the verification task checks required resources and native contents.
+
+GitHub Actions runs checks and the matching packaging task on all four operating-system targets. CodeQL analyzes Java
+on pushes, pull requests, and a weekly schedule.
+
+## Development process
+
+Features are developed on role-and-feature-specific branches and reviewed before merging into `master`. Behavioural
+changes use a failing-test-first workflow. AI interaction summaries are stored under `logs/<member>/`, and generated
+summaries remain marked pending until the named team member verifies them.
+
+Documentation must describe the latest released behaviour precisely. Update this guide and the User Guide in the same
+feature branch as any affected behaviour.
+
+## Acknowledgements
+
+- The initial visual direction was adapted from Google Stitch mock-ups created for GymFlow; generated HTML was used
+  only as a visual reference and was not copied into the JavaFX implementation.
+- OpenAI Codex assisted with planning, implementation, testing, review, and interaction-log summaries.
+- The Ponytail plugin was used to review changes for unnecessary code and speculative abstractions.
+- The Superpowers plugin supplied brainstorming, planning, TDD, debugging, and verification workflows.
+- GymFlow uses OpenJFX and the Xerial SQLite JDBC driver. Their respective projects retain ownership of their code and
+  licences.
+
+Add every externally reused idea, code fragment, asset, or document to this section when it is introduced.

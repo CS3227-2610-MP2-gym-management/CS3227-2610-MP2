@@ -6,6 +6,13 @@ members.
 The current version supports local Owner account setup and login. The dashboard content and Member dashboard remain
 development previews while operational features are added incrementally.
 
+Project documentation:
+
+- [User Guide](docs/UserGuide.md)
+- [Developer Guide](docs/DeveloperGuide.md)
+- [Agentic SE Reflections](docs/Reflections.md)
+- [AI Interaction Logs](logs/README.md)
+
 ## Owner setup and login
 
 On the first launch, GymFlow asks you to create the installation's single Owner account. Enter an email address and a
