@@ -19,8 +19,7 @@ public final class GymFlowApp extends Application {
         stage.setMinWidth(MINIMUM_WIDTH);
         stage.setMinHeight(MINIMUM_HEIGHT);
 
-        AppView appView = new AppView(stage);
-        appView.show(Screen.LOGIN);
+        new AppView(stage);
         stage.show();
     }
 
