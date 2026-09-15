@@ -14,7 +14,7 @@ import java.util.List;
 
 /** Owns the SQLite file and centralized application schema. */
 public final class GymFlowDatabase {
-    private static final int SCHEMA_VERSION = 3;
+    private static final int SCHEMA_VERSION = 4;
     private static final String VISITS_TABLE = """
         CREATE TABLE visits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,6 +96,19 @@ public final class GymFlowDatabase {
             method TEXT NOT NULL CHECK (method IN ('CASH', 'CARD', 'TRANSFER')),
             paid_at TEXT NOT NULL,
             reference TEXT,
+            recorded_by_account_id INTEGER NOT NULL REFERENCES accounts(id),
+            created_at TEXT NOT NULL
+        )
+        """,
+        """
+        CREATE TABLE expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            expense_date TEXT NOT NULL,
+            amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+            method TEXT NOT NULL CHECK (method IN ('CASH', 'CARD', 'TRANSFER')),
+            category TEXT NOT NULL CHECK (category IN (
+                'MAINTENANCE', 'UTILITIES', 'EQUIPMENT', 'SUPPLIES', 'RENT', 'OTHER')),
+            description TEXT,
             recorded_by_account_id INTEGER NOT NULL REFERENCES accounts(id),
             created_at TEXT NOT NULL
         )
