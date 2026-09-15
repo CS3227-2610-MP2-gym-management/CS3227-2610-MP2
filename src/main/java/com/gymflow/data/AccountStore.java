@@ -28,7 +28,7 @@ public final class AccountStore {
         Instant createdAt = Instant.now();
         String sql = """
                 INSERT INTO accounts(email, password_hash, password_salt, password_iterations,
-                    role, is_active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)
+                    role, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)
                 """;
         try (Connection connection = database.connect();
                 PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -38,12 +38,13 @@ public final class AccountStore {
             statement.setInt(4, password.iterations());
             statement.setString(5, role.name());
             statement.setString(6, createdAt.toString());
+            statement.setString(7, createdAt.toString());
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (!keys.next()) {
                     throw new IllegalStateException("Unable to create account");
                 }
-                return new Account(keys.getLong(1), normalizedEmail, role, true, createdAt);
+                return new Account(keys.getLong(1), normalizedEmail, role, true, createdAt, createdAt);
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("Unable to create account", exception);
@@ -82,7 +83,8 @@ public final class AccountStore {
                 results.getString("email"),
                 Role.valueOf(results.getString("role")),
                 results.getBoolean("is_active"),
-                Instant.parse(results.getString("created_at")));
+                Instant.parse(results.getString("created_at")),
+                Instant.parse(results.getString("updated_at")));
         PasswordHash password = new PasswordHash(
                 results.getString("password_hash"),
                 results.getString("password_salt"),

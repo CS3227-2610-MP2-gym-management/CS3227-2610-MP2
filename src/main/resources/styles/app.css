@@ -293,6 +293,10 @@
     -fx-pref-width: 500px;
 }
 
+.membership-dialog {
+    -fx-pref-width: 560px;
+}
+
 .content-scroll,
 .content-scroll > .viewport {
     -fx-background-color: transparent;

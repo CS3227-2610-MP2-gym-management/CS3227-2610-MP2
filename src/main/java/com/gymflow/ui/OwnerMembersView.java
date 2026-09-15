@@ -12,10 +12,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import com.gymflow.member.CreateMemberRequest;
+import com.gymflow.member.AddMembershipRequest;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.model.Account;
 import com.gymflow.model.Member;
 import com.gymflow.model.MemberPayment;
+import com.gymflow.model.Membership;
+import com.gymflow.model.MembershipStatus;
 import com.gymflow.model.PaymentMethod;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -62,8 +65,13 @@ final class OwnerMembersView {
             Consumer<Screen> navigate, Runnable logout) {
         BorderPane root = new BorderPane();
         root.setId("owner-members-screen");
-        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Members", Set.of("Overview", "Members"),
-                item -> navigate.accept(item.equals("Overview") ? Screen.OWNER_HOME : Screen.OWNER_MEMBERS), logout));
+        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Members",
+                Set.of("Overview", "Members", "Memberships"),
+                item -> navigate.accept(switch (item) {
+                case "Overview" -> Screen.OWNER_HOME;
+                case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
+                default -> Screen.OWNER_MEMBERS;
+                }), logout));
 
         showMemberList(root, members, owner);
         return root;
@@ -72,7 +80,7 @@ final class OwnerMembersView {
     private static void showMemberList(BorderPane root, OwnerMemberService members, Account owner) {
         Runnable backToList = () -> showMemberList(root, members, owner);
         root.setCenter(UiComponents.scrollable(memberList(members, owner,
-                member -> showMemberDetails(root, members, member, backToList))));
+                member -> showMemberDetails(root, members, owner, member, backToList))));
     }
 
     private static VBox memberList(OwnerMemberService members, Account owner, Consumer<Member> openMember) {
@@ -150,24 +158,25 @@ final class OwnerMembersView {
     }
 
     private static void showMemberDetails(BorderPane root, OwnerMemberService members,
-            Member member, Runnable backToList) {
-        root.setCenter(UiComponents.scrollable(memberDetails(root, members, member, backToList)));
+            Account owner, Member member, Runnable backToList) {
+        root.setCenter(UiComponents.scrollable(memberDetails(root, members, owner, member, backToList)));
     }
 
     private static VBox memberDetails(BorderPane root, OwnerMemberService members,
-            Member member, Runnable backToList) {
+            Account owner, Member member, Runnable backToList) {
         Button back = new Button("Back to Members");
         back.getStyleClass().add("secondary-button");
         back.setOnAction(event -> backToList.run());
         Button edit = new Button("Edit");
         edit.getStyleClass().add("primary-button");
-        edit.setOnAction(event -> showMemberEditor(root, members, member, backToList));
+        edit.setOnAction(event -> showMemberEditor(root, members, owner, member, backToList));
 
         StackPane header = detailHeader(back, member.fullName(), member.memberNumber(), edit);
         VBox profile = UiComponents.card(sectionTitle("Profile"),
                 detailRow("Email", member.email()),
                 detailRow("Phone", member.phoneNumber()),
                 detailRow("Date of birth", formatDate(member.dateOfBirth())));
+        VBox memberships = membershipCard(root, members, owner, member, backToList, true);
         TableView<MemberPayment> payments = paymentTable();
         Label paymentError = dialogError();
         run(null, () -> members.paymentHistory(member.accountId()),
@@ -175,18 +184,18 @@ final class OwnerMembersView {
                 exception -> paymentError.setText(message(exception)));
         VBox paymentCard = UiComponents.card(sectionTitle("Payment history"), paymentError, payments);
         VBox.setVgrow(payments, Priority.ALWAYS);
-        VBox content = new VBox(20, header, profile, paymentCard);
+        VBox content = new VBox(20, header, profile, memberships, paymentCard);
         content.setPadding(new Insets(36));
         return content;
     }
 
     private static void showMemberEditor(BorderPane root, OwnerMemberService members,
-            Member member, Runnable backToList) {
-        root.setCenter(UiComponents.scrollable(memberEditor(root, members, member, backToList)));
+            Account owner, Member member, Runnable backToList) {
+        root.setCenter(UiComponents.scrollable(memberEditor(root, members, owner, member, backToList)));
     }
 
     private static VBox memberEditor(BorderPane root, OwnerMemberService members,
-            Member member, Runnable backToList) {
+            Account owner, Member member, Runnable backToList) {
         TextField email = valueField(member.email());
         TextField name = valueField(member.fullName());
         TextField phone = valueField(localPhoneNumber(member.phoneNumber()));
@@ -213,11 +222,12 @@ final class OwnerMembersView {
                 result -> payments.getItems().setAll(result),
                 exception -> paymentError.setText(message(exception)));
         VBox profile = UiComponents.card(sectionTitle("Profile"), error, grid);
+        VBox memberships = membershipCard(root, members, owner, member, backToList, false);
         VBox paymentCard = UiComponents.card(sectionTitle("Payment history"), paymentError, payments);
 
         Button cancel = new Button("Cancel");
         cancel.getStyleClass().add("secondary-button");
-        cancel.setOnAction(event -> showMemberDetails(root, members, member, backToList));
+        cancel.setOnAction(event -> showMemberDetails(root, members, owner, member, backToList));
         Button save = new Button("Save Changes");
         save.getStyleClass().add("primary-button");
         save.setOnAction(event -> {
@@ -227,7 +237,7 @@ final class OwnerMembersView {
             save.setText("Saving...");
             run(save, () -> members.updateMember(member.accountId(), email.getText(), name.getText(),
                     phone.getText(), birth.getValue()),
-                    updated -> showMemberDetails(root, members, updated, backToList),
+                    updated -> showMemberDetails(root, members, owner, updated, backToList),
                     exception -> {
                         cancel.setDisable(false);
                         save.setText("Save Changes");
@@ -238,7 +248,7 @@ final class OwnerMembersView {
         HBox actions = new HBox(10, cancel, save);
         actions.setAlignment(Pos.CENTER_RIGHT);
 
-        VBox content = new VBox(20, editHeader(member), profile, paymentCard, actions);
+        VBox content = new VBox(20, editHeader(member), profile, memberships, paymentCard, actions);
         content.setPadding(new Insets(36));
         return content;
     }
@@ -301,6 +311,198 @@ final class OwnerMembersView {
         addPaymentColumn(table, "Method", payment -> payment.method().name());
         addPaymentColumn(table, "Reference", MemberPayment::reference);
         return table;
+    }
+
+    private static VBox membershipCard(BorderPane root, OwnerMemberService members,
+            Account owner, Member member, Runnable backToList, boolean editable) {
+        TableView<Membership> table = membershipTable();
+        Label error = dialogError();
+        Button add = new Button("Add Membership");
+        add.getStyleClass().add("primary-button");
+        add.setDisable(true);
+        Button toggle = new Button("Select a Membership");
+        toggle.getStyleClass().add("secondary-button");
+        toggle.setDisable(true);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox heading = new HBox(12, sectionTitle("Membership history"), spacer);
+        heading.setAlignment(Pos.CENTER_LEFT);
+        if (editable) {
+            heading.getChildren().add(add);
+        }
+        HBox actions = new HBox(10, toggle);
+        actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.setVisible(editable);
+        actions.setManaged(editable);
+
+        table.getSelectionModel().selectedItemProperty().addListener(
+                (observable, previous, selected) -> configureMembershipAction(toggle, selected));
+        add.setOnAction(event -> showAddMembership(add, members, member.accountId(), table.getItems(),
+                owner.id(), () -> showMemberDetails(root, members, owner, member, backToList)));
+        toggle.setOnAction(event -> {
+            Membership selected = table.getSelectionModel().getSelectedItem();
+            if (selected == null) {
+                return;
+            }
+            if (selected.active()) {
+                confirmDeactivation(toggle, members, selected,
+                        owner.id(), () -> showMemberDetails(root, members, owner, member, backToList));
+            } else {
+                error.setText("");
+                toggle.setText("Reactivating…");
+                run(toggle, () -> members.setMembershipActive(selected.id(), true, owner.id()),
+                        ignored -> showMemberDetails(root, members, owner, member, backToList),
+                        exception -> {
+                            configureMembershipAction(toggle, selected);
+                            error.setText(message(exception));
+                        });
+            }
+        });
+        run(null, () -> members.membershipHistory(member.accountId()), result -> {
+            table.getItems().setAll(result);
+            add.setDisable(!editable);
+        }, exception -> error.setText(message(exception)));
+        VBox card = UiComponents.card(heading, error, table, actions);
+        VBox.setVgrow(table, Priority.ALWAYS);
+        return card;
+    }
+
+    private static TableView<Membership> membershipTable() {
+        TableView<Membership> table = new TableView<>();
+        table.setPlaceholder(new Label("No Memberships recorded"));
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.setPrefHeight(220);
+        addMembershipColumn(table, "Start", membership -> membership.startDate().toString());
+        addMembershipColumn(table, "Expiry", membership -> membership.expiryDate().toString());
+        addMembershipColumn(table, "Status",
+                membership -> membership.status(LocalDate.now()).name());
+        return table;
+    }
+
+    private static void addMembershipColumn(TableView<Membership> table, String title,
+            java.util.function.Function<Membership, String> value) {
+        TableColumn<Membership, String> column = new TableColumn<>(title);
+        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
+        table.getColumns().add(column);
+    }
+
+    private static void configureMembershipAction(Button button, Membership membership) {
+        button.getStyleClass().removeAll("primary-button", "danger-button", "secondary-button");
+        if (membership == null) {
+            button.setText("Select a Membership");
+            button.getStyleClass().add("secondary-button");
+            button.setDisable(true);
+        } else if (membership.active()) {
+            button.setText("Deactivate");
+            button.getStyleClass().add("danger-button");
+            button.setDisable(false);
+        } else if (membership.status(LocalDate.now()) == MembershipStatus.DEACTIVATED
+                && membership.expiryDate().isBefore(LocalDate.now())) {
+            button.setText("Expired");
+            button.getStyleClass().add("secondary-button");
+            button.setDisable(true);
+        } else {
+            button.setText("Reactivate");
+            button.getStyleClass().add("primary-button");
+            button.setDisable(false);
+        }
+    }
+
+    private static void showAddMembership(Node ownerNode, OwnerMemberService members,
+            long memberId, List<Membership> history, long ownerAccountId, Runnable success) {
+        LocalDate startDate = history.stream()
+                .filter(Membership::active)
+                .map(Membership::expiryDate)
+                .max(LocalDate::compareTo)
+                .map(date -> date.plusDays(1))
+                .orElse(LocalDate.now());
+        DatePicker start = new DatePicker(startDate);
+        DatePicker expiry = new DatePicker(startDate.plusMonths(1));
+        calendarOnly(start, expiry);
+        TextField amount = field("Payment amount (SGD)");
+        amount.setTextFormatter(decimalAmount());
+        ComboBox<PaymentMethod> method = new ComboBox<>();
+        method.getItems().setAll(PaymentMethod.values());
+        method.setValue(PaymentMethod.CARD);
+        TextField reference = field("Payment reference (optional)");
+        Label error = dialogError();
+        GridPane grid = new GridPane();
+        grid.getStyleClass().add("dialog-form");
+        addRow(grid, 0, "Membership start", start);
+        addRow(grid, 1, "Membership expiry", expiry);
+        addRow(grid, 2, "Amount (SGD)", amount);
+        addRow(grid, 3, "Method", method);
+        addRow(grid, 4, "Reference", reference);
+
+        ButtonType addType = new ButtonType("Add Membership", ButtonBar.ButtonData.OK_DONE);
+        Dialog<ButtonType> dialog = formDialog("Add Membership", addType);
+        dialog.getDialogPane().setContent(dialogContent("Add Membership",
+                "Create one access period and its Payment.", error, grid));
+        UiComponents.styleDialog(dialog, ownerNode, "membership-dialog", false);
+        Button submit = (Button) dialog.getDialogPane().lookupButton(addType);
+        Button cancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        submit.getStyleClass().add("primary-button");
+        submit.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            error.setText("");
+            AddMembershipRequest request;
+            try {
+                request = new AddMembershipRequest(memberId, start.getValue(), expiry.getValue(),
+                        new BigDecimal(amount.getText()), method.getValue(), Instant.now(), reference.getText());
+            } catch (NumberFormatException exception) {
+                showError(error, amount, "Enter a valid payment amount");
+                return;
+            }
+            cancel.setDisable(true);
+            submit.setText("Adding…");
+            run(submit, () -> members.addMembership(request, ownerAccountId), ignored -> {
+                dialog.close();
+                success.run();
+            }, exception -> {
+                cancel.setDisable(false);
+                submit.setText("Add Membership");
+                showError(error, fieldFor(exception.getMessage(), null, null, null, null,
+                        null, start, expiry, amount, method), message(exception));
+            });
+        });
+        dialog.showAndWait();
+    }
+
+    private static void confirmDeactivation(Node ownerNode, OwnerMemberService members,
+            Membership membership, long ownerAccountId, Runnable success) {
+        ButtonType deactivateType = new ButtonType("Deactivate", ButtonBar.ButtonData.OK_DONE);
+        Dialog<ButtonType> dialog = formDialog("Deactivate Membership", deactivateType);
+        Label title = new Label("Deactivate this Membership?");
+        title.getStyleClass().add("dialog-title");
+        UiComponents.preserveLabelHeight(title);
+        Label warning = new Label("This period will stop granting gym access. "
+                + "The Member account and history will remain available.");
+        warning.getStyleClass().add("dialog-warning");
+        warning.setWrapText(true);
+        Label error = dialogError();
+        VBox content = new VBox(12, title, warning, error);
+        content.getStyleClass().add("dialog-content");
+        dialog.getDialogPane().setContent(content);
+        UiComponents.styleDialog(dialog, ownerNode, "membership-dialog", false);
+        Button submit = (Button) dialog.getDialogPane().lookupButton(deactivateType);
+        Button cancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        submit.getStyleClass().add("danger-button");
+        submit.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            cancel.setDisable(true);
+            submit.setText("Deactivating…");
+            run(submit, () -> members.setMembershipActive(membership.id(), false, ownerAccountId),
+                    ignored -> {
+                        dialog.close();
+                        success.run();
+                    }, exception -> {
+                        cancel.setDisable(false);
+                        submit.setText("Deactivate");
+                        error.setText(message(exception));
+                    });
+        });
+        dialog.showAndWait();
     }
 
     private static void addPaymentColumn(TableView<MemberPayment> table, String title,
@@ -511,7 +713,7 @@ final class OwnerMembersView {
                 ? exception.getMessage() : "Unable to access GymFlow data";
     }
 
-    private static <T> void run(Button button, java.util.concurrent.Callable<T> operation,
+    static <T> void run(Button button, java.util.concurrent.Callable<T> operation,
             Consumer<T> success, Consumer<Throwable> failure) {
         if (button != null) {
             button.setDisable(true);

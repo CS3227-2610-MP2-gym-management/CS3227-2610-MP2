@@ -34,7 +34,7 @@ connection. The current schema contains `accounts` with:
 - a case-insensitively unique normalized email;
 - password hash, salt, and iteration count;
 - `OWNER` or `MEMBER` role;
-- active flag and creation timestamp;
+- active flag plus creation and update timestamps;
 - a partial unique index allowing only one Owner.
 
 Reset discovers all non-SQLite tables and recreates the centralized schema inside one transaction. If recreation
@@ -58,6 +58,16 @@ and displaying validation failures inline.
 Owner Member management uses a list-detail pattern. The Members list performs search and creation. Selecting a row opens
 an in-page profile view with read-only payment history, while profile editing happens in the same page instead of a
 separate edit dialog.
+
+`Account` and `Role` are the implemented names for the design's `User` and `UserRole` entities. Memberships store one
+purchased access period, and each has exactly one Payment. Membership and Payment creation uses one transaction.
+Existing databases are upgraded by an idempotent schema-version migration that adds the required timestamps without
+deleting records.
+
+Membership display status is derived from its active flag and dates rather than stored. New active periods cannot
+overlap another active period for the same Member. Deactivation does not change `accounts.is_active`, so it does not
+prevent authentication. `OwnerMemberService.hasValidMembership(memberId, date)` is the shared contract for future
+Member entry validation; it returns true when any active Membership covers the date inclusively.
 
 ## Build, testing, and CI
 

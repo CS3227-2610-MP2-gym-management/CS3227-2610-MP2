@@ -39,9 +39,10 @@ Select `Log out` in the Owner sidebar to clear the current session and return to
 
 ## Owner Home
 
-Owner Home currently displays placeholder overview cards. Select `Members` to open Member management. Select
+Owner Home currently displays placeholder overview cards. Select `Members` to open Member management, or
+`Memberships` to review all purchased Membership periods. Select
 `Create Member` to open the creation form directly; after a successful creation, GymFlow opens the Members page.
-Memberships, Payments, and Visits remain visible previews and are not yet functional.
+Payments and Visits remain visible previews and are not yet functional.
 
 ## Managing Members
 
@@ -65,13 +66,30 @@ values. Give the initial password to the Member securely outside GymFlow.
 
 ### Editing a Member
 
-Select a Member row to open the Member profile page. The profile page shows the Member number, contact details, date of
-birth, and read-only payment history. Select `Back to Members` to return to the list.
+Select a Member row to open the Member profile page. The profile page shows the Member number, contact details,
+Membership history, and read-only Payment history. Select `Back to Members` to return to the list.
 
 Select `Edit` on the profile page to update email, full name, phone number, and optional date of birth. The edit view
 keeps payment history visible but read-only. Select `Cancel` to discard changes or `Save Changes` to persist them.
 Phone numbers and dates of birth follow the same validation rules as creation. The Member number cannot be changed. A
 validation failure remains on the edit page for correction.
+
+## Managing Memberships
+
+The Memberships page lists every purchased period with its Member, start date, expiry date, and derived status. Search
+by Member name or email, select `Search`, or press Enter. Clearing the search displays all Memberships again.
+
+From a Member profile, select `Add Membership` to record another access period and its Payment. Dates are selected from
+the calendar controls. The suggested start is the day after the latest active period expires, or today when none
+exists; the suggested expiry is one month later. Enter a positive SGD amount, choose `CASH`, `CARD`, or `TRANSFER`, and
+optionally enter a reference.
+
+Active Membership periods cannot overlap. A deactivated period may be replaced by a new overlapping period. Select a
+Membership row and use `Deactivate` to stop it granting gym access without disabling the Member account or removing
+history. A current or future deactivated period may be reactivated when it does not overlap another active period.
+Expired periods cannot be reactivated; add a new Membership instead.
+
+Statuses are calculated from the active flag and dates: `ACTIVE`, `UPCOMING`, `EXPIRED`, or `DEACTIVATED`.
 
 ## Member dashboard preview
 

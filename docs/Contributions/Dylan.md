@@ -13,7 +13,8 @@ feature is merged.
 | Owner authentication | First-run Owner setup, secure login and logout, one-Owner constraint | `871ea27`, PR #1 |
 | Application reset | Password-and-`RESET` guarded transactional database reset | `871ea27`, PR #1 |
 | Code cleanup | Removed test-only persistence API and low-value reflection test | `b6c168a`, PR #1 |
-| Member management | Atomic onboarding, Singapore profile validation, search, full-page profiles, payment history, and in-page editing | Current Member-management branch |
+| Member management | Atomic onboarding, Singapore profile validation, search, full-page profiles, payment history, and in-page editing | `3d4b995`, PR #2 |
+| Membership management | Membership overview, renewal Payments, activation controls, validity contract, and schema migration | Current Membership-management branch |
 
 ## Team-level engineering
 
@@ -27,9 +28,7 @@ feature is merged.
 
 ## Planned Owner P0 work
 
-- Membership activation, renewal, deactivation, and payment history
 - Collective and per-Member attendance oversight
-- Shared membership-validity contract for the teammate's Member entry workflow
 - Documentation and AI-log updates in every feature branch
 
 Do not list Member-facing features here unless Dylan actually implements them and the team agrees that ownership has

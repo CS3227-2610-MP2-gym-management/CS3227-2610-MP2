@@ -14,8 +14,11 @@ import java.util.Locale;
 
 import com.gymflow.auth.PasswordHash;
 import com.gymflow.member.CreateMemberRequest;
+import com.gymflow.member.AddMembershipRequest;
 import com.gymflow.model.Member;
 import com.gymflow.model.MemberPayment;
+import com.gymflow.model.Membership;
+import com.gymflow.model.MembershipOverview;
 import com.gymflow.model.PaymentMethod;
 
 /** Persists Owner-managed Member records. */
@@ -89,7 +92,8 @@ public final class OwnerMemberStore {
     /** Lists payments recorded for a Member, newest first. */
     public List<MemberPayment> paymentHistory(long memberAccountId) {
         String sql = """
-                SELECT p.amount_cents, p.method, p.paid_at, p.reference
+                SELECT p.id, p.membership_id, p.amount_cents, p.method, p.paid_at,
+                    p.reference, p.recorded_by_account_id, p.created_at
                 FROM payments p JOIN memberships m ON m.id = p.membership_id
                 WHERE m.member_account_id = ?
                 ORDER BY p.paid_at DESC, p.id DESC
@@ -109,6 +113,138 @@ public final class OwnerMemberStore {
         }
     }
 
+    /** Lists a Member's purchased Membership periods, newest first. */
+    public List<Membership> membershipHistory(long memberAccountId) {
+        String sql = """
+                SELECT * FROM memberships WHERE member_account_id = ?
+                ORDER BY start_date DESC, id DESC
+                """;
+        try (Connection connection = database.connect();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, memberAccountId);
+            try (ResultSet results = statement.executeQuery()) {
+                List<Membership> found = new ArrayList<>();
+                while (results.next()) {
+                    found.add(readMembership(results));
+                }
+                return found;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to load Memberships", exception);
+        }
+    }
+
+    /** Lists Memberships whose Member name or email matches the query. */
+    public List<MembershipOverview> searchMemberships(String query) {
+        String pattern = "%" + escape(query.toLowerCase(Locale.ROOT)) + "%";
+        String sql = """
+                SELECT m.*, p.member_number, p.full_name, a.email
+                FROM memberships m
+                JOIN member_profiles p ON p.account_id = m.member_account_id
+                JOIN accounts a ON a.id = p.account_id
+                WHERE lower(p.full_name) LIKE ? ESCAPE '\\'
+                   OR lower(a.email) LIKE ? ESCAPE '\\'
+                ORDER BY p.full_name, m.start_date DESC, m.id DESC
+                """;
+        try (Connection connection = database.connect();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, pattern);
+            statement.setString(2, pattern);
+            try (ResultSet results = statement.executeQuery()) {
+                List<MembershipOverview> found = new ArrayList<>();
+                while (results.next()) {
+                    found.add(new MembershipOverview(readMembership(results),
+                            results.getString("member_number"), results.getString("full_name"),
+                            results.getString("email")));
+                }
+                return found;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to search Memberships", exception);
+        }
+    }
+
+    /** Atomically creates one Membership and its Payment. */
+    public Membership addMembership(AddMembershipRequest request, long ownerAccountId) {
+        try (Connection connection = database.connect()) {
+            connection.setAutoCommit(false);
+            try {
+                requireOwner(connection, ownerAccountId);
+                requireMember(connection, request.memberId());
+                requireNoActiveOverlap(connection, request.memberId(), request.startDate(),
+                        request.expiryDate(), 0);
+                Instant now = Instant.now();
+                long membershipId = insertMembership(connection, request.memberId(),
+                        request.startDate(), request.expiryDate(), now);
+                insertPayment(connection, membershipId, request.paymentAmount(),
+                        request.paymentMethod(), request.paidAt(), request.paymentReference(),
+                        ownerAccountId, now);
+                connection.commit();
+                return new Membership(membershipId, request.memberId(), request.startDate(),
+                        request.expiryDate(), true, now, now);
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to add Membership", exception);
+        }
+    }
+
+    /** Activates or deactivates one Membership. */
+    public Membership setMembershipActive(long membershipId, boolean active,
+            long ownerAccountId) {
+        try (Connection connection = database.connect()) {
+            connection.setAutoCommit(false);
+            try {
+                requireOwner(connection, ownerAccountId);
+                Membership membership = findMembership(connection, membershipId);
+                if (active) {
+                    if (membership.expiryDate().isBefore(LocalDate.now())) {
+                        throw new IllegalArgumentException("Expired Memberships cannot be reactivated");
+                    }
+                    requireNoActiveOverlap(connection, membership.memberId(),
+                            membership.startDate(), membership.expiryDate(), membership.id());
+                }
+                Instant updatedAt = Instant.now();
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE memberships SET is_active = ?, updated_at = ? WHERE id = ?")) {
+                    statement.setBoolean(1, active);
+                    statement.setString(2, updatedAt.toString());
+                    statement.setLong(3, membershipId);
+                    statement.executeUpdate();
+                }
+                connection.commit();
+                return new Membership(membership.id(), membership.memberId(), membership.startDate(),
+                        membership.expiryDate(), active, membership.createdAt(), updatedAt);
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to update Membership", exception);
+        }
+    }
+
+    /** Returns whether any active Membership covers the supplied date. */
+    public boolean hasValidMembership(long memberAccountId, LocalDate date) {
+        String sql = """
+                SELECT 1 FROM memberships
+                WHERE member_account_id = ? AND is_active = 1
+                  AND start_date <= ? AND expiry_date >= ?
+                LIMIT 1
+                """;
+        try (Connection connection = database.connect();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, memberAccountId);
+            statement.setString(2, date.toString());
+            statement.setString(3, date.toString());
+            return statement.executeQuery().next();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to check Membership", exception);
+        }
+    }
+
     /** Changes only the editable fields of an existing Member. */
     public Member update(long accountId, String email, String fullName,
             String phoneNumber, LocalDate dateOfBirth) {
@@ -117,9 +253,10 @@ public final class OwnerMemberStore {
             try {
                 int accountRows;
                 try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE accounts SET email = ? WHERE id = ? AND role = 'MEMBER'")) {
+                        "UPDATE accounts SET email = ?, updated_at = ? WHERE id = ? AND role = 'MEMBER'")) {
                     statement.setString(1, email);
-                    statement.setLong(2, accountId);
+                    statement.setString(2, Instant.now().toString());
+                    statement.setLong(3, accountId);
                     try {
                         accountRows = statement.executeUpdate();
                     } catch (SQLException exception) {
@@ -164,17 +301,49 @@ public final class OwnerMemberStore {
         }
     }
 
+    private static void requireMember(Connection connection, long memberAccountId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT 1 FROM member_profiles p JOIN accounts a ON a.id = p.account_id
+                WHERE p.account_id = ? AND a.role = 'MEMBER'
+                """)) {
+            statement.setLong(1, memberAccountId);
+            if (!statement.executeQuery().next()) {
+                throw new IllegalArgumentException("Member not found");
+            }
+        }
+    }
+
+    private static void requireNoActiveOverlap(Connection connection, long memberAccountId,
+            LocalDate start, LocalDate expiry, long excludedId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT 1 FROM memberships
+                WHERE member_account_id = ? AND is_active = 1 AND id <> ?
+                  AND start_date <= ? AND expiry_date >= ?
+                LIMIT 1
+                """)) {
+            statement.setLong(1, memberAccountId);
+            statement.setLong(2, excludedId);
+            statement.setString(3, expiry.toString());
+            statement.setString(4, start.toString());
+            if (statement.executeQuery().next()) {
+                throw new IllegalArgumentException("Membership dates overlap an active Membership");
+            }
+        }
+    }
+
     private static long insertAccount(Connection connection, String email,
             PasswordHash password) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO accounts(email, password_hash, password_salt, password_iterations,
-                    role, is_active, created_at) VALUES (?, ?, ?, ?, 'MEMBER', 1, ?)
+                    role, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, 'MEMBER', 1, ?, ?)
                 """, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, email);
             statement.setString(2, password.hash());
             statement.setString(3, password.salt());
             statement.setInt(4, password.iterations());
-            statement.setString(5, java.time.Instant.now().toString());
+            String now = Instant.now().toString();
+            statement.setString(5, now);
+            statement.setString(6, now);
             statement.executeUpdate();
             return generatedId(statement);
         }
@@ -207,13 +376,21 @@ public final class OwnerMemberStore {
 
     private static long insertMembership(Connection connection, long accountId,
             CreateMemberRequest request) throws SQLException {
+        return insertMembership(connection, accountId, request.membershipStart(),
+                request.membershipExpiry(), Instant.now());
+    }
+
+    private static long insertMembership(Connection connection, long accountId,
+            LocalDate start, LocalDate expiry, Instant now) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("""
-                INSERT INTO memberships(member_account_id, start_date, expiry_date, is_active)
-                VALUES (?, ?, ?, 1)
+                INSERT INTO memberships(member_account_id, start_date, expiry_date, is_active,
+                    created_at, updated_at) VALUES (?, ?, ?, 1, ?, ?)
                 """, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, accountId);
-            statement.setString(2, request.membershipStart().toString());
-            statement.setString(3, request.membershipExpiry().toString());
+            statement.setString(2, start.toString());
+            statement.setString(3, expiry.toString());
+            statement.setString(4, now.toString());
+            statement.setString(5, now.toString());
             statement.executeUpdate();
             return generatedId(statement);
         }
@@ -221,16 +398,24 @@ public final class OwnerMemberStore {
 
     private static void insertPayment(Connection connection, long membershipId,
             CreateMemberRequest request, long ownerAccountId) throws SQLException {
+        insertPayment(connection, membershipId, request.paymentAmount(), request.paymentMethod(),
+                request.paidAt(), request.paymentReference(), ownerAccountId, Instant.now());
+    }
+
+    private static void insertPayment(Connection connection, long membershipId,
+            BigDecimal amount, PaymentMethod method, Instant paidAt, String reference,
+            long ownerAccountId, Instant createdAt) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO payments(membership_id, amount_cents, method, paid_at, reference,
-                    recorded_by_account_id) VALUES (?, ?, ?, ?, ?, ?)
+                    recorded_by_account_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """)) {
             statement.setLong(1, membershipId);
-            statement.setLong(2, request.paymentAmount().movePointRight(2).longValueExact());
-            statement.setString(3, request.paymentMethod().name());
-            statement.setString(4, request.paidAt().toString());
-            statement.setString(5, blankToNull(request.paymentReference()));
+            statement.setLong(2, amount.movePointRight(2).longValueExact());
+            statement.setString(3, method.name());
+            statement.setString(4, paidAt.toString());
+            statement.setString(5, blankToNull(reference));
             statement.setLong(6, ownerAccountId);
+            statement.setString(7, createdAt.toString());
             statement.executeUpdate();
         }
     }
@@ -269,8 +454,33 @@ public final class OwnerMemberStore {
     private static MemberPayment readPayment(ResultSet results) throws SQLException {
         BigDecimal amount = BigDecimal.valueOf(results.getLong("amount_cents"), 2);
         String reference = results.getString("reference");
-        return new MemberPayment(Instant.parse(results.getString("paid_at")), amount,
-                PaymentMethod.valueOf(results.getString("method")), reference == null ? "" : reference);
+        return new MemberPayment(results.getLong("id"), results.getLong("membership_id"), amount,
+                PaymentMethod.valueOf(results.getString("method")),
+                Instant.parse(results.getString("paid_at")), reference == null ? "" : reference,
+                results.getLong("recorded_by_account_id"),
+                Instant.parse(results.getString("created_at")));
+    }
+
+    private static Membership readMembership(ResultSet results) throws SQLException {
+        return new Membership(results.getLong("id"), results.getLong("member_account_id"),
+                LocalDate.parse(results.getString("start_date")),
+                LocalDate.parse(results.getString("expiry_date")), results.getBoolean("is_active"),
+                Instant.parse(results.getString("created_at")),
+                Instant.parse(results.getString("updated_at")));
+    }
+
+    private static Membership findMembership(Connection connection, long membershipId)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM memberships WHERE id = ?")) {
+            statement.setLong(1, membershipId);
+            try (ResultSet results = statement.executeQuery()) {
+                if (!results.next()) {
+                    throw new IllegalArgumentException("Membership not found");
+                }
+                return readMembership(results);
+            }
+        }
     }
 
     private static String escape(String query) {

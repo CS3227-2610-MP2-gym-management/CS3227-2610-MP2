@@ -74,8 +74,13 @@ final class OwnerHomeView {
         BorderPane root = new BorderPane();
         root.setId("owner-home-screen");
         root.getStyleClass().add("dashboard-screen");
-        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Overview", Set.of("Overview", "Members"),
-                item -> navigate.accept(item.equals("Members") ? Screen.OWNER_MEMBERS : Screen.OWNER_HOME),
+        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Overview",
+                Set.of("Overview", "Members", "Memberships"),
+                item -> navigate.accept(switch (item) {
+                case "Members" -> Screen.OWNER_MEMBERS;
+                case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
+                default -> Screen.OWNER_HOME;
+                }),
                 returnToLogin));
         root.setCenter(UiComponents.scrollable(content));
         root.setAccessibleText("GymFlow owner dashboard preview");

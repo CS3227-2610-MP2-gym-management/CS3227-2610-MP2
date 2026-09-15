@@ -61,6 +61,11 @@ validation completed. The agent traced this to the dialog submission lifecycle, 
 consumed submit events until success. This was more effective than adding a custom dialog framework and reinforced the
 need to include failure-state interaction checks, not only happy-path screenshots, in future agent instructions.
 
+The Membership-management slice used the same skills to define a narrow cross-role contract without taking over the
+Member UI. The agent exposed a date-based Membership validity query for the teammate while keeping activation and
+Payment controls exclusively in the Owner screens. A failing legacy-database test also drove an idempotent timestamp
+migration, avoiding the easier but destructive option of requiring another application reset.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.
