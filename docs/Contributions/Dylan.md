@@ -15,7 +15,8 @@ feature is merged.
 | Code cleanup | Removed test-only persistence API and low-value reflection test | `b6c168a`, PR #1 |
 | Member management | Atomic onboarding, Singapore profile validation, search, full-page profiles, payment history, and in-page editing | `3d4b995`, PR #2 |
 | Membership management | Membership overview, renewal Payments, activation controls, validity contract, and schema migration | `c95711e`, PR #3 |
-| Visit oversight | All/current Visit review, per-Member history, and current visitor count | Current Visit-management branch |
+| Visit oversight | All/current Visit review, per-Member history, and current visitor count | `732dc64`, PR #4 |
+| Member password reset | Owner-authorized Member credential replacement with fresh PBKDF2 salts | Current password-reset branch |
 
 ## Team-level engineering
 

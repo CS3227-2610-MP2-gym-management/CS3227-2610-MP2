@@ -60,6 +60,13 @@ Owner Member management uses a list-detail pattern. The Members list performs se
 an in-page profile view with read-only payment history, while profile editing happens in the same page instead of a
 separate edit dialog.
 
+Member password replacement follows the same security boundary as onboarding. `OwnerMemberService` validates the new
+password, creates a fresh PBKDF2 hash and salt, and clears the caller's character array on every outcome.
+`OwnerMemberStore` updates only the credential columns and account update timestamp when the requester is an active
+Owner and the target is a Member. The Owner's password is not requested again because the Owner session and store-level
+role check already authorize the operation; full GymFlow reset retains its stronger reauthentication guard because it
+deletes every record.
+
 `Account` and `Role` are the implemented names for the design's `User` and `UserRole` entities. Memberships store one
 purchased access period, and each has exactly one Payment. Membership and Payment creation uses one transaction.
 Existing databases are upgraded by an idempotent schema-version migration that adds the required timestamps without

@@ -63,6 +63,87 @@ class OwnerMemberServiceTest {
     }
 
     @Test
+    void ownerResetsMemberPasswordWithoutChangingMemberRecords() throws Exception {
+        Member member = members.createMember(
+                request("alice@example.com", "member password".toCharArray()), owner.id());
+        String originalHash = accountValue(member.accountId(), "password_hash");
+        String originalSalt = accountValue(member.accountId(), "password_salt");
+        int membershipsBefore = count("memberships");
+        int paymentsBefore = count("payments");
+        char[] replacement = "replacement password".toCharArray();
+
+        members.resetMemberPassword(member.accountId(), replacement, owner.id());
+
+        assertArrayEquals(new char[replacement.length], replacement);
+        assertFalse(authentication.authenticate(
+                member.email(), "member password".toCharArray()).isPresent());
+        assertTrue(authentication.authenticate(
+                member.email(), "replacement password".toCharArray()).isPresent());
+        assertFalse(originalHash.equals(accountValue(member.accountId(), "password_hash")));
+        assertFalse(originalSalt.equals(accountValue(member.accountId(), "password_salt")));
+        assertEquals(membershipsBefore, count("memberships"));
+        assertEquals(paymentsBefore, count("payments"));
+        assertEquals("1", accountValue(member.accountId(), "is_active"));
+    }
+
+    @Test
+    void rejectsInvalidMemberPasswordsAndClearsThem() {
+        Member member = members.createMember(
+                request("alice@example.com", "member password".toCharArray()), owner.id());
+        char[] shortPassword = "too short".toCharArray();
+        char[] longPassword = new char[129];
+
+        assertThrows(IllegalArgumentException.class,
+                () -> members.resetMemberPassword(member.accountId(), shortPassword, owner.id()));
+        assertThrows(IllegalArgumentException.class,
+                () -> members.resetMemberPassword(member.accountId(), longPassword, owner.id()));
+
+        assertArrayEquals(new char[shortPassword.length], shortPassword);
+        assertArrayEquals(new char[longPassword.length], longPassword);
+        assertTrue(authentication.authenticate(
+                member.email(), "member password".toCharArray()).isPresent());
+    }
+
+    @Test
+    void rejectsPasswordResetWithoutAnActiveOwnerOrMemberTarget() throws Exception {
+        Member member = members.createMember(
+                request("alice@example.com", "member password".toCharArray()), owner.id());
+        char[] ownerTargetPassword = "replacement password".toCharArray();
+        char[] missingMemberPassword = "replacement password".toCharArray();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> members.resetMemberPassword(owner.id(), ownerTargetPassword, owner.id()));
+        assertThrows(IllegalArgumentException.class,
+                () -> members.resetMemberPassword(999, missingMemberPassword, owner.id()));
+        assertArrayEquals(new char[ownerTargetPassword.length], ownerTargetPassword);
+        assertArrayEquals(new char[missingMemberPassword.length], missingMemberPassword);
+
+        execute("UPDATE accounts SET is_active = 0 WHERE id = " + owner.id());
+        char[] unauthorizedPassword = "replacement password".toCharArray();
+        assertThrows(IllegalArgumentException.class,
+                () -> members.resetMemberPassword(member.accountId(), unauthorizedPassword, owner.id()));
+        assertArrayEquals(new char[unauthorizedPassword.length], unauthorizedPassword);
+        assertTrue(authentication.authenticate(
+                member.email(), "member password".toCharArray()).isPresent());
+    }
+
+    @Test
+    void resetsInactiveMemberPasswordWithoutReactivatingAccount() throws Exception {
+        Member member = members.createMember(
+                request("alice@example.com", "member password".toCharArray()), owner.id());
+        execute("UPDATE accounts SET is_active = 0 WHERE id = " + member.accountId());
+        String originalHash = accountValue(member.accountId(), "password_hash");
+
+        members.resetMemberPassword(member.accountId(),
+                "replacement password".toCharArray(), owner.id());
+
+        assertFalse(originalHash.equals(accountValue(member.accountId(), "password_hash")));
+        assertEquals("0", accountValue(member.accountId(), "is_active"));
+        assertFalse(authentication.authenticate(
+                member.email(), "replacement password".toCharArray()).isPresent());
+    }
+
+    @Test
     void failedFinalInsertRollsBackAllOnboardingRecords() throws Exception {
         try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile);
                 Statement statement = connection.createStatement()) {
@@ -405,6 +486,13 @@ class OwnerMemberServiceTest {
                 Statement statement = connection.createStatement();
                 ResultSet results = statement.executeQuery("SELECT COUNT(*) FROM " + table)) {
             return results.getInt(1);
+        }
+    }
+
+    private void execute(String sql) throws Exception {
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile);
+                Statement statement = connection.createStatement()) {
+            statement.executeUpdate(sql);
         }
     }
 
