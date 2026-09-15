@@ -291,6 +291,34 @@ public final class OwnerMemberStore {
         }
     }
 
+    /** Replaces a Member's password when the requesting account is an active Owner. */
+    public void updatePassword(long memberAccountId, PasswordHash password,
+            long ownerAccountId) {
+        String sql = """
+                UPDATE accounts
+                SET password_hash = ?, password_salt = ?, password_iterations = ?, updated_at = ?
+                WHERE id = ? AND role = 'MEMBER'
+                  AND EXISTS (
+                      SELECT 1 FROM accounts owner
+                      WHERE owner.id = ? AND owner.role = 'OWNER' AND owner.is_active = 1
+                  )
+                """;
+        try (Connection connection = database.connect();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, password.hash());
+            statement.setString(2, password.salt());
+            statement.setInt(3, password.iterations());
+            statement.setString(4, Instant.now().toString());
+            statement.setLong(5, memberAccountId);
+            statement.setLong(6, ownerAccountId);
+            if (statement.executeUpdate() != 1) {
+                throw new IllegalArgumentException("An active Owner and Member are required");
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to reset Member password", exception);
+        }
+    }
+
     private static void requireOwner(Connection connection, long ownerAccountId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT 1 FROM accounts WHERE id = ? AND role = 'OWNER' AND is_active = 1")) {

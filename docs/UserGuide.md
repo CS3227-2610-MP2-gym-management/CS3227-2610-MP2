@@ -75,6 +75,18 @@ keeps payment history visible but read-only. Select `Cancel` to discard changes 
 Phone numbers and dates of birth follow the same validation rules as creation. The Member number cannot be changed. A
 validation failure remains on the edit page for correction.
 
+### Resetting a Member password
+
+The Owner sets and confirms the initial password while creating a Member and must communicate it securely outside
+GymFlow. To replace it later, open the Member profile, select `Reset Password`, and enter the new password twice. The
+new password must contain 12–128 characters. Validation or storage errors remain in the dialog so they can be
+corrected without reopening it.
+
+The Owner does not need to enter their own password again because this action is available only inside an authenticated
+Owner session. A successful reset replaces the old Member password without changing the Member's profile, account
+activity, Memberships, Payments, or Visits. Member login routing remains under development; the temporary Member
+preview is still available until that work is complete.
+
 ## Managing Memberships
 
 The Memberships page lists every purchased period with its Member, start date, expiry date, and derived status. Search

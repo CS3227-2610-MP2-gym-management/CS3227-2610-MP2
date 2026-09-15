@@ -39,6 +39,17 @@ public final class OwnerMemberService {
         }
     }
 
+    /** Replaces a Member's password when requested by an active Owner. */
+    public void resetMemberPassword(long memberAccountId, char[] newPassword,
+            long ownerAccountId) {
+        try {
+            validatePassword(newPassword);
+            members.updatePassword(memberAccountId, passwords.hash(newPassword), ownerAccountId);
+        } finally {
+            clear(newPassword);
+        }
+    }
+
     /** Searches all Members when the query is blank, otherwise matches name or email. */
     public List<Member> searchMembers(String query) {
         return members.search(query == null ? "" : query.trim());
@@ -94,10 +105,7 @@ public final class OwnerMemberService {
             throw new IllegalArgumentException("Member details are required");
         }
         normalizeEmail(request.email());
-        int passwordLength = request.initialPassword() == null ? 0 : request.initialPassword().length;
-        if (passwordLength < 12 || passwordLength > 128) {
-            throw new IllegalArgumentException("Password must be between 12 and 128 characters");
-        }
+        validatePassword(request.initialPassword());
         requireText(request.fullName(), "Full name is required");
         normalizePhone(request.phoneNumber());
         validateDateOfBirth(request.dateOfBirth());
@@ -132,6 +140,13 @@ public final class OwnerMemberService {
             amount.movePointRight(2).longValueExact();
         } catch (ArithmeticException exception) {
             throw new IllegalArgumentException("Payment amount is too large", exception);
+        }
+    }
+
+    private static void validatePassword(char[] password) {
+        int length = password == null ? 0 : password.length;
+        if (length < 12 || length > 128) {
+            throw new IllegalArgumentException("Password must be between 12 and 128 characters");
         }
     }
 

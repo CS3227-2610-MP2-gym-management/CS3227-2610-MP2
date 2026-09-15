@@ -71,6 +71,12 @@ while the teammate remains responsible for Member entry and exit workflows. Data
 apply to both roles—one open Visit per Member and exit after entry—without introducing a speculative shared service or
 duplicating those invariants in each UI.
 
+The Member password-reset slice applied the same minimal design. The agent considered whether resetting a Member
+password should require the Owner to re-enter their own password. The chosen design relies on the authenticated Owner
+session and repeats the role check at the persistence boundary, avoiding an extra authentication flow while retaining
+password re-entry for the destructive full-data reset. Tests verify that only credential fields change and that
+plain-text character arrays are cleared on both successful and rejected requests.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

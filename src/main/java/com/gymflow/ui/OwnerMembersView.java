@@ -176,8 +176,20 @@ final class OwnerMembersView {
         Button edit = new Button("Edit");
         edit.getStyleClass().add("primary-button");
         edit.setOnAction(event -> showMemberEditor(root, members, visits, owner, member, backToList));
+        Button resetPassword = new Button("Reset Password");
+        resetPassword.getStyleClass().add("secondary-button");
+        Label passwordStatus = new Label();
+        passwordStatus.getStyleClass().add("success-text");
+        UiComponents.preserveLabelHeight(passwordStatus);
+        passwordStatus.setWrapText(true);
+        passwordStatus.setManaged(false);
+        passwordStatus.setVisible(false);
+        resetPassword.setOnAction(event -> showResetPassword(
+                resetPassword, members, member, owner, passwordStatus));
+        HBox headerActions = new HBox(10, resetPassword, edit);
+        headerActions.setAlignment(Pos.CENTER_RIGHT);
 
-        StackPane header = detailHeader(back, member.fullName(), member.memberNumber(), edit);
+        StackPane header = detailHeader(back, member.fullName(), member.memberNumber(), headerActions);
         VBox profile = UiComponents.card(sectionTitle("Profile"),
                 detailRow("Email", member.email()),
                 detailRow("Phone", member.phoneNumber()),
@@ -196,7 +208,7 @@ final class OwnerMembersView {
                 exception -> paymentError.setText(message(exception)));
         VBox paymentCard = UiComponents.card(sectionTitle("Payment history"), paymentError, payments);
         VBox.setVgrow(payments, Priority.ALWAYS);
-        VBox content = new VBox(20, header, profile, memberships, visitCard, paymentCard);
+        VBox content = new VBox(20, header, passwordStatus, profile, memberships, visitCard, paymentCard);
         content.setPadding(new Insets(36));
         return content;
     }
@@ -536,6 +548,55 @@ final class OwnerMembersView {
                         submit.setText("Deactivate");
                         error.setText(message(exception));
                     });
+        });
+        dialog.showAndWait();
+    }
+
+    private static void showResetPassword(Node ownerNode, OwnerMemberService members,
+            Member member, Account owner, Label status) {
+        PasswordField password = new PasswordField();
+        password.setPromptText("New password (12–128 characters)");
+        password.setAccessibleText("New Member password");
+        PasswordField confirm = new PasswordField();
+        confirm.setPromptText("Confirm new password");
+        confirm.setAccessibleText("Confirm new Member password");
+        Label error = dialogError();
+        GridPane grid = new GridPane();
+        grid.getStyleClass().add("dialog-form");
+        addRow(grid, 0, "New password", password);
+        addRow(grid, 1, "Confirm password", confirm);
+
+        ButtonType resetType = new ButtonType("Reset Password", ButtonBar.ButtonData.OK_DONE);
+        Dialog<ButtonType> dialog = formDialog("Reset Member Password", resetType);
+        dialog.getDialogPane().setContent(dialogContent("Reset Member Password",
+                "Set a new password for " + member.fullName() + ".", error, grid));
+        UiComponents.styleDialog(dialog, ownerNode, "membership-dialog", false);
+        Button submit = (Button) dialog.getDialogPane().lookupButton(resetType);
+        Button cancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        submit.getStyleClass().add("primary-button");
+        submit.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            error.setText("");
+            if (!password.getText().equals(confirm.getText())) {
+                showError(error, confirm, "Passwords do not match");
+                return;
+            }
+            cancel.setDisable(true);
+            submit.setText("Resetting…");
+            char[] replacement = password.getText().toCharArray();
+            run(submit, () -> {
+                members.resetMemberPassword(member.accountId(), replacement, owner.id());
+                return null;
+            }, ignored -> {
+                dialog.close();
+                status.setText("Password reset successfully.");
+                status.setManaged(true);
+                status.setVisible(true);
+            }, exception -> {
+                cancel.setDisable(false);
+                submit.setText("Reset Password");
+                showError(error, password, message(exception));
+            });
         });
         dialog.showAndWait();
     }

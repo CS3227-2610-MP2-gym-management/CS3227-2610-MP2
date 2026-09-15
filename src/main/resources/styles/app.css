@@ -90,6 +90,11 @@
     -fx-text-fill: #b42318;
 }
 
+.success-text {
+    -fx-text-fill: #16794a;
+    -fx-font-weight: bold;
+}
+
 .button:disabled {
     -fx-cursor: default;
     -fx-opacity: 0.55;
