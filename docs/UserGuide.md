@@ -40,10 +40,9 @@ Select `Log out` in the Owner sidebar to clear the current session and return to
 ## Owner Home
 
 Owner Home displays the total number of registered Members, the number of Members with a currently valid active
-Membership, the current visitor count, income and expenses during the current calendar month, and their calculated
-net. Income follows the computer's local time zone; expenses use their recorded local date. Financial values are
-displayed in SGD. The Member overview lists the five most recently created Members with their most relevant Membership
-period and its derived status.
+Membership, the current visitor count, all recorded income and expenses, and their calculated net. Financial values
+are displayed in SGD and cover all records currently stored in GymFlow. The Member overview lists the five most
+recently created Members with their most relevant Membership period and its derived status.
 
 Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, or `Visits` to
 review attendance. Select

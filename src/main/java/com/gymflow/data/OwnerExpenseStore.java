@@ -82,16 +82,11 @@ public final class OwnerExpenseStore {
         }
     }
 
-    /** Totals Expenses within a half-open date range. */
-    public BigDecimal total(LocalDate start, LocalDate end) {
-        String sql = """
-                SELECT COALESCE(SUM(amount_cents), 0) FROM expenses
-                WHERE expense_date >= ? AND expense_date < ?
-                """;
+    /** Totals every recorded Expense. */
+    public BigDecimal total() {
+        String sql = "SELECT COALESCE(SUM(amount_cents), 0) FROM expenses";
         try (Connection connection = database.connect();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, start.toString());
-            statement.setString(2, end.toString());
             try (ResultSet results = statement.executeQuery()) {
                 return BigDecimal.valueOf(results.getLong(1), 2);
             }

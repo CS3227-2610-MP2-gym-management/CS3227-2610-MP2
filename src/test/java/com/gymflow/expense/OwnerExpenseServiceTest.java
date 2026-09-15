@@ -107,13 +107,13 @@ class OwnerExpenseServiceTest {
     }
 
     @Test
-    void totalsOnlyCurrentCalendarMonth() throws Exception {
+    void totalsExpensesAcrossAllRecordedDates() throws Exception {
         LocalDate today = LocalDate.now();
         expenses.addExpense(request(today, new BigDecimal("75.25")), owner.id());
         expenses.addExpense(request(today.withDayOfMonth(1), new BigDecimal("24.75")), owner.id());
         execute("UPDATE expenses SET expense_date = '2020-01-01' WHERE id = 1");
 
-        assertEquals(new BigDecimal("24.75"), expenses.expensesThisMonth());
+        assertEquals(new BigDecimal("100.00"), expenses.totalExpenses());
     }
 
     private static AddExpenseRequest request(LocalDate date, BigDecimal amount) {

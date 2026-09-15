@@ -89,13 +89,14 @@ YAGNI constraint: expose the information already available before adding new fin
 
 The Owner overview followed the same approach. Instead of adding a dashboard service, the agent extended the existing
 Owner Member query boundary with one summary result and retained the Visit service for the current visitor count. The
-team explicitly defined ambiguous metrics before implementation: revenue means the current local calendar month, and
-the overview shows the five most recently created Members rather than duplicating the complete Members page.
+team explicitly defined ambiguous metrics before implementation: revenue means every Payment recorded in the local
+database, and the overview shows the five most recently created Members rather than duplicating the complete Members
+page.
 
 Expense management required a separate persistence boundary because an operating Expense has no Member or Membership
 relationship. The agent resisted forcing expenses into the existing Payment table and omitted speculative receipt,
 budget, recurrence, edit, and delete workflows. The resulting Finances screen reuses existing income behaviour while
-adding only the categories, monthly total, and immutable creation flow required by the Owner story.
+adding only the categories, all-recorded-time total, and immutable creation flow required by the Owner story.
 
 ## Lessons and future improvements
 

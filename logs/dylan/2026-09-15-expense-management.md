@@ -9,14 +9,14 @@ income and expenses in separate tabs under a renamed Finances page. Expense fiel
 payment method, category, and optional description. Future dates, editing, deletion, receipts, budgets, and recurring
 expenses are outside the feature.
 
-The supported categories are Maintenance, Utilities, Equipment, Supplies, Rent, and Other. Owner Overview shows the
-current month's income, expenses, and calculated net.
+The supported categories are Maintenance, Utilities, Equipment, Supplies, Rent, and Other. Owner Overview shows
+all recorded income, expenses, and calculated net.
 
 ## Agent work
 
 - Added failing tests before the schema, model, store, and service implementation.
 - Added an idempotent version-4 Expense schema using integer cents and active-Owner authorization.
-- Added Expense creation, category filtering, newest-first ordering, and current-month totals.
+- Added Expense creation, category filtering, newest-first ordering, and all-recorded-time totals.
 - Renamed the Owner Payments destination to Finances and retained the existing Income search and ledger.
 - Added a styled, failure-retaining Add Expense dialog and a category-filtered Expenses table.
 - Reused the shared two-decimal formatter and calendar-only control instead of duplicating form rules.

@@ -5,9 +5,9 @@
 ## Request and decisions
 
 Dylan asked to replace the Owner overview placeholders using the Member, Membership, Payment, and Visit data already
-stored by GymFlow. The agreed definitions were all registered Members, distinct Members with a valid active
-Membership today, open Visits, Payments received during the current local calendar month, and the five most recently
-created Members.
+stored by GymFlow. The final definitions are all registered Members, distinct Members with a valid active Membership
+today, open Visits, all recorded Payments and Expenses, their calculated net, and the five most recently created
+Members.
 
 ## Agent work
 
@@ -20,5 +20,5 @@ created Members.
 
 ## Verification required
 
-Dylan should confirm the definitions and values using the release JAR, including a Payment outside the current month,
-a deactivated Membership, more than five Members, and at least one open Visit.
+Dylan should confirm the definitions and values using the release JAR, including older Payments and Expenses, a
+deactivated Membership, more than five Members, and at least one open Visit.

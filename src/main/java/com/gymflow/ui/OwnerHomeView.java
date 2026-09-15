@@ -61,9 +61,9 @@ final class OwnerHomeView {
                 UiComponents.statCard("Total Members", totalMembers),
                 UiComponents.statCard("Active Memberships", activeMemberships),
                 UiComponents.statCard("Currently Visiting", currentVisitorCount),
-                UiComponents.statCard("Income This Month", income),
-                UiComponents.statCard("Expenses This Month", expenseTotal),
-                UiComponents.statCard("Net This Month", netTotal));
+                UiComponents.statCard("All-Time Income", income),
+                UiComponents.statCard("All-Time Expenses", expenseTotal),
+                UiComponents.statCard("All-Time Net", netTotal));
         BigDecimal[] incomeValue = {null};
         BigDecimal[] expenseValue = {null};
         Runnable updateNet = () -> {
@@ -81,12 +81,12 @@ final class OwnerHomeView {
         OwnerMembersView.run(null, members::ownerDashboard, dashboard -> {
             totalMembers.setText(Long.toString(dashboard.totalMembers()));
             activeMemberships.setText(Long.toString(dashboard.activeMemberships()));
-            incomeValue[0] = dashboard.revenueThisMonth();
+            incomeValue[0] = dashboard.totalIncome();
             income.setText(SGD.format(incomeValue[0]));
             memberOverview.getItems().setAll(dashboard.members());
             updateNet.run();
         }, ignored -> { });
-        OwnerMembersView.run(null, expenses::expensesThisMonth, total -> {
+        OwnerMembersView.run(null, expenses::totalExpenses, total -> {
             expenseValue[0] = total;
             expenseTotal.setText(SGD.format(total));
             updateNet.run();

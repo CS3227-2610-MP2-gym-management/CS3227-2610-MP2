@@ -375,7 +375,7 @@ class OwnerMemberServiceTest {
     }
 
     @Test
-    void summarizesCurrentMonthAndFiveMostRecentMembers() throws Exception {
+    void summarizesAllRecordedIncomeAndFiveMostRecentMembers() throws Exception {
         LocalDate today = LocalDate.now();
         Instant thisMonth = today.withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
         for (int index = 1; index <= 6; index++) {
@@ -394,7 +394,7 @@ class OwnerMemberServiceTest {
 
         assertEquals(6, dashboard.totalMembers());
         assertEquals(5, dashboard.activeMemberships());
-        assertEquals(new BigDecimal("200.00"), dashboard.revenueThisMonth());
+        assertEquals(new BigDecimal("210.00"), dashboard.totalIncome());
         assertEquals(List.of("Member 6", "Member 5", "Member 4", "Member 3", "Member 2"),
                 dashboard.members().stream().map(MembershipOverview::memberName).toList());
         assertEquals(MembershipStatus.DEACTIVATED,

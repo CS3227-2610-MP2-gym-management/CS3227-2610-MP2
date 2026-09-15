@@ -265,6 +265,7 @@ final class OwnerFinancesView {
 
     private static TableView<Expense> expenseTable() {
         TableView<Expense> table = new TableView<>();
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setPlaceholder(new Label("No Expenses found"));
         addColumn(table, "Date", 140, item -> DATE.format(item.expenseDate()));
         addColumn(table, "Amount", 120, item -> SGD.format(item.amount()));

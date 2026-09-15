@@ -37,10 +37,9 @@ public final class OwnerExpenseService {
         return expenses.list(category);
     }
 
-    /** Totals Expenses in the computer's current calendar month. */
-    public BigDecimal expensesThisMonth() {
-        LocalDate start = LocalDate.now().withDayOfMonth(1);
-        return expenses.total(start, start.plusMonths(1));
+    /** Totals every recorded Expense. */
+    public BigDecimal totalExpenses() {
+        return expenses.total();
     }
 
     private static void validate(AddExpenseRequest request) {
