@@ -116,7 +116,13 @@ Clearing the search restores all records in the selected tab.
 
 Each row shows the Member number and name, entry time, exit time, and duration. An ongoing Visit displays
 `Currently inside` and `Ongoing`. Times use the computer's local time zone. The same read-only history is available
-from the Member's profile page. Owners cannot create, end, or correct Visits in the current release.
+from the Member's profile page.
+
+To correct a record, select it and choose `Correct Selected Visit`. The Owner may change its entry time and may add,
+change, or clear its exit time. Every correction requires a reason. Clearing the exit marks the Member as currently
+inside and is rejected if that Member already has another open Visit. Previous correction information is shown when
+the record is corrected again; GymFlow retains the latest correction rather than a complete audit history. Owners
+cannot create new Visits directly.
 
 ## Member dashboard preview
 

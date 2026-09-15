@@ -77,6 +77,11 @@ session and repeats the role check at the persistence boundary, avoiding an extr
 password re-entry for the destructive full-data reset. Tests verify that only credential fields change and that
 plain-text character arrays are cleared on both successful and rejected requests.
 
+Visit correction extended an existing shared entity without introducing a general audit framework. The agent used a
+schema migration test to preserve version-2 records, retained only the latest correction metadata, and relied on the
+existing one-open-Visit index to reject invalid reopening. This kept the feature aligned with the specific Owner story
+while still recording when, why, and by whom the latest correction was made.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

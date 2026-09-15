@@ -1,5 +1,6 @@
 package com.gymflow.visit;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.gymflow.data.GymFlowDatabase;
@@ -29,5 +30,21 @@ public final class OwnerVisitService {
     /** Returns the number of Members currently inside the gym. */
     public long currentVisitorCount() {
         return visits.countCurrentlyVisiting();
+    }
+
+    /** Corrects Visit timestamps and records the responsible Owner and reason. */
+    public Visit correctVisit(long visitId, Instant enteredAt, Instant exitedAt,
+            String correctionReason, long ownerAccountId) {
+        if (enteredAt == null) {
+            throw new IllegalArgumentException("Entry time is required");
+        }
+        if (exitedAt != null && exitedAt.isBefore(enteredAt)) {
+            throw new IllegalArgumentException("Exit time cannot precede entry time");
+        }
+        String reason = correctionReason == null ? "" : correctionReason.trim();
+        if (reason.isEmpty()) {
+            throw new IllegalArgumentException("Correction reason is required");
+        }
+        return visits.correct(visitId, enteredAt, exitedAt, reason, ownerAccountId);
     }
 }
