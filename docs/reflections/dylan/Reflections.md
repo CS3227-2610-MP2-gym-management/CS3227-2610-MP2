@@ -92,6 +92,11 @@ Owner Member query boundary with one summary result and retained the Visit servi
 team explicitly defined ambiguous metrics before implementation: revenue means the current local calendar month, and
 the overview shows the five most recently created Members rather than duplicating the complete Members page.
 
+Expense management required a separate persistence boundary because an operating Expense has no Member or Membership
+relationship. The agent resisted forcing expenses into the existing Payment table and omitted speculative receipt,
+budget, recurrence, edit, and delete workflows. The resulting Finances screen reuses existing income behaviour while
+adding only the categories, monthly total, and immutable creation flow required by the Owner story.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

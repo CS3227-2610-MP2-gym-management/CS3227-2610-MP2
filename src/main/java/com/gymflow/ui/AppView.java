@@ -3,6 +3,7 @@ package com.gymflow.ui;
 import java.util.Objects;
 
 import com.gymflow.auth.AuthenticationService;
+import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.model.Account;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.visit.OwnerVisitService;
@@ -14,6 +15,7 @@ import javafx.stage.Stage;
 public final class AppView {
     private final Scene scene;
     private final AuthenticationService authentication;
+    private final OwnerExpenseService expenses;
     private final OwnerMemberService members;
     private final OwnerVisitService visits;
     private Account session;
@@ -25,9 +27,11 @@ public final class AppView {
      * @param stage stage that will display GymFlow
      */
     public AppView(Stage stage, AuthenticationService authentication,
-            OwnerMemberService members, OwnerVisitService visits, boolean ownerExists) {
+            OwnerMemberService members, OwnerExpenseService expenses,
+            OwnerVisitService visits, boolean ownerExists) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
+        this.expenses = Objects.requireNonNull(expenses);
         this.members = Objects.requireNonNull(members);
         this.visits = Objects.requireNonNull(visits);
         this.ownerExists = ownerExists;
@@ -47,7 +51,7 @@ public final class AppView {
         case LOGIN -> createLogin();
         case OWNER_HOME -> session == null
                 ? createLogin()
-                : OwnerHomeView.create(authentication, members, visits, session,
+                : OwnerHomeView.create(authentication, members, expenses, visits, session,
                         this::show, this::logout, this::resetCompleted);
         case OWNER_MEMBERS -> session == null
                 ? createLogin()
@@ -55,9 +59,9 @@ public final class AppView {
         case OWNER_MEMBERSHIPS -> session == null
                 ? createLogin()
                 : OwnerMembershipsView.create(members, this::show, this::logout);
-        case OWNER_PAYMENTS -> session == null
+        case OWNER_FINANCES -> session == null
                 ? createLogin()
-                : OwnerPaymentsView.create(members, this::show, this::logout);
+                : OwnerFinancesView.create(members, expenses, session, this::show, this::logout);
         case OWNER_VISITS -> session == null
                 ? createLogin()
                 : OwnerVisitsView.create(visits, session, this::show, this::logout);

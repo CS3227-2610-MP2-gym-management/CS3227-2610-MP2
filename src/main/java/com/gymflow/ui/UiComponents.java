@@ -8,11 +8,14 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -76,8 +79,12 @@ final class UiComponents {
         Label label = new Label(labelText);
         label.getStyleClass().add("stat-label");
         value.getStyleClass().add("stat-value");
+        preserveLabelHeight(label);
+        preserveLabelHeight(value);
         VBox card = card(label, value);
         HBox.setHgrow(card, Priority.ALWAYS);
+        card.setMinWidth(200);
+        card.setPrefWidth(220);
         card.setMaxWidth(Double.MAX_VALUE);
         return card;
     }
@@ -150,5 +157,18 @@ final class UiComponents {
         label.setMaxWidth(Double.MAX_VALUE);
         label.setPadding(new Insets(3, 5, 9, 2));
         label.setWrapText(true);
+    }
+
+    static TextFormatter<String> decimalAmount() {
+        return new TextFormatter<>(change -> change.getControlNewText().matches("\\d*(\\.\\d{0,2})?")
+                ? change : null);
+    }
+
+    static void calendarOnly(DatePicker... pickers) {
+        for (DatePicker picker : pickers) {
+            picker.setEditable(false);
+            picker.getEditor().setFocusTraversable(false);
+            picker.getEditor().addEventFilter(MouseEvent.MOUSE_PRESSED, event -> event.consume());
+        }
     }
 }

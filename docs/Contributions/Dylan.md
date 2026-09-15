@@ -20,6 +20,7 @@ feature is merged.
 | Visit correction | Owner correction of Visit timestamps with latest reason and responsible Owner | Current record-management branch |
 | Payments overview | Read-only global Payment ledger with Member search and Membership links | Current record-management branch |
 | Owner overview | Live Member, Membership, monthly revenue, visitor, and recent-Member summaries | Current record-management branch |
+| Expense management | Immutable operating Expenses, category filtering, Finances tabs, and monthly net summary | Current expense-management branch |
 
 ## Team-level engineering
 
