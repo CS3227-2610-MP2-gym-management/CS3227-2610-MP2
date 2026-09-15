@@ -20,6 +20,7 @@ import com.gymflow.model.MemberPayment;
 import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipOverview;
 import com.gymflow.model.PaymentMethod;
+import com.gymflow.model.PaymentOverview;
 
 /** Persists Owner-managed Member records. */
 public final class OwnerMemberStore {
@@ -110,6 +111,39 @@ public final class OwnerMemberStore {
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("Unable to load Member payments", exception);
+        }
+    }
+
+    /** Searches all Payments by Member name or email. */
+    public List<PaymentOverview> searchPayments(String query) {
+        String pattern = "%" + escape(query.toLowerCase(Locale.ROOT)) + "%";
+        String sql = """
+                SELECT pay.*, p.member_number, p.full_name, a.email,
+                    m.start_date, m.expiry_date
+                FROM payments pay
+                JOIN memberships m ON m.id = pay.membership_id
+                JOIN member_profiles p ON p.account_id = m.member_account_id
+                JOIN accounts a ON a.id = p.account_id
+                WHERE lower(p.full_name) LIKE ? ESCAPE '\\'
+                   OR lower(a.email) LIKE ? ESCAPE '\\'
+                ORDER BY pay.paid_at DESC, pay.id DESC
+                """;
+        try (Connection connection = database.connect();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, pattern);
+            statement.setString(2, pattern);
+            try (ResultSet results = statement.executeQuery()) {
+                List<PaymentOverview> found = new ArrayList<>();
+                while (results.next()) {
+                    found.add(new PaymentOverview(readPayment(results),
+                            results.getString("member_number"), results.getString("full_name"),
+                            results.getString("email"), LocalDate.parse(results.getString("start_date")),
+                            LocalDate.parse(results.getString("expiry_date"))));
+                }
+                return found;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to search Payments", exception);
         }
     }
 

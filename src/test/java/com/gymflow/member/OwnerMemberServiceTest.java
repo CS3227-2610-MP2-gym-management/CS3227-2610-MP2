@@ -15,6 +15,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.data.GymFlowDatabase;
@@ -25,6 +26,7 @@ import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipOverview;
 import com.gymflow.model.MembershipStatus;
 import com.gymflow.model.PaymentMethod;
+import com.gymflow.model.PaymentOverview;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -338,6 +340,36 @@ class OwnerMemberServiceTest {
         assertEquals("alice@example.com", alice.memberEmail());
         assertEquals(1, members.searchMemberships("bob@").size());
         assertTrue(members.searchMemberships("M000001").isEmpty());
+    }
+
+    @Test
+    void searchesGlobalPaymentsWithMemberAndMembershipDetails() {
+        Member alice = members.createMember(
+                request("alice@example.com", "member password".toCharArray()), owner.id());
+        Member bob = members.createMember(
+                request("bob@example.com", "another password".toCharArray()), owner.id());
+        members.updateMember(bob.accountId(), bob.email(), "Bob Lee",
+                bob.phoneNumber(), bob.dateOfBirth());
+        members.addMembership(new AddMembershipRequest(alice.accountId(),
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31),
+                new BigDecimal("90.00"), PaymentMethod.CASH,
+                Instant.parse("2026-09-15T12:00:00Z"), "LATEST"), owner.id());
+
+        List<PaymentOverview> all = members.searchPayments("");
+
+        assertEquals(3, all.size());
+        assertEquals(List.of("Alice Tan", "Bob Lee", "Alice Tan"),
+                all.stream().map(PaymentOverview::memberName).toList());
+        assertEquals("LATEST", all.getFirst().payment().reference());
+        assertEquals("Alice Tan", all.getFirst().memberName());
+        assertEquals("alice@example.com", all.getFirst().memberEmail());
+        assertEquals(LocalDate.of(2026, 10, 1), all.getFirst().membershipStart());
+        assertEquals(LocalDate.of(2026, 10, 31), all.getFirst().membershipExpiry());
+        assertEquals(2, members.searchPayments("ALICE").size());
+        assertEquals(1, members.searchPayments("bob@").size());
+        assertTrue(members.searchPayments(alice.memberNumber()).isEmpty());
+        assertTrue(members.searchPayments("LATEST").isEmpty());
+        assertTrue(members.searchPayments("CARD").isEmpty());
     }
 
     @Test

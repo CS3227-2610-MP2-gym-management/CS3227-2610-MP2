@@ -80,10 +80,11 @@ final class OwnerHomeView {
         root.setId("owner-home-screen");
         root.getStyleClass().add("dashboard-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Overview",
-                Set.of("Overview", "Members", "Memberships", "Visits"),
+                Set.of("Overview", "Members", "Memberships", "Payments", "Visits"),
                 item -> navigate.accept(switch (item) {
                 case "Members" -> Screen.OWNER_MEMBERS;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
+                case "Payments" -> Screen.OWNER_PAYMENTS;
                 case "Visits" -> Screen.OWNER_VISITS;
                 default -> Screen.OWNER_HOME;
                 }),

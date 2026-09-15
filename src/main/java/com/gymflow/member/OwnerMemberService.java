@@ -14,6 +14,7 @@ import com.gymflow.model.Member;
 import com.gymflow.model.MemberPayment;
 import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipOverview;
+import com.gymflow.model.PaymentOverview;
 
 /** Implements Owner-side Member onboarding and profile management. */
 public final class OwnerMemberService {
@@ -58,6 +59,11 @@ public final class OwnerMemberService {
     /** Lists payments recorded for a Member. */
     public List<MemberPayment> paymentHistory(long memberAccountId) {
         return members.paymentHistory(memberAccountId);
+    }
+
+    /** Searches all Payments by Member name or email. */
+    public List<PaymentOverview> searchPayments(String query) {
+        return members.searchPayments(query == null ? "" : query.trim());
     }
 
     /** Lists one Member's Membership history. */

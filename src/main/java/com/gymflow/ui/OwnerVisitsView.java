@@ -126,11 +126,12 @@ final class OwnerVisitsView {
         BorderPane root = new BorderPane();
         root.setId("owner-visits-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Visits",
-                Set.of("Overview", "Members", "Memberships", "Visits"),
+                Set.of("Overview", "Members", "Memberships", "Payments", "Visits"),
                 item -> navigate.accept(switch (item) {
                 case "Overview" -> Screen.OWNER_HOME;
                 case "Members" -> Screen.OWNER_MEMBERS;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
+                case "Payments" -> Screen.OWNER_PAYMENTS;
                 default -> Screen.OWNER_VISITS;
                 }), logout));
         root.setCenter(UiComponents.scrollable(content));

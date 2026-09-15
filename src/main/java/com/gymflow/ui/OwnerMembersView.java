@@ -68,10 +68,11 @@ final class OwnerMembersView {
         BorderPane root = new BorderPane();
         root.setId("owner-members-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Members",
-                Set.of("Overview", "Members", "Memberships", "Visits"),
+                Set.of("Overview", "Members", "Memberships", "Payments", "Visits"),
                 item -> navigate.accept(switch (item) {
                 case "Overview" -> Screen.OWNER_HOME;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
+                case "Payments" -> Screen.OWNER_PAYMENTS;
                 case "Visits" -> Screen.OWNER_VISITS;
                 default -> Screen.OWNER_MEMBERS;
                 }), logout));

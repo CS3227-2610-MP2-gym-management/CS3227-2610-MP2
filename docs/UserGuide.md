@@ -43,7 +43,7 @@ Owner Home displays a current visitor count alongside placeholder cards for feat
 Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, or `Visits` to
 review attendance. Select
 `Create Member` to open the creation form directly; after a successful creation, GymFlow opens the Members page.
-Payments remains a visible preview and is not yet functional.
+Select `Payments` to review the gym's recorded membership payments.
 
 ## Managing Members
 
@@ -107,6 +107,13 @@ remain listed under `Currently Visiting` and included in the current visitor cou
 does not create an artificial exit time; deactivation only prevents the Membership from authorizing a future entry.
 
 Statuses are calculated from the active flag and dates: `ACTIVE`, `UPCOMING`, `EXPIRED`, or `DEACTIVATED`.
+
+## Reviewing Payments
+
+The Payments page lists every recorded membership Payment with its Member, Membership period, SGD amount, method,
+payment time, and optional reference. Search by Member name or email and select `Search`, or press Enter. Clearing the
+search displays every Payment again. This page is read-only; Payment editing, deletion, refunds, and exports are not
+available.
 
 ## Reviewing Visits
 
