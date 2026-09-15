@@ -5,6 +5,7 @@ import java.util.Objects;
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.model.Account;
 import com.gymflow.member.OwnerMemberService;
+import com.gymflow.visit.OwnerVisitService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -14,6 +15,7 @@ public final class AppView {
     private final Scene scene;
     private final AuthenticationService authentication;
     private final OwnerMemberService members;
+    private final OwnerVisitService visits;
     private Account session;
     private boolean ownerExists;
 
@@ -23,10 +25,11 @@ public final class AppView {
      * @param stage stage that will display GymFlow
      */
     public AppView(Stage stage, AuthenticationService authentication,
-            OwnerMemberService members, boolean ownerExists) {
+            OwnerMemberService members, OwnerVisitService visits, boolean ownerExists) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
         this.members = Objects.requireNonNull(members);
+        this.visits = Objects.requireNonNull(visits);
         this.ownerExists = ownerExists;
         scene = new Scene(createLogin(), 1280, 800);
         scene.getStylesheets().add(Objects.requireNonNull(
@@ -35,7 +38,7 @@ public final class AppView {
     }
 
     /**
-     * Displays one of the three initial screens.
+     * Displays an application screen.
      *
      * @param screen screen to display
      */
@@ -44,14 +47,17 @@ public final class AppView {
         case LOGIN -> createLogin();
         case OWNER_HOME -> session == null
                 ? createLogin()
-                : OwnerHomeView.create(authentication, members, session,
+                : OwnerHomeView.create(authentication, members, visits, session,
                         this::show, this::logout, this::resetCompleted);
         case OWNER_MEMBERS -> session == null
                 ? createLogin()
-                : OwnerMembersView.create(members, session, this::show, this::logout);
+                : OwnerMembersView.create(members, visits, session, this::show, this::logout);
         case OWNER_MEMBERSHIPS -> session == null
                 ? createLogin()
                 : OwnerMembershipsView.create(members, this::show, this::logout);
+        case OWNER_VISITS -> session == null
+                ? createLogin()
+                : OwnerVisitsView.create(visits, this::show, this::logout);
         case MEMBER_HOME -> MemberHomeView.create(() -> show(Screen.LOGIN));
         };
         scene.setRoot(root);

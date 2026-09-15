@@ -69,9 +69,12 @@ final class UiComponents {
     }
 
     static VBox statCard(String labelText) {
+        return statCard(labelText, new Label("—"));
+    }
+
+    static VBox statCard(String labelText, Label value) {
         Label label = new Label(labelText);
         label.getStyleClass().add("stat-label");
-        Label value = new Label("—");
         value.getStyleClass().add("stat-value");
         VBox card = card(label, value);
         HBox.setHgrow(card, Priority.ALWAYS);

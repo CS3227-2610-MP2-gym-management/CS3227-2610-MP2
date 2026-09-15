@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.model.Account;
+import com.gymflow.visit.OwnerVisitService;
 import javafx.event.ActionEvent;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -31,18 +32,22 @@ final class OwnerHomeView {
     private OwnerHomeView() {
     }
 
-    static Parent create(AuthenticationService authentication, OwnerMemberService members, Account owner,
+    static Parent create(AuthenticationService authentication, OwnerMemberService members,
+            OwnerVisitService visits, Account owner,
             Consumer<Screen> navigate, Runnable returnToLogin, Runnable resetCompleted) {
         Button createMember = new Button("Create Member");
         createMember.getStyleClass().add("primary-button");
         createMember.setOnAction(event -> OwnerMembersView.showCreateMember(
                 createMember, members, owner, () -> navigate.accept(Screen.OWNER_MEMBERS)));
 
+        Label currentVisitorCount = new Label("—");
         HBox stats = new HBox(16,
                 UiComponents.statCard("Total Members"),
                 UiComponents.statCard("Active Memberships"),
-                UiComponents.statCard("Currently Visiting"),
+                UiComponents.statCard("Currently Visiting", currentVisitorCount),
                 UiComponents.statCard("Revenue"));
+        OwnerMembersView.run(null, visits::currentVisitorCount,
+                count -> currentVisitorCount.setText(Long.toString(count)), ignored -> { });
 
         Label sectionTitle = new Label("Member overview");
         sectionTitle.getStyleClass().add("section-title");
@@ -75,10 +80,11 @@ final class OwnerHomeView {
         root.setId("owner-home-screen");
         root.getStyleClass().add("dashboard-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Overview",
-                Set.of("Overview", "Members", "Memberships"),
+                Set.of("Overview", "Members", "Memberships", "Visits"),
                 item -> navigate.accept(switch (item) {
                 case "Members" -> Screen.OWNER_MEMBERS;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
+                case "Visits" -> Screen.OWNER_VISITS;
                 default -> Screen.OWNER_HOME;
                 }),
                 returnToLogin));

@@ -66,6 +66,11 @@ Member UI. The agent exposed a date-based Membership validity query for the team
 Payment controls exclusively in the Owner screens. A failing legacy-database test also drove an idempotent timestamp
 migration, avoiding the easier but destructive option of requiring another application reset.
 
+The Visit-oversight slice reinforced that ownership boundary. Dylan's Owner screens only read shared Visit records,
+while the teammate remains responsible for Member entry and exit workflows. Database constraints capture rules that
+apply to both roles—one open Visit per Member and exit after entry—without introducing a speculative shared service or
+duplicating those invariants in each UI.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

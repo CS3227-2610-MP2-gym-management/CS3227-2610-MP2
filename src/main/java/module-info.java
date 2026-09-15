@@ -9,4 +9,5 @@ module com.gymflow {
     exports com.gymflow.auth;
     exports com.gymflow.model;
     exports com.gymflow.ui to javafx.graphics;
+    exports com.gymflow.visit;
 }

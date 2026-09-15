@@ -39,10 +39,11 @@ Select `Log out` in the Owner sidebar to clear the current session and return to
 
 ## Owner Home
 
-Owner Home currently displays placeholder overview cards. Select `Members` to open Member management, or
-`Memberships` to review all purchased Membership periods. Select
+Owner Home displays a current visitor count alongside placeholder cards for features not yet connected to data.
+Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, or `Visits` to
+review attendance. Select
 `Create Member` to open the creation form directly; after a successful creation, GymFlow opens the Members page.
-Payments and Visits remain visible previews and are not yet functional.
+Payments remains a visible preview and is not yet functional.
 
 ## Managing Members
 
@@ -67,7 +68,7 @@ values. Give the initial password to the Member securely outside GymFlow.
 ### Editing a Member
 
 Select a Member row to open the Member profile page. The profile page shows the Member number, contact details,
-Membership history, and read-only Payment history. Select `Back to Members` to return to the list.
+Membership history, Visit history, and read-only Payment history. Select `Back to Members` to return to the list.
 
 Select `Edit` on the profile page to update email, full name, phone number, and optional date of birth. The edit view
 keeps payment history visible but read-only. Select `Cancel` to discard changes or `Save Changes` to persist them.
@@ -89,7 +90,21 @@ Membership row and use `Deactivate` to stop it granting gym access without disab
 history. A current or future deactivated period may be reactivated when it does not overlap another active period.
 Expired periods cannot be reactivated; add a new Membership instead.
 
+If a Membership is deactivated while the Member is already inside the gym, their ongoing Visit remains open. They
+remain listed under `Currently Visiting` and included in the current visitor count until they submit an exit. GymFlow
+does not create an artificial exit time; deactivation only prevents the Membership from authorizing a future entry.
+
 Statuses are calculated from the active flag and dates: `ACTIVE`, `UPCOMING`, `EXPIRED`, or `DEACTIVATED`.
+
+## Reviewing Visits
+
+The Visits page provides two tabs. `All Visits` contains completed and ongoing visits, while `Currently Visiting`
+contains only Members whose Visit has no exit time. Search by Member name or email and select `Search`, or press Enter.
+Clearing the search restores all records in the selected tab.
+
+Each row shows the Member number and name, entry time, exit time, and duration. An ongoing Visit displays
+`Currently inside` and `Ongoing`. Times use the computer's local time zone. The same read-only history is available
+from the Member's profile page. Owners cannot create, end, or correct Visits in the current release.
 
 ## Member dashboard preview
 

@@ -217,6 +217,34 @@
     -fx-text-fill: #7a879b;
 }
 
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: transparent;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #eef2f7;
+    -fx-background-radius: 8px 8px 0 0;
+    -fx-padding: 8px 16px;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #2864dc;
+}
+
+.tab-pane .tab .tab-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: #39465a;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: white;
+}
+
+.tab-pane .tab-content-area {
+    -fx-border-color: #e4e9f1;
+    -fx-border-radius: 0 8px 8px 8px;
+}
+
 .gymflow-dialog {
     -fx-background-color: #f4f6fa;
     -fx-padding: 0;

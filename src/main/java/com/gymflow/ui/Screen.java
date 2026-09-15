@@ -6,5 +6,6 @@ public enum Screen {
     OWNER_HOME,
     OWNER_MEMBERS,
     OWNER_MEMBERSHIPS,
+    OWNER_VISITS,
     MEMBER_HOME
 }
