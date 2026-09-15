@@ -4,7 +4,7 @@ GymFlow is a JavaFX desktop application for a small gym. It provides separate ex
 members.
 
 The current version supports local Owner account setup and login plus Owner-managed Member onboarding, profiles,
-Membership periods, and Payments. The Member dashboard remains a development preview while Member features are added
+Membership periods, income Payments, and operating Expenses. The Member dashboard remains a development preview while Member features are added
 separately.
 
 Project documentation:

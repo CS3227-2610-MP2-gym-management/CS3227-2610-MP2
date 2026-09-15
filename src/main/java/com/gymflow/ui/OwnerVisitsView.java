@@ -44,7 +44,7 @@ import javafx.scene.layout.VBox;
 /** Owner overview of completed and ongoing gym Visits. */
 final class OwnerVisitsView {
     private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Payments", "Visits");
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits");
     private static final DateTimeFormatter LOCAL_TIME = DateTimeFormatter.ISO_LOCAL_TIME;
 
     private OwnerVisitsView() {
@@ -126,12 +126,12 @@ final class OwnerVisitsView {
         BorderPane root = new BorderPane();
         root.setId("owner-visits-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Visits",
-                Set.of("Overview", "Members", "Memberships", "Payments", "Visits"),
+                Set.copyOf(NAVIGATION),
                 item -> navigate.accept(switch (item) {
                 case "Overview" -> Screen.OWNER_HOME;
                 case "Members" -> Screen.OWNER_MEMBERS;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
-                case "Payments" -> Screen.OWNER_PAYMENTS;
+                case "Finances" -> Screen.OWNER_FINANCES;
                 default -> Screen.OWNER_VISITS;
                 }), logout));
         root.setCenter(UiComponents.scrollable(content));

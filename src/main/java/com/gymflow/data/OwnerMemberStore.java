@@ -149,8 +149,7 @@ public final class OwnerMemberStore {
     }
 
     /** Loads the summary figures and recent Members shown on the Owner dashboard. */
-    public OwnerDashboard ownerDashboard(LocalDate today, Instant monthStart,
-            Instant nextMonthStart) {
+    public OwnerDashboard ownerDashboard(LocalDate today) {
         try (Connection connection = database.connect()) {
             long totalMembers = scalar(connection,
                     "SELECT COUNT(*) FROM member_profiles");
@@ -158,10 +157,8 @@ public final class OwnerMemberStore {
                     SELECT COUNT(DISTINCT member_account_id) FROM memberships
                     WHERE is_active = 1 AND start_date <= ? AND expiry_date >= ?
                     """, today.toString(), today.toString());
-            long revenueCents = scalar(connection, """
-                    SELECT COALESCE(SUM(amount_cents), 0) FROM payments
-                    WHERE paid_at >= ? AND paid_at < ?
-                    """, monthStart.toString(), nextMonthStart.toString());
+            long revenueCents = scalar(connection,
+                    "SELECT COALESCE(SUM(amount_cents), 0) FROM payments");
             return new OwnerDashboard(totalMembers, activeMemberships,
                     BigDecimal.valueOf(revenueCents, 2), recentMembers(connection, today));
         } catch (SQLException exception) {

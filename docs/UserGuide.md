@@ -40,14 +40,14 @@ Select `Log out` in the Owner sidebar to clear the current session and return to
 ## Owner Home
 
 Owner Home displays the total number of registered Members, the number of Members with a currently valid active
-Membership, the current visitor count, and Payments received during the current calendar month. Revenue follows the
-computer's local time zone and is displayed in SGD. The Member overview lists the five most recently created Members
-with their most relevant Membership period and its derived status.
+Membership, the current visitor count, all recorded income and expenses, and their calculated net. Financial values
+are displayed in SGD and cover all records currently stored in GymFlow. The Member overview lists the five most
+recently created Members with their most relevant Membership period and its derived status.
 
 Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, or `Visits` to
 review attendance. Select
 `Create Member` to open the creation form directly; after a successful creation, GymFlow opens the Members page.
-Select `Payments` to review the gym's recorded membership payments.
+Select `Finances` to review membership income and operating expenses.
 
 ## Managing Members
 
@@ -112,12 +112,24 @@ does not create an artificial exit time; deactivation only prevents the Membersh
 
 Statuses are calculated from the active flag and dates: `ACTIVE`, `UPCOMING`, `EXPIRED`, or `DEACTIVATED`.
 
-## Reviewing Payments
+## Managing Finances
 
-The Payments page lists every recorded membership Payment with its Member, Membership period, SGD amount, method,
-payment time, and optional reference. Search by Member name or email and select `Search`, or press Enter. Clearing the
-search displays every Payment again. This page is read-only; Payment editing, deletion, refunds, and exports are not
-available.
+The Finances page separates records into `Income` and `Expenses` tabs. Income lists every recorded membership Payment
+with its Member, Membership period, SGD amount, method, payment time, and optional reference. Search by Member name or
+email and select `Search`, or press Enter. Clearing the search displays every Payment again.
+
+The Expenses tab lists operating expenses by date, amount, method, category, and optional description. Choose a
+category or `All Categories` to filter the table. To add an expense:
+
+1. Select `Add Expense` in the Expenses tab.
+2. Select today or an earlier date from the calendar.
+3. Enter a positive SGD amount with at most two decimal places.
+4. Choose `CASH`, `CARD`, or `TRANSFER` and an expense category.
+5. Optionally enter a description, then select `Add Expense`.
+
+Supported categories are `MAINTENANCE`, `UTILITIES`, `EQUIPMENT`, `SUPPLIES`, `RENT`, and `OTHER`. Expenses currently
+support creation and viewing only; they cannot be edited or deleted. Income is also read-only, and refunds and exports
+are not available.
 
 ## Reviewing Visits
 

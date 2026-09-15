@@ -25,7 +25,7 @@ import javafx.scene.layout.VBox;
 /** Owner Membership overview and search screen. */
 final class OwnerMembershipsView {
     private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Payments", "Visits");
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits");
 
     private OwnerMembershipsView() {
     }
@@ -75,11 +75,11 @@ final class OwnerMembershipsView {
         BorderPane root = new BorderPane();
         root.setId("owner-memberships-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Memberships",
-                Set.of("Overview", "Members", "Memberships", "Payments", "Visits"),
+                Set.copyOf(NAVIGATION),
                 item -> navigate.accept(switch (item) {
                 case "Overview" -> Screen.OWNER_HOME;
                 case "Members" -> Screen.OWNER_MEMBERS;
-                case "Payments" -> Screen.OWNER_PAYMENTS;
+                case "Finances" -> Screen.OWNER_FINANCES;
                 case "Visits" -> Screen.OWNER_VISITS;
                 default -> Screen.OWNER_MEMBERSHIPS;
                 }), logout));

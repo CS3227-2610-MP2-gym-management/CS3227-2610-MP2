@@ -44,7 +44,6 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -55,7 +54,7 @@ import javafx.scene.layout.VBox;
 
 final class OwnerMembersView {
     private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Payments", "Visits");
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits");
     private static final DateTimeFormatter PAYMENT_TIME =
             DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a").withZone(ZoneId.systemDefault());
     private static final NumberFormat SGD = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-SG"));
@@ -68,11 +67,11 @@ final class OwnerMembersView {
         BorderPane root = new BorderPane();
         root.setId("owner-members-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Members",
-                Set.of("Overview", "Members", "Memberships", "Payments", "Visits"),
+                Set.copyOf(NAVIGATION),
                 item -> navigate.accept(switch (item) {
                 case "Overview" -> Screen.OWNER_HOME;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
-                case "Payments" -> Screen.OWNER_PAYMENTS;
+                case "Finances" -> Screen.OWNER_FINANCES;
                 case "Visits" -> Screen.OWNER_VISITS;
                 default -> Screen.OWNER_MEMBERS;
                 }), logout));
@@ -232,7 +231,7 @@ final class OwnerMembersView {
         phoneInput.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(phone, Priority.ALWAYS);
         DatePicker birth = new DatePicker(member.dateOfBirth());
-        calendarOnly(birth);
+        UiComponents.calendarOnly(birth);
 
         Label error = dialogError();
         GridPane grid = new GridPane();
@@ -467,9 +466,9 @@ final class OwnerMembersView {
                 .orElse(LocalDate.now());
         DatePicker start = new DatePicker(startDate);
         DatePicker expiry = new DatePicker(startDate.plusMonths(1));
-        calendarOnly(start, expiry);
+        UiComponents.calendarOnly(start, expiry);
         TextField amount = field("Payment amount (SGD)");
-        amount.setTextFormatter(decimalAmount());
+        amount.setTextFormatter(UiComponents.decimalAmount());
         ComboBox<PaymentMethod> method = new ComboBox<>();
         method.getItems().setAll(PaymentMethod.values());
         method.setValue(PaymentMethod.CARD);
@@ -634,12 +633,12 @@ final class OwnerMembersView {
         DatePicker start = new DatePicker(LocalDate.now());
         DatePicker expiry = new DatePicker(LocalDate.now().plusMonths(1));
         TextField amount = field("Payment amount (SGD)");
-        amount.setTextFormatter(decimalAmount());
+        amount.setTextFormatter(UiComponents.decimalAmount());
         ComboBox<PaymentMethod> method = new ComboBox<>();
         method.getItems().setAll(PaymentMethod.values());
         method.setValue(PaymentMethod.CARD);
         TextField reference = field("Payment reference (optional)");
-        calendarOnly(birth, start, expiry);
+        UiComponents.calendarOnly(birth, start, expiry);
         Label error = dialogError();
         GridPane grid = grid(email, password, confirm, name, phoneInput, birth,
                 start, expiry, amount, method, reference);
@@ -724,19 +723,6 @@ final class OwnerMembersView {
     private static TextFormatter<String> digits(int maximumLength) {
         return new TextFormatter<>(change -> change.getControlNewText().matches("\\d{0," + maximumLength + "}")
                 ? change : null);
-    }
-
-    private static TextFormatter<String> decimalAmount() {
-        return new TextFormatter<>(change -> change.getControlNewText().matches("\\d*(\\.\\d{0,2})?")
-                ? change : null);
-    }
-
-    private static void calendarOnly(DatePicker... pickers) {
-        for (DatePicker picker : pickers) {
-            picker.setEditable(false);
-            picker.getEditor().setFocusTraversable(false);
-            picker.getEditor().addEventFilter(MouseEvent.MOUSE_PRESSED, event -> event.consume());
-        }
     }
 
     private static String localPhoneNumber(String storedNumber) {

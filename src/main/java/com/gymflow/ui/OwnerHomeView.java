@@ -1,5 +1,6 @@
 package com.gymflow.ui;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.gymflow.auth.AuthenticationService;
+import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.model.Account;
 import com.gymflow.model.MembershipOverview;
@@ -28,13 +30,13 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 final class OwnerHomeView {
     private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Payments", "Visits");
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits");
     private static final NumberFormat SGD =
             NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-SG"));
 
@@ -42,7 +44,7 @@ final class OwnerHomeView {
     }
 
     static Parent create(AuthenticationService authentication, OwnerMemberService members,
-            OwnerVisitService visits, Account owner,
+            OwnerExpenseService expenses, OwnerVisitService visits, Account owner,
             Consumer<Screen> navigate, Runnable returnToLogin, Runnable resetCompleted) {
         Button createMember = new Button("Create Member");
         createMember.getStyleClass().add("primary-button");
@@ -52,12 +54,23 @@ final class OwnerHomeView {
         Label totalMembers = new Label("—");
         Label activeMemberships = new Label("—");
         Label currentVisitorCount = new Label("—");
-        Label revenue = new Label("—");
-        HBox stats = new HBox(16,
+        Label income = new Label("—");
+        Label expenseTotal = new Label("—");
+        Label netTotal = new Label("—");
+        FlowPane stats = new FlowPane(16, 16,
                 UiComponents.statCard("Total Members", totalMembers),
                 UiComponents.statCard("Active Memberships", activeMemberships),
                 UiComponents.statCard("Currently Visiting", currentVisitorCount),
-                UiComponents.statCard("Revenue This Month", revenue));
+                UiComponents.statCard("All-Time Income", income),
+                UiComponents.statCard("All-Time Expenses", expenseTotal),
+                UiComponents.statCard("All-Time Net", netTotal));
+        BigDecimal[] incomeValue = {null};
+        BigDecimal[] expenseValue = {null};
+        Runnable updateNet = () -> {
+            if (incomeValue[0] != null && expenseValue[0] != null) {
+                netTotal.setText(SGD.format(OwnerFinancesView.net(incomeValue[0], expenseValue[0])));
+            }
+        };
         OwnerMembersView.run(null, visits::currentVisitorCount,
                 count -> currentVisitorCount.setText(Long.toString(count)), ignored -> { });
 
@@ -68,8 +81,15 @@ final class OwnerHomeView {
         OwnerMembersView.run(null, members::ownerDashboard, dashboard -> {
             totalMembers.setText(Long.toString(dashboard.totalMembers()));
             activeMemberships.setText(Long.toString(dashboard.activeMemberships()));
-            revenue.setText(SGD.format(dashboard.revenueThisMonth()));
+            incomeValue[0] = dashboard.totalIncome();
+            income.setText(SGD.format(incomeValue[0]));
             memberOverview.getItems().setAll(dashboard.members());
+            updateNet.run();
+        }, ignored -> { });
+        OwnerMembersView.run(null, expenses::totalExpenses, total -> {
+            expenseValue[0] = total;
+            expenseTotal.setText(SGD.format(total));
+            updateNet.run();
         }, ignored -> { });
         VBox tableCard = UiComponents.card(sectionTitle, memberOverview);
         VBox.setVgrow(tableCard, Priority.ALWAYS);
@@ -97,11 +117,11 @@ final class OwnerHomeView {
         root.setId("owner-home-screen");
         root.getStyleClass().add("dashboard-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Overview",
-                Set.of("Overview", "Members", "Memberships", "Payments", "Visits"),
+                Set.copyOf(NAVIGATION),
                 item -> navigate.accept(switch (item) {
                 case "Members" -> Screen.OWNER_MEMBERS;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
-                case "Payments" -> Screen.OWNER_PAYMENTS;
+                case "Finances" -> Screen.OWNER_FINANCES;
                 case "Visits" -> Screen.OWNER_VISITS;
                 default -> Screen.OWNER_HOME;
                 }),
@@ -119,7 +139,7 @@ final class OwnerHomeView {
                 item -> item.memberName() + " · " + item.memberNumber());
         addColumn(table, "Contact", 220, MembershipOverview::memberEmail);
         addColumn(table, "Membership", 220, item -> item.membership() == null ? "—"
-                : OwnerPaymentsView.formatMembershipPeriod(item.membership().startDate(),
+                : OwnerFinancesView.formatMembershipPeriod(item.membership().startDate(),
                         item.membership().expiryDate()));
         addColumn(table, "Status", 120, item -> item.membership() == null ? "NONE"
                 : item.membership().status(LocalDate.now()).name());

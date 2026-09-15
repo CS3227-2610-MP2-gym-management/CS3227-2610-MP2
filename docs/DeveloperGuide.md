@@ -10,6 +10,7 @@ The current code is divided by responsibility:
 - `com.gymflow.ui`: application startup, navigation, and JavaFX views.
 - `com.gymflow.auth`: password hashing and authentication rules.
 - `com.gymflow.data`: SQLite initialization and account persistence.
+- `com.gymflow.expense`: Owner-side operating-expense validation and queries.
 - `com.gymflow.model`: shared account and role data.
 - `com.gymflow.member`: Owner-side Member onboarding and profile rules.
 - `com.gymflow.visit`: read-only Owner attendance queries.
@@ -83,10 +84,16 @@ payment time and ID descending. The global page is deliberately read-only; Membe
 remain the only Payment creation paths.
 
 `OwnerMemberStore.ownerDashboard` supplies the Owner overview without another service layer. It counts registered
-Member profiles, distinct Members with an active Membership covering today, and Payments within the current local
-calendar month. It also returns the five most recently created Members. Each row selects the currently valid active
+Member profiles and distinct Members with an active Membership covering today, and totals every recorded Payment.
+It also returns the five most recently created Members. Each row selects the currently valid active
 Membership first, otherwise the nearest upcoming active Membership, otherwise the latest historical Membership.
 `OwnerVisitService.currentVisitorCount` remains the source of the separate open-Visit count.
+
+Operating Expenses are stored separately because they have no Member or Membership relationship. `OwnerExpenseService`
+validates immutable additions and exposes all/category listings plus the all-recorded-time total.
+`OwnerExpenseStore` stores amounts as integer SGD cents and verifies the recording account is an active Owner. Expense
+editing and deletion are intentionally not implemented. The Owner overview subtracts the Expense total from membership
+income to derive the all-recorded-time net value.
 
 The shared `Visit` record maps to the `visits` table. `Account`, `Role`, and `member_account_id` are the implemented
 names for the design's `User`, `UserRole`, and `Visit.memberId` concepts. A null `exited_at` derives the currently
