@@ -19,6 +19,7 @@ feature is merged.
 | Member password reset | Owner-authorized Member credential replacement with fresh PBKDF2 salts | `65871d7`, PR #5 |
 | Visit correction | Owner correction of Visit timestamps with latest reason and responsible Owner | Current record-management branch |
 | Payments overview | Read-only global Payment ledger with Member search and Membership links | Current record-management branch |
+| Owner overview | Live Member, Membership, monthly revenue, visitor, and recent-Member summaries | Current record-management branch |
 
 ## Team-level engineering
 

@@ -15,11 +15,13 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.model.Account;
+import com.gymflow.model.OwnerDashboard;
 import com.gymflow.model.Member;
 import com.gymflow.model.MemberPayment;
 import com.gymflow.model.Membership;
@@ -370,6 +372,33 @@ class OwnerMemberServiceTest {
         assertTrue(members.searchPayments(alice.memberNumber()).isEmpty());
         assertTrue(members.searchPayments("LATEST").isEmpty());
         assertTrue(members.searchPayments("CARD").isEmpty());
+    }
+
+    @Test
+    void summarizesCurrentMonthAndFiveMostRecentMembers() throws Exception {
+        LocalDate today = LocalDate.now();
+        Instant thisMonth = today.withDayOfMonth(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        for (int index = 1; index <= 6; index++) {
+            CreateMemberRequest request = new CreateMemberRequest("member" + index + "@example.com",
+                    "member password".toCharArray(), "Member " + index, "81234567", null,
+                    today, today.plusMonths(1), BigDecimal.valueOf(index * 10L),
+                    PaymentMethod.CARD, thisMonth.plusSeconds(index), "");
+            members.createMember(request, owner.id());
+        }
+        execute("UPDATE payments SET paid_at = '2020-01-01T00:00:00Z' WHERE id = 1");
+        Membership deactivated = members.membershipHistory(
+                members.searchMembers("member2@").getFirst().accountId()).getFirst();
+        members.setMembershipActive(deactivated.id(), false, owner.id());
+
+        OwnerDashboard dashboard = members.ownerDashboard();
+
+        assertEquals(6, dashboard.totalMembers());
+        assertEquals(5, dashboard.activeMemberships());
+        assertEquals(new BigDecimal("200.00"), dashboard.revenueThisMonth());
+        assertEquals(List.of("Member 6", "Member 5", "Member 4", "Member 3", "Member 2"),
+                dashboard.members().stream().map(MembershipOverview::memberName).toList());
+        assertEquals(MembershipStatus.DEACTIVATED,
+                dashboard.members().getLast().membership().status(today));
     }
 
     @Test

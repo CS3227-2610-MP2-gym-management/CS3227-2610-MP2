@@ -87,6 +87,11 @@ filters, or a new service layer. One joined projection supplies the Owner table 
 while the existing Owner Member store remains the single query boundary. This was a direct application of Ponytail's
 YAGNI constraint: expose the information already available before adding new financial workflows.
 
+The Owner overview followed the same approach. Instead of adding a dashboard service, the agent extended the existing
+Owner Member query boundary with one summary result and retained the Visit service for the current visitor count. The
+team explicitly defined ambiguous metrics before implementation: revenue means the current local calendar month, and
+the overview shows the five most recently created Members rather than duplicating the complete Members page.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

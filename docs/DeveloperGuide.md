@@ -82,6 +82,12 @@ the Owner Payments page. `OwnerMemberStore.searchPayments` matches Member name o
 payment time and ID descending. The global page is deliberately read-only; Member onboarding and Membership renewal
 remain the only Payment creation paths.
 
+`OwnerMemberStore.ownerDashboard` supplies the Owner overview without another service layer. It counts registered
+Member profiles, distinct Members with an active Membership covering today, and Payments within the current local
+calendar month. It also returns the five most recently created Members. Each row selects the currently valid active
+Membership first, otherwise the nearest upcoming active Membership, otherwise the latest historical Membership.
+`OwnerVisitService.currentVisitorCount` remains the source of the separate open-Visit count.
+
 The shared `Visit` record maps to the `visits` table. `Account`, `Role`, and `member_account_id` are the implemented
 names for the design's `User`, `UserRole`, and `Visit.memberId` concepts. A null `exited_at` derives the currently
 checked-in state. A partial unique index prevents more than one open Visit per Member, and a table constraint prevents

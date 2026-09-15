@@ -19,6 +19,7 @@ import com.gymflow.model.Member;
 import com.gymflow.model.MemberPayment;
 import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipOverview;
+import com.gymflow.model.OwnerDashboard;
 import com.gymflow.model.PaymentMethod;
 import com.gymflow.model.PaymentOverview;
 
@@ -144,6 +145,90 @@ public final class OwnerMemberStore {
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("Unable to search Payments", exception);
+        }
+    }
+
+    /** Loads the summary figures and recent Members shown on the Owner dashboard. */
+    public OwnerDashboard ownerDashboard(LocalDate today, Instant monthStart,
+            Instant nextMonthStart) {
+        try (Connection connection = database.connect()) {
+            long totalMembers = scalar(connection,
+                    "SELECT COUNT(*) FROM member_profiles");
+            long activeMemberships = scalar(connection, """
+                    SELECT COUNT(DISTINCT member_account_id) FROM memberships
+                    WHERE is_active = 1 AND start_date <= ? AND expiry_date >= ?
+                    """, today.toString(), today.toString());
+            long revenueCents = scalar(connection, """
+                    SELECT COALESCE(SUM(amount_cents), 0) FROM payments
+                    WHERE paid_at >= ? AND paid_at < ?
+                    """, monthStart.toString(), nextMonthStart.toString());
+            return new OwnerDashboard(totalMembers, activeMemberships,
+                    BigDecimal.valueOf(revenueCents, 2), recentMembers(connection, today));
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to load Owner overview", exception);
+        }
+    }
+
+    private static List<MembershipOverview> recentMembers(Connection connection, LocalDate today)
+            throws SQLException {
+        String sql = """
+                SELECT a.email, p.member_number, p.full_name,
+                    m.id AS membership_id, m.member_account_id, m.start_date, m.expiry_date,
+                    m.is_active, m.created_at AS membership_created_at,
+                    m.updated_at AS membership_updated_at
+                FROM member_profiles p
+                JOIN accounts a ON a.id = p.account_id
+                LEFT JOIN memberships m ON m.id = (
+                    SELECT candidate.id FROM memberships candidate
+                    WHERE candidate.member_account_id = p.account_id
+                    ORDER BY
+                        CASE
+                            WHEN candidate.is_active = 1
+                                AND candidate.start_date <= ? AND candidate.expiry_date >= ? THEN 0
+                            WHEN candidate.is_active = 1 AND candidate.start_date > ? THEN 1
+                            ELSE 2
+                        END,
+                        CASE WHEN candidate.is_active = 1 AND candidate.start_date > ?
+                            THEN candidate.start_date END,
+                        candidate.expiry_date DESC, candidate.id DESC
+                    LIMIT 1
+                )
+                ORDER BY a.created_at DESC, a.id DESC
+                LIMIT 5
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int index = 1; index <= 4; index++) {
+                statement.setString(index, today.toString());
+            }
+            try (ResultSet results = statement.executeQuery()) {
+                List<MembershipOverview> found = new ArrayList<>();
+                while (results.next()) {
+                    Membership membership = results.getObject("membership_id") == null ? null
+                            : new Membership(results.getLong("membership_id"),
+                                    results.getLong("member_account_id"),
+                                    LocalDate.parse(results.getString("start_date")),
+                                    LocalDate.parse(results.getString("expiry_date")),
+                                    results.getBoolean("is_active"),
+                                    Instant.parse(results.getString("membership_created_at")),
+                                    Instant.parse(results.getString("membership_updated_at")));
+                    found.add(new MembershipOverview(membership,
+                            results.getString("member_number"), results.getString("full_name"),
+                            results.getString("email")));
+                }
+                return found;
+            }
+        }
+    }
+
+    private static long scalar(Connection connection, String sql, String... parameters)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int index = 0; index < parameters.length; index++) {
+                statement.setString(index + 1, parameters[index]);
+            }
+            try (ResultSet result = statement.executeQuery()) {
+                return result.getLong(1);
+            }
         }
     }
 

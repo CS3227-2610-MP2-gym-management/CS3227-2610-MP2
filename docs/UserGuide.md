@@ -39,7 +39,11 @@ Select `Log out` in the Owner sidebar to clear the current session and return to
 
 ## Owner Home
 
-Owner Home displays a current visitor count alongside placeholder cards for features not yet connected to data.
+Owner Home displays the total number of registered Members, the number of Members with a currently valid active
+Membership, the current visitor count, and Payments received during the current calendar month. Revenue follows the
+computer's local time zone and is displayed in SGD. The Member overview lists the five most recently created Members
+with their most relevant Membership period and its derived status.
+
 Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, or `Visits` to
 review attendance. Select
 `Create Member` to open the creation form directly; after a successful creation, GymFlow opens the Members page.

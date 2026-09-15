@@ -1,13 +1,19 @@
 package com.gymflow.ui;
 
+import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.model.Account;
+import com.gymflow.model.MembershipOverview;
 import com.gymflow.visit.OwnerVisitService;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.event.ActionEvent;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -18,6 +24,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
@@ -28,6 +35,8 @@ import javafx.scene.layout.VBox;
 final class OwnerHomeView {
     private static final List<String> NAVIGATION =
             List.of("Overview", "Members", "Memberships", "Payments", "Visits");
+    private static final NumberFormat SGD =
+            NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-SG"));
 
     private OwnerHomeView() {
     }
@@ -40,20 +49,28 @@ final class OwnerHomeView {
         createMember.setOnAction(event -> OwnerMembersView.showCreateMember(
                 createMember, members, owner, () -> navigate.accept(Screen.OWNER_MEMBERS)));
 
+        Label totalMembers = new Label("—");
+        Label activeMemberships = new Label("—");
         Label currentVisitorCount = new Label("—");
+        Label revenue = new Label("—");
         HBox stats = new HBox(16,
-                UiComponents.statCard("Total Members"),
-                UiComponents.statCard("Active Memberships"),
+                UiComponents.statCard("Total Members", totalMembers),
+                UiComponents.statCard("Active Memberships", activeMemberships),
                 UiComponents.statCard("Currently Visiting", currentVisitorCount),
-                UiComponents.statCard("Revenue"));
+                UiComponents.statCard("Revenue This Month", revenue));
         OwnerMembersView.run(null, visits::currentVisitorCount,
                 count -> currentVisitorCount.setText(Long.toString(count)), ignored -> { });
 
         Label sectionTitle = new Label("Member overview");
         sectionTitle.getStyleClass().add("section-title");
         UiComponents.preserveLabelHeight(sectionTitle);
-        TableView<Void> memberOverview = UiComponents.emptyTable(
-                "No member data yet", "Member", "Contact", "Membership", "Status");
+        TableView<MembershipOverview> memberOverview = memberOverviewTable();
+        OwnerMembersView.run(null, members::ownerDashboard, dashboard -> {
+            totalMembers.setText(Long.toString(dashboard.totalMembers()));
+            activeMemberships.setText(Long.toString(dashboard.activeMemberships()));
+            revenue.setText(SGD.format(dashboard.revenueThisMonth()));
+            memberOverview.getItems().setAll(dashboard.members());
+        }, ignored -> { });
         VBox tableCard = UiComponents.card(sectionTitle, memberOverview);
         VBox.setVgrow(tableCard, Priority.ALWAYS);
 
@@ -92,6 +109,31 @@ final class OwnerHomeView {
         root.setCenter(UiComponents.scrollable(content));
         root.setAccessibleText("GymFlow owner dashboard preview");
         return root;
+    }
+
+    private static TableView<MembershipOverview> memberOverviewTable() {
+        TableView<MembershipOverview> table = new TableView<>();
+        table.setPlaceholder(new Label("No Members found"));
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        addColumn(table, "Member", 220,
+                item -> item.memberName() + " · " + item.memberNumber());
+        addColumn(table, "Contact", 220, MembershipOverview::memberEmail);
+        addColumn(table, "Membership", 220, item -> item.membership() == null ? "—"
+                : OwnerPaymentsView.formatMembershipPeriod(item.membership().startDate(),
+                        item.membership().expiryDate()));
+        addColumn(table, "Status", 120, item -> item.membership() == null ? "NONE"
+                : item.membership().status(LocalDate.now()).name());
+        table.setPrefHeight(260);
+        return table;
+    }
+
+    private static void addColumn(TableView<MembershipOverview> table, String title, double width,
+            Function<MembershipOverview, String> value) {
+        TableColumn<MembershipOverview, String> column = new TableColumn<>(title);
+        column.setMinWidth(width);
+        column.setPrefWidth(width);
+        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
+        table.getColumns().add(column);
     }
 
     private static void confirmReset(AuthenticationService authentication, Account owner,
