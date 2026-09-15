@@ -2,6 +2,7 @@ package com.gymflow.member;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +15,8 @@ import com.gymflow.model.Member;
 import com.gymflow.model.MemberPayment;
 import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipOverview;
+import com.gymflow.model.PaymentOverview;
+import com.gymflow.model.OwnerDashboard;
 
 /** Implements Owner-side Member onboarding and profile management. */
 public final class OwnerMemberService {
@@ -58,6 +61,20 @@ public final class OwnerMemberService {
     /** Lists payments recorded for a Member. */
     public List<MemberPayment> paymentHistory(long memberAccountId) {
         return members.paymentHistory(memberAccountId);
+    }
+
+    /** Searches all Payments by Member name or email. */
+    public List<PaymentOverview> searchPayments(String query) {
+        return members.searchPayments(query == null ? "" : query.trim());
+    }
+
+    /** Loads the current Owner overview using the computer's local calendar month. */
+    public OwnerDashboard ownerDashboard() {
+        LocalDate today = LocalDate.now();
+        ZoneId zone = ZoneId.systemDefault();
+        return members.ownerDashboard(today,
+                today.withDayOfMonth(1).atStartOfDay(zone).toInstant(),
+                today.plusMonths(1).withDayOfMonth(1).atStartOfDay(zone).toInstant());
     }
 
     /** Lists one Member's Membership history. */

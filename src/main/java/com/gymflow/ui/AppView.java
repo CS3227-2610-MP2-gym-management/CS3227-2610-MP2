@@ -55,9 +55,12 @@ public final class AppView {
         case OWNER_MEMBERSHIPS -> session == null
                 ? createLogin()
                 : OwnerMembershipsView.create(members, this::show, this::logout);
+        case OWNER_PAYMENTS -> session == null
+                ? createLogin()
+                : OwnerPaymentsView.create(members, this::show, this::logout);
         case OWNER_VISITS -> session == null
                 ? createLogin()
-                : OwnerVisitsView.create(visits, this::show, this::logout);
+                : OwnerVisitsView.create(visits, session, this::show, this::logout);
         case MEMBER_HOME -> MemberHomeView.create(() -> show(Screen.LOGIN));
         };
         scene.setRoot(root);

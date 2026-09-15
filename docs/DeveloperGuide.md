@@ -77,14 +77,28 @@ overlap another active period for the same Member. Deactivation does not change 
 prevent authentication. `OwnerMemberService.hasValidMembership(memberId, date)` is the shared contract for future
 Member entry validation; it returns true when any active Membership covers the date inclusively.
 
+`PaymentOverview` joins an immutable `MemberPayment` to the Member identity and purchased Membership period required by
+the Owner Payments page. `OwnerMemberStore.searchPayments` matches Member name or email only and orders records by
+payment time and ID descending. The global page is deliberately read-only; Member onboarding and Membership renewal
+remain the only Payment creation paths.
+
+`OwnerMemberStore.ownerDashboard` supplies the Owner overview without another service layer. It counts registered
+Member profiles, distinct Members with an active Membership covering today, and Payments within the current local
+calendar month. It also returns the five most recently created Members. Each row selects the currently valid active
+Membership first, otherwise the nearest upcoming active Membership, otherwise the latest historical Membership.
+`OwnerVisitService.currentVisitorCount` remains the source of the separate open-Visit count.
+
 The shared `Visit` record maps to the `visits` table. `Account`, `Role`, and `member_account_id` are the implemented
 names for the design's `User`, `UserRole`, and `Visit.memberId` concepts. A null `exited_at` derives the currently
 checked-in state. A partial unique index prevents more than one open Visit per Member, and a table constraint prevents
 an exit from preceding entry. Visit timestamps use fixed UTC ISO-8601 millisecond form
 `yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`; this makes the database constraint and ordering exact at the supported precision.
-`OwnerVisitService` exposes read-only all/current searches, per-Member history, and the
-current visitor count. Member-side entry and exit orchestration is intentionally left to the Member feature owner,
-who can use the existing Membership-validity contract before inserting a Visit.
+`OwnerVisitService` exposes all/current searches, per-Member history, the current visitor count, and Owner correction.
+Schema version 3 adds nullable latest-correction metadata and transactionally rebuilds version-2 Visit tables while
+preserving their rows. A correction atomically replaces the timestamps and latest reason after confirming an active
+Owner, valid timestamp order, and a real change. The existing unique index also prevents a correction from reopening a
+Visit when that Member already has another open Visit. Member-side entry and exit orchestration is intentionally left
+to the Member feature owner, who can use the existing Membership-validity contract before inserting a Visit.
 
 Deactivating a Membership deliberately does not close an existing open Visit. The Member remains currently checked
 in until the Member-side exit workflow supplies the real exit time; otherwise deactivation would fabricate attendance

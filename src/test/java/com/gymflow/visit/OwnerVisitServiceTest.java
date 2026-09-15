@@ -2,6 +2,8 @@ package com.gymflow.visit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -30,6 +32,7 @@ class OwnerVisitServiceTest {
     Path directory;
     private Path databaseFile;
     private OwnerVisitService visits;
+    private Account owner;
     private Member alice;
     private Member bob;
 
@@ -38,7 +41,7 @@ class OwnerVisitServiceTest {
         databaseFile = directory.resolve("gymflow.db");
         GymFlowDatabase database = new GymFlowDatabase(databaseFile);
         database.initialize();
-        Account owner = new AuthenticationService(database)
+        owner = new AuthenticationService(database)
                 .createOwner("owner@example.com", "owner password".toCharArray());
         OwnerMemberService members = new OwnerMemberService(database);
         alice = members.createMember(member("alice@example.com", "Alice Tan", "81234567"), owner.id());
@@ -88,6 +91,59 @@ class OwnerVisitServiceTest {
         assertEquals(Instant.parse("2026-09-15T02:00:00Z"), visit.exitedAt());
         assertEquals(Instant.parse("2026-09-15T01:00:00Z"), visit.createdAt());
         assertEquals(1, visits.visitHistory(alice.accountId()).size());
+        assertNull(visit.correctedAt());
+        assertNull(visit.correctedByUserId());
+        assertNull(visit.correctionReason());
+    }
+
+    @Test
+    void ownerCorrectsVisitAndRecordsLatestReason() throws Exception {
+        insertVisit(1, alice.accountId(), "2026-09-15T01:00:00.000Z", null);
+
+        Visit corrected = visits.correctVisit(1,
+                Instant.parse("2026-09-15T01:15:00Z"),
+                Instant.parse("2026-09-15T02:30:00Z"), "  Member forgot to exit  ", owner.id());
+
+        assertEquals(Instant.parse("2026-09-15T01:15:00Z"), corrected.enteredAt());
+        assertEquals(Instant.parse("2026-09-15T02:30:00Z"), corrected.exitedAt());
+        assertEquals(owner.id(), corrected.correctedByUserId());
+        assertEquals("Member forgot to exit", corrected.correctionReason());
+        assertTrue(corrected.correctedAt() != null);
+        assertEquals(0, visits.currentVisitorCount());
+    }
+
+    @Test
+    void rejectsInvalidOrUnauthorizedCorrectionsWithoutChangingVisit() throws Exception {
+        insertVisit(1, alice.accountId(), "2026-09-15T01:00:00.000Z", "2026-09-15T02:00:00.000Z");
+        Instant entry = Instant.parse("2026-09-15T01:00:00Z");
+        Instant exit = Instant.parse("2026-09-15T02:00:00Z");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> visits.correctVisit(1, entry, exit, "unchanged", owner.id()));
+        assertThrows(IllegalArgumentException.class,
+                () -> visits.correctVisit(1, exit, entry, "reversed", owner.id()));
+        assertThrows(IllegalArgumentException.class,
+                () -> visits.correctVisit(1, entry, null, " ", owner.id()));
+        assertThrows(IllegalArgumentException.class,
+                () -> visits.correctVisit(999, entry, null, "missing", owner.id()));
+        assertThrows(IllegalArgumentException.class,
+                () -> visits.correctVisit(1, entry, null, "unauthorized", alice.accountId()));
+
+        Visit unchanged = visits.visitHistory(alice.accountId()).getFirst();
+        assertEquals(entry, unchanged.enteredAt());
+        assertEquals(exit, unchanged.exitedAt());
+        assertNull(unchanged.correctedAt());
+    }
+
+    @Test
+    void rejectsReopeningWhenMemberAlreadyHasAnotherOpenVisit() throws Exception {
+        insertVisit(1, alice.accountId(), "2026-09-15T01:00:00.000Z", "2026-09-15T02:00:00.000Z");
+        insertVisit(2, alice.accountId(), "2026-09-15T03:00:00.000Z", null);
+
+        assertThrows(IllegalArgumentException.class, () -> visits.correctVisit(1,
+                Instant.parse("2026-09-15T01:00:00Z"), null, "Exit was recorded by mistake", owner.id()));
+
+        assertEquals(1, visits.currentVisitorCount());
     }
 
     private CreateMemberRequest member(String email, String name, String phone) {

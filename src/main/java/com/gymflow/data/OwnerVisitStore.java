@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +16,8 @@ import com.gymflow.model.VisitOverview;
 
 /** Reads Visit records for Owner attendance oversight. */
 public final class OwnerVisitStore {
+    private static final DateTimeFormatter TIMESTAMP =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
     private final GymFlowDatabase database;
 
     /** Creates a Visit store backed by the supplied database. */
@@ -86,12 +90,85 @@ public final class OwnerVisitStore {
         }
     }
 
+    /** Corrects a Visit and records the latest Owner-provided reason. */
+    public Visit correct(long visitId, Instant enteredAt, Instant exitedAt,
+            String reason, long ownerAccountId) {
+        try (Connection connection = database.connect()) {
+            connection.setAutoCommit(false);
+            try {
+                requireOwner(connection, ownerAccountId);
+                Visit current = find(connection, visitId);
+                if (current.enteredAt().equals(enteredAt)
+                        && java.util.Objects.equals(current.exitedAt(), exitedAt)) {
+                    throw new IllegalArgumentException("Change at least one Visit time");
+                }
+                Instant correctedAt = Instant.now();
+                try (PreparedStatement statement = connection.prepareStatement("""
+                        UPDATE visits SET entered_at = ?, exited_at = ?, corrected_at = ?,
+                            corrected_by_account_id = ?, correction_reason = ? WHERE id = ?
+                        """)) {
+                    statement.setString(1, TIMESTAMP.format(enteredAt));
+                    statement.setString(2, exitedAt == null ? null : TIMESTAMP.format(exitedAt));
+                    statement.setString(3, TIMESTAMP.format(correctedAt));
+                    statement.setLong(4, ownerAccountId);
+                    statement.setString(5, reason);
+                    statement.setLong(6, visitId);
+                    try {
+                        statement.executeUpdate();
+                    } catch (SQLException exception) {
+                        if (exception.getErrorCode() == 19) {
+                            throw new IllegalArgumentException(
+                                    "Correction conflicts with another open Visit", exception);
+                        }
+                        throw exception;
+                    }
+                }
+                Visit corrected = find(connection, visitId);
+                connection.commit();
+                return corrected;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to correct Visit", exception);
+        }
+    }
+
+    private static void requireOwner(Connection connection, long ownerAccountId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT 1 FROM accounts WHERE id = ? AND role = 'OWNER' AND is_active = 1")) {
+            statement.setLong(1, ownerAccountId);
+            if (!statement.executeQuery().next()) {
+                throw new IllegalArgumentException("An active Owner is required");
+            }
+        }
+    }
+
+    private static Visit find(Connection connection, long visitId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM visits WHERE id = ?")) {
+            statement.setLong(1, visitId);
+            try (ResultSet results = statement.executeQuery()) {
+                if (!results.next()) {
+                    throw new IllegalArgumentException("Visit not found");
+                }
+                return readVisit(results);
+            }
+        }
+    }
+
     private static Visit readVisit(ResultSet results) throws SQLException {
         String exitedAt = results.getString("exited_at");
+        String correctedAt = results.getString("corrected_at");
+        long correctedBy = results.getLong("corrected_by_account_id");
+        Long correctedByUserId = results.wasNull() ? null : correctedBy;
         return new Visit(results.getLong("id"), results.getLong("member_account_id"),
                 Instant.parse(results.getString("entered_at")),
                 exitedAt == null ? null : Instant.parse(exitedAt),
-                Instant.parse(results.getString("created_at")));
+                Instant.parse(results.getString("created_at")),
+                correctedAt == null ? null : Instant.parse(correctedAt),
+                correctedByUserId, results.getString("correction_reason"));
     }
 
     private static String escape(String query) {

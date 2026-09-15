@@ -39,11 +39,15 @@ Select `Log out` in the Owner sidebar to clear the current session and return to
 
 ## Owner Home
 
-Owner Home displays a current visitor count alongside placeholder cards for features not yet connected to data.
+Owner Home displays the total number of registered Members, the number of Members with a currently valid active
+Membership, the current visitor count, and Payments received during the current calendar month. Revenue follows the
+computer's local time zone and is displayed in SGD. The Member overview lists the five most recently created Members
+with their most relevant Membership period and its derived status.
+
 Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, or `Visits` to
 review attendance. Select
 `Create Member` to open the creation form directly; after a successful creation, GymFlow opens the Members page.
-Payments remains a visible preview and is not yet functional.
+Select `Payments` to review the gym's recorded membership payments.
 
 ## Managing Members
 
@@ -108,6 +112,13 @@ does not create an artificial exit time; deactivation only prevents the Membersh
 
 Statuses are calculated from the active flag and dates: `ACTIVE`, `UPCOMING`, `EXPIRED`, or `DEACTIVATED`.
 
+## Reviewing Payments
+
+The Payments page lists every recorded membership Payment with its Member, Membership period, SGD amount, method,
+payment time, and optional reference. Search by Member name or email and select `Search`, or press Enter. Clearing the
+search displays every Payment again. This page is read-only; Payment editing, deletion, refunds, and exports are not
+available.
+
 ## Reviewing Visits
 
 The Visits page provides two tabs. `All Visits` contains completed and ongoing visits, while `Currently Visiting`
@@ -116,7 +127,13 @@ Clearing the search restores all records in the selected tab.
 
 Each row shows the Member number and name, entry time, exit time, and duration. An ongoing Visit displays
 `Currently inside` and `Ongoing`. Times use the computer's local time zone. The same read-only history is available
-from the Member's profile page. Owners cannot create, end, or correct Visits in the current release.
+from the Member's profile page.
+
+To correct a record, select it and choose `Correct Selected Visit`. The Owner may change its entry time and may add,
+change, or clear its exit time. Every correction requires a reason. Clearing the exit marks the Member as currently
+inside and is rejected if that Member already has another open Visit. Previous correction information is shown when
+the record is corrected again; GymFlow retains the latest correction rather than a complete audit history. Owners
+cannot create new Visits directly.
 
 ## Member dashboard preview
 

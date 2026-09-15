@@ -77,6 +77,21 @@ session and repeats the role check at the persistence boundary, avoiding an extr
 password re-entry for the destructive full-data reset. Tests verify that only credential fields change and that
 plain-text character arrays are cleared on both successful and rejected requests.
 
+Visit correction extended an existing shared entity without introducing a general audit framework. The agent used a
+schema migration test to preserve version-2 records, retained only the latest correction metadata, and relied on the
+existing one-open-Visit index to reject invalid reopening. This kept the feature aligned with the specific Owner story
+while still recording when, why, and by whom the latest correction was made.
+
+The global Payments page reused the existing immutable Payment records instead of introducing editing, refunds, date
+filters, or a new service layer. One joined projection supplies the Owner table with Member and Membership context,
+while the existing Owner Member store remains the single query boundary. This was a direct application of Ponytail's
+YAGNI constraint: expose the information already available before adding new financial workflows.
+
+The Owner overview followed the same approach. Instead of adding a dashboard service, the agent extended the existing
+Owner Member query boundary with one summary result and retained the Visit service for the current visitor count. The
+team explicitly defined ambiguous metrics before implementation: revenue means the current local calendar month, and
+the overview shows the five most recently created Members rather than duplicating the complete Members page.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

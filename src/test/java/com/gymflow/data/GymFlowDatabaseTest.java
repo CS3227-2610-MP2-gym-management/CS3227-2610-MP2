@@ -35,7 +35,7 @@ class GymFlowDatabaseTest {
             assertNotNull(text(statement, "SELECT created_at FROM memberships WHERE id = 1"));
             assertNotNull(text(statement, "SELECT updated_at FROM memberships WHERE id = 1"));
             assertNotNull(text(statement, "SELECT created_at FROM payments WHERE id = 1"));
-            assertEquals(2, value(statement, "PRAGMA user_version"));
+            assertEquals(3, value(statement, "PRAGMA user_version"));
             assertEquals(1, value(statement,
                     "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'visits'"));
         }
@@ -96,7 +96,25 @@ class GymFlowDatabaseTest {
 
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM visits"));
-            assertEquals(2, value(statement, "PRAGMA user_version"));
+            assertEquals(3, value(statement, "PRAGMA user_version"));
+        }
+    }
+
+    @Test
+    void migratesVersionTwoVisitsWithEmptyCorrectionMetadata() throws Exception {
+        Path file = directory.resolve("version-two.db");
+        createVersionTwoDatabase(file);
+        GymFlowDatabase database = new GymFlowDatabase(file);
+
+        database.initialize();
+        database.initialize();
+
+        try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
+            assertEquals(3, value(statement, "PRAGMA user_version"));
+            assertEquals(1, value(statement, "SELECT COUNT(*) FROM visits"));
+            assertEquals(null, text(statement, "SELECT corrected_at FROM visits WHERE id = 1"));
+            assertEquals(null, text(statement, "SELECT corrected_by_account_id FROM visits WHERE id = 1"));
+            assertEquals(null, text(statement, "SELECT correction_reason FROM visits WHERE id = 1"));
         }
     }
 
@@ -150,6 +168,34 @@ class GymFlowDatabaseTest {
             statement.executeUpdate("INSERT INTO memberships VALUES (1, 1, '2026-01-01', '2026-01-31', 1)");
             statement.executeUpdate("INSERT INTO payments VALUES "
                     + "(1, 1, 5000, 'CARD', '2026-01-01T00:00:00Z', NULL, 1)");
+        }
+    }
+
+    private static void createVersionTwoDatabase(Path file) throws Exception {
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file);
+                Statement statement = connection.createStatement()) {
+            statement.executeUpdate("""
+                    CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT, password_hash TEXT,
+                        password_salt TEXT, password_iterations INTEGER, role TEXT, is_active INTEGER,
+                        created_at TEXT, updated_at TEXT)
+                    """);
+            statement.executeUpdate("""
+                    CREATE TABLE member_profiles (account_id INTEGER PRIMARY KEY, member_number TEXT,
+                        full_name TEXT, phone_number TEXT, date_of_birth TEXT)
+                    """);
+            statement.executeUpdate("""
+                    CREATE TABLE visits (id INTEGER PRIMARY KEY, member_account_id INTEGER,
+                        entered_at TEXT, exited_at TEXT, created_at TEXT)
+                    """);
+            statement.executeUpdate("INSERT INTO accounts VALUES "
+                    + "(1, 'member@example.com', 'hash', 'salt', 1, 'MEMBER', 1, "
+                    + "'2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')");
+            statement.executeUpdate("INSERT INTO member_profiles VALUES "
+                    + "(1, 'M000001', 'Member', '+65 8123 4567', NULL)");
+            statement.executeUpdate("INSERT INTO visits VALUES "
+                    + "(1, 1, '2026-09-15T01:00:00.000Z', '2026-09-15T02:00:00.000Z', "
+                    + "'2026-09-15T01:00:00.000Z')");
+            statement.execute("PRAGMA user_version = 2");
         }
     }
 
