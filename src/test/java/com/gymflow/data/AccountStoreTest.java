@@ -31,6 +31,8 @@ class AccountStoreTest {
         assertTrue(created.id() > 0);
         assertEquals("owner@example.com", stored.account().email());
         assertEquals(Role.OWNER, stored.account().role());
+        assertEquals(created.createdAt(), created.updatedAt());
+        assertEquals(created.updatedAt(), stored.account().updatedAt());
         assertEquals(password, stored.password());
     }
 }

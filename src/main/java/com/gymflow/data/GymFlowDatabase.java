@@ -7,12 +7,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 /** Owns the SQLite file and centralized application schema. */
 public final class GymFlowDatabase {
+    private static final int SCHEMA_VERSION = 1;
     private static final String[] SCHEMA = {
         """
         CREATE TABLE accounts (
@@ -23,7 +25,8 @@ public final class GymFlowDatabase {
             password_iterations INTEGER NOT NULL,
             role TEXT NOT NULL CHECK (role IN ('OWNER', 'MEMBER')),
             is_active INTEGER NOT NULL CHECK (is_active IN (0, 1)),
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
         )
         """,
         "CREATE UNIQUE INDEX one_owner ON accounts(role) WHERE role = 'OWNER'",
@@ -43,6 +46,8 @@ public final class GymFlowDatabase {
             start_date TEXT NOT NULL,
             expiry_date TEXT NOT NULL,
             is_active INTEGER NOT NULL CHECK (is_active IN (0, 1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
             CHECK (expiry_date >= start_date)
         )
         """,
@@ -54,7 +59,8 @@ public final class GymFlowDatabase {
             method TEXT NOT NULL CHECK (method IN ('CASH', 'CARD', 'TRANSFER')),
             paid_at TEXT NOT NULL,
             reference TEXT,
-            recorded_by_account_id INTEGER NOT NULL REFERENCES accounts(id)
+            recorded_by_account_id INTEGER NOT NULL REFERENCES accounts(id),
+            created_at TEXT NOT NULL
         )
         """
     };
@@ -73,9 +79,18 @@ public final class GymFlowDatabase {
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            try (Connection connection = connect(); Statement statement = connection.createStatement()) {
-                for (String sql : SCHEMA) {
-                    statement.executeUpdate(ifMissing(sql));
+            try (Connection connection = connect()) {
+                connection.setAutoCommit(false);
+                try (Statement statement = connection.createStatement()) {
+                    for (String sql : SCHEMA) {
+                        statement.executeUpdate(ifMissing(sql));
+                    }
+                    migrateLegacyTimestamps(connection, statement);
+                    statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
+                    connection.commit();
+                } catch (SQLException exception) {
+                    connection.rollback();
+                    throw exception;
                 }
             }
         } catch (IOException | SQLException exception) {
@@ -108,6 +123,7 @@ public final class GymFlowDatabase {
                     for (String sql : schema) {
                         statement.executeUpdate(sql);
                     }
+                    statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
                 }
                 connection.commit();
             } catch (SQLException exception) {
@@ -130,5 +146,39 @@ public final class GymFlowDatabase {
     private static String ifMissing(String sql) {
         return sql.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS")
                 .replace("CREATE UNIQUE INDEX", "CREATE UNIQUE INDEX IF NOT EXISTS");
+    }
+
+    private static void migrateLegacyTimestamps(Connection connection,
+            Statement statement) throws SQLException {
+        String migratedAt = Instant.now().toString();
+        if (!hasColumn(connection, "accounts", "updated_at")) {
+            statement.executeUpdate("ALTER TABLE accounts ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''");
+            statement.executeUpdate("UPDATE accounts SET updated_at = created_at");
+        }
+        if (!hasColumn(connection, "memberships", "created_at")) {
+            statement.executeUpdate("ALTER TABLE memberships ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
+            statement.executeUpdate("UPDATE memberships SET created_at = '" + migratedAt + "'");
+        }
+        if (!hasColumn(connection, "memberships", "updated_at")) {
+            statement.executeUpdate("ALTER TABLE memberships ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''");
+            statement.executeUpdate("UPDATE memberships SET updated_at = created_at");
+        }
+        if (!hasColumn(connection, "payments", "created_at")) {
+            statement.executeUpdate("ALTER TABLE payments ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
+            statement.executeUpdate("UPDATE payments SET created_at = '" + migratedAt + "'");
+        }
+    }
+
+    private static boolean hasColumn(Connection connection, String table,
+            String column) throws SQLException {
+        try (Statement statement = connection.createStatement();
+                var results = statement.executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (results.next()) {
+                if (column.equals(results.getString("name"))) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

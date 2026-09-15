@@ -12,6 +12,8 @@ import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.data.OwnerMemberStore;
 import com.gymflow.model.Member;
 import com.gymflow.model.MemberPayment;
+import com.gymflow.model.Membership;
+import com.gymflow.model.MembershipOverview;
 
 /** Implements Owner-side Member onboarding and profile management. */
 public final class OwnerMemberService {
@@ -47,6 +49,36 @@ public final class OwnerMemberService {
         return members.paymentHistory(memberAccountId);
     }
 
+    /** Lists one Member's Membership history. */
+    public List<Membership> membershipHistory(long memberAccountId) {
+        return members.membershipHistory(memberAccountId);
+    }
+
+    /** Searches Memberships by Member name or email. */
+    public List<MembershipOverview> searchMemberships(String query) {
+        return members.searchMemberships(query == null ? "" : query.trim());
+    }
+
+    /** Atomically creates one Membership and its Payment. */
+    public Membership addMembership(AddMembershipRequest request, long ownerAccountId) {
+        validate(request);
+        return members.addMembership(request, ownerAccountId);
+    }
+
+    /** Activates or deactivates a Membership. */
+    public Membership setMembershipActive(long membershipId, boolean active,
+            long ownerAccountId) {
+        return members.setMembershipActive(membershipId, active, ownerAccountId);
+    }
+
+    /** Returns whether a Member may access the gym on the supplied date. */
+    public boolean hasValidMembership(long memberAccountId, LocalDate date) {
+        if (date == null) {
+            throw new IllegalArgumentException("Membership date is required");
+        }
+        return members.hasValidMembership(memberAccountId, date);
+    }
+
     /** Updates editable account and profile fields. */
     public Member updateMember(long accountId, String email, String fullName,
             String phoneNumber, LocalDate dateOfBirth) {
@@ -71,6 +103,19 @@ public final class OwnerMemberService {
         validateDateOfBirth(request.dateOfBirth());
         if (request.membershipStart() == null || request.membershipExpiry() == null
                 || request.membershipExpiry().isBefore(request.membershipStart())) {
+            throw new IllegalArgumentException("Membership expiry must not precede its start");
+        }
+        validateAmount(request.paymentAmount());
+        if (request.paymentMethod() == null || request.paidAt() == null) {
+            throw new IllegalArgumentException("Payment method and time are required");
+        }
+    }
+
+    private static void validate(AddMembershipRequest request) {
+        if (request == null || request.startDate() == null || request.expiryDate() == null) {
+            throw new IllegalArgumentException("Membership dates are required");
+        }
+        if (request.expiryDate().isBefore(request.startDate())) {
             throw new IllegalArgumentException("Membership expiry must not precede its start");
         }
         validateAmount(request.paymentAmount());

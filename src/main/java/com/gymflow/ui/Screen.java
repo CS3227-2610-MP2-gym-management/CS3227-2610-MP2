@@ -1,9 +1,10 @@
 package com.gymflow.ui;
 
-/** Identifies the three screens available in the initial UI preview. */
+/** Identifies the application screens. */
 public enum Screen {
     LOGIN,
     OWNER_HOME,
     OWNER_MEMBERS,
+    OWNER_MEMBERSHIPS,
     MEMBER_HOME
 }
