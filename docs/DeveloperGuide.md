@@ -12,6 +12,7 @@ The current code is divided by responsibility:
 - `com.gymflow.data`: SQLite initialization and account persistence.
 - `com.gymflow.model`: shared account and role data.
 - `com.gymflow.member`: Owner-side Member onboarding and profile rules.
+- `com.gymflow.visit`: read-only Owner attendance queries.
 
 Concrete classes are used instead of repository interfaces or factories because each responsibility currently has one
 implementation. New abstractions should be introduced only when a second implementation or a real testing boundary
@@ -68,6 +69,20 @@ Membership display status is derived from its active flag and dates rather than 
 overlap another active period for the same Member. Deactivation does not change `accounts.is_active`, so it does not
 prevent authentication. `OwnerMemberService.hasValidMembership(memberId, date)` is the shared contract for future
 Member entry validation; it returns true when any active Membership covers the date inclusively.
+
+The shared `Visit` record maps to the `visits` table. `Account`, `Role`, and `member_account_id` are the implemented
+names for the design's `User`, `UserRole`, and `Visit.memberId` concepts. A null `exited_at` derives the currently
+checked-in state. A partial unique index prevents more than one open Visit per Member, and a table constraint prevents
+an exit from preceding entry. Visit timestamps use fixed UTC ISO-8601 millisecond form
+`yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`; this makes the database constraint and ordering exact at the supported precision.
+`OwnerVisitService` exposes read-only all/current searches, per-Member history, and the
+current visitor count. Member-side entry and exit orchestration is intentionally left to the Member feature owner,
+who can use the existing Membership-validity contract before inserting a Visit.
+
+Deactivating a Membership deliberately does not close an existing open Visit. The Member remains currently checked
+in until the Member-side exit workflow supplies the real exit time; otherwise deactivation would fabricate attendance
+data. Deactivation makes `hasValidMembership(memberId, date)` return false for subsequent entry attempts while leaving
+the Member account and existing Visit history unchanged.
 
 ## Build, testing, and CI
 

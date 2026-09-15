@@ -14,7 +14,7 @@ import java.util.List;
 
 /** Owns the SQLite file and centralized application schema. */
 public final class GymFlowDatabase {
-    private static final int SCHEMA_VERSION = 1;
+    private static final int SCHEMA_VERSION = 2;
     private static final String[] SCHEMA = {
         """
         CREATE TABLE accounts (
@@ -62,6 +62,31 @@ public final class GymFlowDatabase {
             recorded_by_account_id INTEGER NOT NULL REFERENCES accounts(id),
             created_at TEXT NOT NULL
         )
+        """,
+        """
+        CREATE TABLE visits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            member_account_id INTEGER NOT NULL REFERENCES member_profiles(account_id) ON DELETE CASCADE,
+            entered_at TEXT NOT NULL,
+            exited_at TEXT,
+            created_at TEXT NOT NULL,
+            CHECK (length(entered_at) = 24
+                AND entered_at GLOB '????-??-??T??:??:??.???Z'
+                AND unixepoch(entered_at, 'subsec') IS NOT NULL),
+            CHECK (length(created_at) = 24
+                AND created_at GLOB '????-??-??T??:??:??.???Z'
+                AND unixepoch(created_at, 'subsec') IS NOT NULL),
+            CHECK (exited_at IS NULL OR (
+                length(exited_at) = 24
+                AND exited_at GLOB '????-??-??T??:??:??.???Z'
+                AND unixepoch(exited_at, 'subsec') IS NOT NULL
+                AND exited_at >= entered_at
+            ))
+        )
+        """,
+        """
+        CREATE UNIQUE INDEX one_open_visit_per_member
+        ON visits(member_account_id) WHERE exited_at IS NULL
         """
     };
 

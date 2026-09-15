@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.member.OwnerMemberService;
+import com.gymflow.visit.OwnerVisitService;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
@@ -15,6 +16,7 @@ public final class GymFlowApp extends Application {
     private AuthenticationService authentication;
     private boolean ownerExists;
     private OwnerMemberService members;
+    private OwnerVisitService visits;
 
     /** Initializes local storage before the JavaFX application thread starts. */
     @Override
@@ -23,6 +25,7 @@ public final class GymFlowApp extends Application {
         database.initialize();
         authentication = new AuthenticationService(database);
         members = new OwnerMemberService(database);
+        visits = new OwnerVisitService(database);
         ownerExists = authentication.hasOwner();
     }
 
@@ -37,7 +40,7 @@ public final class GymFlowApp extends Application {
         stage.setMinWidth(MINIMUM_WIDTH);
         stage.setMinHeight(MINIMUM_HEIGHT);
 
-        new AppView(stage, authentication, members, ownerExists);
+        new AppView(stage, authentication, members, visits, ownerExists);
         stage.show();
     }
 

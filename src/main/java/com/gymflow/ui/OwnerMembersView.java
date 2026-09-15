@@ -20,6 +20,8 @@ import com.gymflow.model.MemberPayment;
 import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipStatus;
 import com.gymflow.model.PaymentMethod;
+import com.gymflow.model.Visit;
+import com.gymflow.visit.OwnerVisitService;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.concurrent.Task;
@@ -61,26 +63,28 @@ final class OwnerMembersView {
     private OwnerMembersView() {
     }
 
-    static Parent create(OwnerMemberService members, Account owner,
+    static Parent create(OwnerMemberService members, OwnerVisitService visits, Account owner,
             Consumer<Screen> navigate, Runnable logout) {
         BorderPane root = new BorderPane();
         root.setId("owner-members-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Members",
-                Set.of("Overview", "Members", "Memberships"),
+                Set.of("Overview", "Members", "Memberships", "Visits"),
                 item -> navigate.accept(switch (item) {
                 case "Overview" -> Screen.OWNER_HOME;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
+                case "Visits" -> Screen.OWNER_VISITS;
                 default -> Screen.OWNER_MEMBERS;
                 }), logout));
 
-        showMemberList(root, members, owner);
+        showMemberList(root, members, visits, owner);
         return root;
     }
 
-    private static void showMemberList(BorderPane root, OwnerMemberService members, Account owner) {
-        Runnable backToList = () -> showMemberList(root, members, owner);
+    private static void showMemberList(BorderPane root, OwnerMemberService members,
+            OwnerVisitService visits, Account owner) {
+        Runnable backToList = () -> showMemberList(root, members, visits, owner);
         root.setCenter(UiComponents.scrollable(memberList(members, owner,
-                member -> showMemberDetails(root, members, owner, member, backToList))));
+                member -> showMemberDetails(root, members, visits, owner, member, backToList))));
     }
 
     private static VBox memberList(OwnerMemberService members, Account owner, Consumer<Member> openMember) {
@@ -108,8 +112,9 @@ final class OwnerMembersView {
         long[] searchVersion = {0};
         Runnable refresh = () -> {
             long request = ++searchVersion[0];
+            String query = search.getText();
             error.setText("");
-            run(null, () -> members.searchMembers(search.getText()), result -> {
+            run(null, () -> members.searchMembers(query), result -> {
                 if (request == searchVersion[0]) {
                     table.getItems().setAll(result);
                 }
@@ -158,25 +163,32 @@ final class OwnerMembersView {
     }
 
     private static void showMemberDetails(BorderPane root, OwnerMemberService members,
-            Account owner, Member member, Runnable backToList) {
-        root.setCenter(UiComponents.scrollable(memberDetails(root, members, owner, member, backToList)));
+            OwnerVisitService visits, Account owner, Member member, Runnable backToList) {
+        root.setCenter(UiComponents.scrollable(
+                memberDetails(root, members, visits, owner, member, backToList)));
     }
 
     private static VBox memberDetails(BorderPane root, OwnerMemberService members,
-            Account owner, Member member, Runnable backToList) {
+            OwnerVisitService visits, Account owner, Member member, Runnable backToList) {
         Button back = new Button("Back to Members");
         back.getStyleClass().add("secondary-button");
         back.setOnAction(event -> backToList.run());
         Button edit = new Button("Edit");
         edit.getStyleClass().add("primary-button");
-        edit.setOnAction(event -> showMemberEditor(root, members, owner, member, backToList));
+        edit.setOnAction(event -> showMemberEditor(root, members, visits, owner, member, backToList));
 
         StackPane header = detailHeader(back, member.fullName(), member.memberNumber(), edit);
         VBox profile = UiComponents.card(sectionTitle("Profile"),
                 detailRow("Email", member.email()),
                 detailRow("Phone", member.phoneNumber()),
                 detailRow("Date of birth", formatDate(member.dateOfBirth())));
-        VBox memberships = membershipCard(root, members, owner, member, backToList, true);
+        VBox memberships = membershipCard(root, members, visits, owner, member, backToList, true);
+        TableView<Visit> visitHistory = visitTable();
+        Label visitError = dialogError();
+        run(null, () -> visits.visitHistory(member.accountId()),
+                result -> visitHistory.getItems().setAll(result),
+                exception -> visitError.setText(message(exception)));
+        VBox visitCard = UiComponents.card(sectionTitle("Visit history"), visitError, visitHistory);
         TableView<MemberPayment> payments = paymentTable();
         Label paymentError = dialogError();
         run(null, () -> members.paymentHistory(member.accountId()),
@@ -184,18 +196,19 @@ final class OwnerMembersView {
                 exception -> paymentError.setText(message(exception)));
         VBox paymentCard = UiComponents.card(sectionTitle("Payment history"), paymentError, payments);
         VBox.setVgrow(payments, Priority.ALWAYS);
-        VBox content = new VBox(20, header, profile, memberships, paymentCard);
+        VBox content = new VBox(20, header, profile, memberships, visitCard, paymentCard);
         content.setPadding(new Insets(36));
         return content;
     }
 
     private static void showMemberEditor(BorderPane root, OwnerMemberService members,
-            Account owner, Member member, Runnable backToList) {
-        root.setCenter(UiComponents.scrollable(memberEditor(root, members, owner, member, backToList)));
+            OwnerVisitService visits, Account owner, Member member, Runnable backToList) {
+        root.setCenter(UiComponents.scrollable(
+                memberEditor(root, members, visits, owner, member, backToList)));
     }
 
     private static VBox memberEditor(BorderPane root, OwnerMemberService members,
-            Account owner, Member member, Runnable backToList) {
+            OwnerVisitService visits, Account owner, Member member, Runnable backToList) {
         TextField email = valueField(member.email());
         TextField name = valueField(member.fullName());
         TextField phone = valueField(localPhoneNumber(member.phoneNumber()));
@@ -222,12 +235,12 @@ final class OwnerMembersView {
                 result -> payments.getItems().setAll(result),
                 exception -> paymentError.setText(message(exception)));
         VBox profile = UiComponents.card(sectionTitle("Profile"), error, grid);
-        VBox memberships = membershipCard(root, members, owner, member, backToList, false);
+        VBox memberships = membershipCard(root, members, visits, owner, member, backToList, false);
         VBox paymentCard = UiComponents.card(sectionTitle("Payment history"), paymentError, payments);
 
         Button cancel = new Button("Cancel");
         cancel.getStyleClass().add("secondary-button");
-        cancel.setOnAction(event -> showMemberDetails(root, members, owner, member, backToList));
+        cancel.setOnAction(event -> showMemberDetails(root, members, visits, owner, member, backToList));
         Button save = new Button("Save Changes");
         save.getStyleClass().add("primary-button");
         save.setOnAction(event -> {
@@ -237,7 +250,7 @@ final class OwnerMembersView {
             save.setText("Saving...");
             run(save, () -> members.updateMember(member.accountId(), email.getText(), name.getText(),
                     phone.getText(), birth.getValue()),
-                    updated -> showMemberDetails(root, members, owner, updated, backToList),
+                    updated -> showMemberDetails(root, members, visits, owner, updated, backToList),
                     exception -> {
                         cancel.setDisable(false);
                         save.setText("Save Changes");
@@ -313,8 +326,28 @@ final class OwnerMembersView {
         return table;
     }
 
+    private static TableView<Visit> visitTable() {
+        TableView<Visit> table = new TableView<>();
+        table.setPlaceholder(new Label("No Visits recorded"));
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.setPrefHeight(220);
+        addVisitColumn(table, "Entry time", visit -> VisitFormat.entryTime(visit.enteredAt()));
+        addVisitColumn(table, "Exit time", visit -> VisitFormat.exitTime(visit.exitedAt()));
+        addVisitColumn(table, "Duration",
+                visit -> VisitFormat.duration(visit.enteredAt(), visit.exitedAt()));
+        return table;
+    }
+
+    private static void addVisitColumn(TableView<Visit> table, String title,
+            java.util.function.Function<Visit, String> value) {
+        TableColumn<Visit, String> column = new TableColumn<>(title);
+        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
+        table.getColumns().add(column);
+    }
+
     private static VBox membershipCard(BorderPane root, OwnerMemberService members,
-            Account owner, Member member, Runnable backToList, boolean editable) {
+            OwnerVisitService visits, Account owner, Member member,
+            Runnable backToList, boolean editable) {
         TableView<Membership> table = membershipTable();
         Label error = dialogError();
         Button add = new Button("Add Membership");
@@ -339,7 +372,7 @@ final class OwnerMembersView {
         table.getSelectionModel().selectedItemProperty().addListener(
                 (observable, previous, selected) -> configureMembershipAction(toggle, selected));
         add.setOnAction(event -> showAddMembership(add, members, member.accountId(), table.getItems(),
-                owner.id(), () -> showMemberDetails(root, members, owner, member, backToList)));
+                owner.id(), () -> showMemberDetails(root, members, visits, owner, member, backToList)));
         toggle.setOnAction(event -> {
             Membership selected = table.getSelectionModel().getSelectedItem();
             if (selected == null) {
@@ -347,12 +380,14 @@ final class OwnerMembersView {
             }
             if (selected.active()) {
                 confirmDeactivation(toggle, members, selected,
-                        owner.id(), () -> showMemberDetails(root, members, owner, member, backToList));
+                        owner.id(), () -> showMemberDetails(
+                                root, members, visits, owner, member, backToList));
             } else {
                 error.setText("");
                 toggle.setText("Reactivating…");
                 run(toggle, () -> members.setMembershipActive(selected.id(), true, owner.id()),
-                        ignored -> showMemberDetails(root, members, owner, member, backToList),
+                        ignored -> showMemberDetails(
+                                root, members, visits, owner, member, backToList),
                         exception -> {
                             configureMembershipAction(toggle, selected);
                             error.setText(message(exception));

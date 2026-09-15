@@ -14,7 +14,8 @@ feature is merged.
 | Application reset | Password-and-`RESET` guarded transactional database reset | `871ea27`, PR #1 |
 | Code cleanup | Removed test-only persistence API and low-value reflection test | `b6c168a`, PR #1 |
 | Member management | Atomic onboarding, Singapore profile validation, search, full-page profiles, payment history, and in-page editing | `3d4b995`, PR #2 |
-| Membership management | Membership overview, renewal Payments, activation controls, validity contract, and schema migration | Current Membership-management branch |
+| Membership management | Membership overview, renewal Payments, activation controls, validity contract, and schema migration | `c95711e`, PR #3 |
+| Visit oversight | All/current Visit review, per-Member history, and current visitor count | Current Visit-management branch |
 
 ## Team-level engineering
 
@@ -26,9 +27,8 @@ feature is merged.
 | Automated testing | Authentication, password hashing, persistence, rollback, and packaging checks | `871ea27` |
 | Agentic SE | Superpowers planning/TDD workflow and Ponytail Full review | Dylan logs and reflections |
 
-## Planned Owner P0 work
+## Planned team-level work
 
-- Collective and per-Member attendance oversight
 - Documentation and AI-log updates in every feature branch
 
 Do not list Member-facing features here unless Dylan actually implements them and the team agrees that ownership has
