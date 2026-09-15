@@ -1,6 +1,7 @@
 package com.gymflow.ui;
 
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -30,7 +31,10 @@ final class OwnerPaymentsView {
     private static final List<String> NAVIGATION =
             List.of("Overview", "Members", "Memberships", "Payments", "Visits");
     private static final DateTimeFormatter PAID_AT =
-            DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a").withZone(ZoneId.systemDefault());
+            DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.ENGLISH)
+                    .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter MEMBERSHIP_DATE =
+            DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
     private static final NumberFormat SGD =
             NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-SG"));
 
@@ -99,22 +103,27 @@ final class OwnerPaymentsView {
     private static TableView<PaymentOverview> paymentTable() {
         TableView<PaymentOverview> table = new TableView<>();
         table.setPlaceholder(new Label("No Payments found"));
-        addColumn(table, "Member No.", PaymentOverview::memberNumber);
-        addColumn(table, "Member", PaymentOverview::memberName);
-        addColumn(table, "Membership", item -> item.membershipStart()
-                + " to " + item.membershipExpiry());
-        addColumn(table, "Amount", item -> SGD.format(item.payment().amount()));
-        addColumn(table, "Method", item -> item.payment().method().name());
-        addColumn(table, "Paid at", item -> PAID_AT.format(item.payment().paidAt()));
-        addColumn(table, "Reference", item -> item.payment().reference().isBlank()
+        addColumn(table, "Member No.", 110, PaymentOverview::memberNumber);
+        addColumn(table, "Member", 160, PaymentOverview::memberName);
+        addColumn(table, "Membership", 220, item -> formatMembershipPeriod(
+                item.membershipStart(), item.membershipExpiry()));
+        addColumn(table, "Amount", 105, item -> SGD.format(item.payment().amount()));
+        addColumn(table, "Method", 100, item -> item.payment().method().name());
+        addColumn(table, "Paid at", 190, item -> PAID_AT.format(item.payment().paidAt()));
+        addColumn(table, "Reference", 180, item -> item.payment().reference().isBlank()
                 ? "—" : item.payment().reference());
         return table;
     }
 
-    private static void addColumn(TableView<PaymentOverview> table, String title,
+    static String formatMembershipPeriod(LocalDate start, LocalDate expiry) {
+        return MEMBERSHIP_DATE.format(start) + " – " + MEMBERSHIP_DATE.format(expiry);
+    }
+
+    private static void addColumn(TableView<PaymentOverview> table, String title, double width,
             Function<PaymentOverview, String> value) {
         TableColumn<PaymentOverview, String> column = new TableColumn<>(title);
-        column.setPrefWidth(140);
+        column.setMinWidth(width);
+        column.setPrefWidth(width);
         column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
         table.getColumns().add(column);
     }
