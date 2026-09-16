@@ -4,13 +4,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import com.gymflow.announcement.OwnerAnnouncementService;
 import com.gymflow.model.Account;
 import com.gymflow.model.Announcement;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -20,10 +18,9 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
@@ -75,7 +72,8 @@ final class OwnerAnnouncementsView {
         Label error = new Label();
         error.getStyleClass().add("dialog-error");
         UiComponents.preserveLabelHeight(error);
-        TableView<Announcement> table = table(withdrawn);
+        ListView<Announcement> list = announcementList(withdrawn, announcement ->
+                showDetail(root, service, owner, announcement));
         long[] version = {0};
         Runnable refresh = () -> {
             long request = ++version[0];
@@ -83,7 +81,7 @@ final class OwnerAnnouncementsView {
             OwnerMembersView.run(null, withdrawn ? service::listWithdrawn : service::listPublished,
                     result -> {
                         if (request == version[0]) {
-                            table.getItems().setAll(result);
+                            list.getItems().setAll(result);
                         }
                     }, exception -> error.setText("Unable to access GymFlow data"));
         };
@@ -92,29 +90,28 @@ final class OwnerAnnouncementsView {
             previous.run();
             refresh.run();
         };
-        table.setOnMouseClicked(event -> {
-            Announcement selected = table.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                showDetail(root, service, owner, selected);
-            }
-        });
-        VBox content = new VBox(12, error, table);
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox content = new VBox(12, error, list);
+        VBox.setVgrow(list, Priority.ALWAYS);
         return content;
     }
 
-    private static TableView<Announcement> table(boolean withdrawn) {
-        TableView<Announcement> table = new TableView<>();
-        table.setPlaceholder(new Label(withdrawn ? "No withdrawn Announcements" : "No published Announcements"));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        addColumn(table, "Title", 220, Announcement::title);
-        addColumn(table, "Published", 190, item -> DATE_TIME.format(item.publishedAt()));
-        if (withdrawn) {
-            addColumn(table, "Withdrawn", 190, item -> DATE_TIME.format(item.withdrawnAt()));
-        } else {
-            addColumn(table, "Content", 360, OwnerAnnouncementsView::preview);
-        }
-        return table;
+    private static ListView<Announcement> announcementList(boolean withdrawn,
+            Consumer<Announcement> open) {
+        return UiComponents.cardList(withdrawn
+                ? "No withdrawn Announcements" : "No published Announcements", item -> {
+                    Label title = UiComponents.cardLabel(item.title(), "record-title");
+                    Label date = UiComponents.cardLabel("Published "
+                            + DATE_TIME.format(item.publishedAt()), "record-meta");
+                    String detail = withdrawn
+                            ? "Withdrawn " + DATE_TIME.format(item.withdrawnAt())
+                            : preview(item);
+                    VBox card = new VBox(6, title, date,
+                            UiComponents.cardLabel(detail, "record-value"));
+                    card.getStyleClass().add("record-card");
+                    UiComponents.makeActionable(card, "Open announcement " + item.title(),
+                            () -> open.accept(item));
+                    return card;
+                });
     }
 
     private static void showDetail(BorderPane root, OwnerAnnouncementService service,
@@ -233,11 +230,4 @@ final class OwnerAnnouncementsView {
         return content.length() <= 80 ? content : content.substring(0, 77) + "…";
     }
 
-    private static void addColumn(TableView<Announcement> table, String title, double width,
-            Function<Announcement, String> value) {
-        TableColumn<Announcement, String> column = new TableColumn<>(title);
-        column.setMinWidth(width);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        table.getColumns().add(column);
-    }
 }

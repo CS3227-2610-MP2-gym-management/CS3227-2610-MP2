@@ -6,7 +6,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableView;
+import javafx.scene.control.ListView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -49,8 +49,9 @@ final class MemberHomeView {
 
         Label historyTitle = new Label("Recent visits");
         historyTitle.getStyleClass().add("section-title");
-        TableView<Void> visits = UiComponents.emptyTable(
-                "No gym visits recorded yet", "Date", "Entry Time", "Exit Time", "Duration");
+        ListView<Void> visits = UiComponents.cardList(
+                "No gym visits recorded yet", ignored -> new VBox());
+        visits.setPrefHeight(260);
         VBox history = UiComponents.card(historyTitle, visits);
         VBox.setVgrow(history, Priority.ALWAYS);
 
@@ -90,4 +91,3 @@ final class MemberHomeView {
         return button;
     }
 }
-

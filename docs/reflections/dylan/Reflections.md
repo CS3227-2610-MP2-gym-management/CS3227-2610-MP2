@@ -108,6 +108,11 @@ adding theme state and callbacks to every screen. The agent still needed explici
 text-clipping workaround while changing shared UI styling, showing why visual regression checks remain important even
 when automated tests and Checkstyle pass.
 
+The record-list redesign reused JavaFX `ListView` virtualization instead of placing every card in a `VBox`. One shared
+cell renderer supplies consistent wrapping, empty states, keyboard focus, and light/dark styling while each screen keeps
+only its domain-specific card contents and actions. This avoided changing stores or services for a presentation-only
+feature and prevented long lists from creating every card at once.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

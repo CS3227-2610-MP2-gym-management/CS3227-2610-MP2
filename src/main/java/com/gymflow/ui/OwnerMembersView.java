@@ -22,7 +22,6 @@ import com.gymflow.model.PaymentMethod;
 import com.gymflow.model.Visit;
 import com.gymflow.visit.OwnerVisitService;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -36,11 +35,9 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.BorderPane;
@@ -84,16 +81,7 @@ final class OwnerMembersView {
         HBox searchBar = new HBox(10, search, searchButton);
         HBox.setHgrow(search, Priority.ALWAYS);
 
-        TableView<Member> table = memberTable();
-        table.setRowFactory(view -> {
-            TableRow<Member> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (!row.isEmpty()) {
-                    openMember.accept(row.getItem());
-                }
-            });
-            return row;
-        });
+        ListView<Member> list = memberList(openMember);
         Button create = new Button("Create Member");
         create.getStyleClass().add("primary-button");
         Label error = dialogError();
@@ -105,7 +93,7 @@ final class OwnerMembersView {
             error.setText("");
             run(null, () -> members.searchMembers(query), result -> {
                 if (request == searchVersion[0]) {
-                    table.getItems().setAll(result);
+                    list.getItems().setAll(result);
                 }
             }, exception -> {
                 if (request == searchVersion[0]) {
@@ -123,8 +111,8 @@ final class OwnerMembersView {
         create.setOnAction(event -> showCreateMember(create, members, owner, refresh));
 
         HBox actions = new HBox(10, create);
-        VBox card = UiComponents.card(searchBar, error, table, actions);
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox card = UiComponents.card(searchBar, error, list, actions);
+        VBox.setVgrow(list, Priority.ALWAYS);
         VBox content = new VBox(20, UiComponents.header("Members",
                 "Create, search, and open Member profiles", null), card);
         content.setPadding(new Insets(36));
@@ -133,22 +121,18 @@ final class OwnerMembersView {
         return content;
     }
 
-    private static TableView<Member> memberTable() {
-        TableView<Member> table = new TableView<>();
-        table.setPlaceholder(new Label("No Members found"));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        addColumn(table, "Member No.", Member::memberNumber);
-        addColumn(table, "Name", Member::fullName);
-        addColumn(table, "Email", Member::email);
-        addColumn(table, "Phone", Member::phoneNumber);
-        return table;
-    }
-
-    private static void addColumn(TableView<Member> table, String title,
-            java.util.function.Function<Member, String> value) {
-        TableColumn<Member, String> column = new TableColumn<>(title);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        table.getColumns().add(column);
+    private static ListView<Member> memberList(Consumer<Member> openMember) {
+        return UiComponents.cardList("No Members found", member -> {
+            Label title = UiComponents.cardLabel(
+                    member.fullName() + " · " + member.memberNumber(), "record-title");
+            Label email = UiComponents.cardLabel(member.email(), "record-value");
+            Label phone = UiComponents.cardLabel(member.phoneNumber(), "record-meta");
+            VBox card = new VBox(6, title, email, phone);
+            card.getStyleClass().add("record-card");
+            UiComponents.makeActionable(card, "Open profile for " + member.fullName(),
+                    () -> openMember.accept(member));
+            return card;
+        });
     }
 
     private static void showMemberDetails(BorderPane root, OwnerMemberService members,
@@ -184,13 +168,13 @@ final class OwnerMembersView {
                 detailRow("Phone", member.phoneNumber()),
                 detailRow("Date of birth", formatDate(member.dateOfBirth())));
         VBox memberships = membershipCard(root, members, visits, owner, member, backToList, true);
-        TableView<Visit> visitHistory = visitTable();
+        ListView<Visit> visitHistory = visitList();
         Label visitError = dialogError();
         run(null, () -> visits.visitHistory(member.accountId()),
                 result -> visitHistory.getItems().setAll(result),
                 exception -> visitError.setText(message(exception)));
         VBox visitCard = UiComponents.card(sectionTitle("Visit history"), visitError, visitHistory);
-        TableView<MemberPayment> payments = paymentTable();
+        ListView<MemberPayment> payments = paymentList();
         Label paymentError = dialogError();
         run(null, () -> members.paymentHistory(member.accountId()),
                 result -> payments.getItems().setAll(result),
@@ -230,7 +214,7 @@ final class OwnerMembersView {
         addRow(grid, 2, "Phone", phoneInput);
         addRow(grid, 3, "Date of birth", birth);
 
-        TableView<MemberPayment> payments = paymentTable();
+        ListView<MemberPayment> payments = paymentList();
         Label paymentError = dialogError();
         run(null, () -> members.paymentHistory(member.accountId()),
                 result -> payments.getItems().setAll(result),
@@ -315,48 +299,44 @@ final class OwnerMembersView {
         return row;
     }
 
-    private static TableView<MemberPayment> paymentTable() {
-        TableView<MemberPayment> table = new TableView<>();
-        table.setPlaceholder(new Label("No payments recorded"));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPrefHeight(240);
-        addPaymentColumn(table, "Paid at", payment -> PAYMENT_TIME.format(payment.paidAt()));
-        addPaymentColumn(table, "Amount", payment -> SGD.format(payment.amount()));
-        addPaymentColumn(table, "Method", payment -> payment.method().name());
-        addPaymentColumn(table, "Reference", MemberPayment::reference);
-        return table;
+    private static ListView<MemberPayment> paymentList() {
+        ListView<MemberPayment> list = UiComponents.cardList("No payments recorded", payment -> {
+            Label amount = UiComponents.cardLabel(SGD.format(payment.amount()), "record-title");
+            String reference = payment.reference().isBlank() ? "No reference" : payment.reference();
+            VBox card = new VBox(6, amount,
+                    UiComponents.cardLabel(PAYMENT_TIME.format(payment.paidAt())
+                            + " · " + payment.method().name(), "record-meta"),
+                    UiComponents.cardLabel(reference, "record-value"));
+            card.getStyleClass().add("record-card");
+            return card;
+        });
+        list.setPrefHeight(240);
+        return list;
     }
 
-    private static TableView<Visit> visitTable() {
-        TableView<Visit> table = new TableView<>();
-        table.setPlaceholder(new Label("No Visits recorded"));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPrefHeight(220);
-        addVisitColumn(table, "Entry time", visit -> VisitFormat.entryTime(visit.enteredAt()));
-        addVisitColumn(table, "Exit time", visit -> VisitFormat.exitTime(visit.exitedAt()));
-        addVisitColumn(table, "Duration",
-                visit -> VisitFormat.duration(visit.enteredAt(), visit.exitedAt()));
-        return table;
-    }
-
-    private static void addVisitColumn(TableView<Visit> table, String title,
-            java.util.function.Function<Visit, String> value) {
-        TableColumn<Visit, String> column = new TableColumn<>(title);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        table.getColumns().add(column);
+    private static ListView<Visit> visitList() {
+        ListView<Visit> list = UiComponents.cardList("No Visits recorded", visit -> {
+            VBox card = new VBox(6,
+                    UiComponents.cardLabel("Entry: " + VisitFormat.entryTime(visit.enteredAt()),
+                            "record-title"),
+                    UiComponents.cardLabel("Exit: " + VisitFormat.exitTime(visit.exitedAt()),
+                            "record-meta"),
+                    UiComponents.cardLabel(VisitFormat.duration(
+                            visit.enteredAt(), visit.exitedAt()), "record-value"));
+            card.getStyleClass().add("record-card");
+            return card;
+        });
+        list.setPrefHeight(220);
+        return list;
     }
 
     private static VBox membershipCard(BorderPane root, OwnerMemberService members,
             OwnerVisitService visits, Account owner, Member member,
             Runnable backToList, boolean editable) {
-        TableView<Membership> table = membershipTable();
         Label error = dialogError();
         Button add = new Button("Add Membership");
         add.getStyleClass().add("primary-button");
         add.setDisable(true);
-        Button toggle = new Button("Select a Membership");
-        toggle.getStyleClass().add("secondary-button");
-        toggle.setDisable(true);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -365,71 +345,59 @@ final class OwnerMembersView {
         if (editable) {
             heading.getChildren().add(add);
         }
-        HBox actions = new HBox(10, toggle);
-        actions.setAlignment(Pos.CENTER_RIGHT);
-        actions.setVisible(editable);
-        actions.setManaged(editable);
-
-        table.getSelectionModel().selectedItemProperty().addListener(
-                (observable, previous, selected) -> configureMembershipAction(toggle, selected));
-        add.setOnAction(event -> showAddMembership(add, members, member.accountId(), table.getItems(),
+        Runnable reload = () -> showMemberDetails(root, members, visits, owner, member, backToList);
+        ListView<Membership> memberships = membershipList(
+                editable, members, owner, error, reload);
+        add.setOnAction(event -> showAddMembership(add, members, member.accountId(), memberships.getItems(),
                 owner.id(), () -> showMemberDetails(root, members, visits, owner, member, backToList)));
-        toggle.setOnAction(event -> {
-            Membership selected = table.getSelectionModel().getSelectedItem();
-            if (selected == null) {
-                return;
-            }
-            if (selected.active()) {
-                confirmDeactivation(toggle, members, selected,
-                        owner.id(), () -> showMemberDetails(
-                                root, members, visits, owner, member, backToList));
-            } else {
-                error.setText("");
-                toggle.setText("Reactivating…");
-                run(toggle, () -> members.setMembershipActive(selected.id(), true, owner.id()),
-                        ignored -> showMemberDetails(
-                                root, members, visits, owner, member, backToList),
-                        exception -> {
-                            configureMembershipAction(toggle, selected);
-                            error.setText(message(exception));
-                        });
-            }
-        });
         run(null, () -> members.membershipHistory(member.accountId()), result -> {
-            table.getItems().setAll(result);
+            memberships.getItems().setAll(result);
             add.setDisable(!editable);
         }, exception -> error.setText(message(exception)));
-        VBox card = UiComponents.card(heading, error, table, actions);
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox card = UiComponents.card(heading, error, memberships);
+        VBox.setVgrow(memberships, Priority.ALWAYS);
         return card;
     }
 
-    private static TableView<Membership> membershipTable() {
-        TableView<Membership> table = new TableView<>();
-        table.setPlaceholder(new Label("No Memberships recorded"));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPrefHeight(220);
-        addMembershipColumn(table, "Start", membership -> membership.startDate().toString());
-        addMembershipColumn(table, "Expiry", membership -> membership.expiryDate().toString());
-        addMembershipColumn(table, "Status",
-                membership -> membership.status(LocalDate.now()).name());
-        return table;
+    private static ListView<Membership> membershipList(boolean editable,
+            OwnerMemberService members, Account owner, Label error, Runnable reload) {
+        ListView<Membership> list = UiComponents.cardList("No Memberships recorded", membership -> {
+            Label period = UiComponents.cardLabel(membership.startDate() + " – "
+                    + membership.expiryDate(), "record-title");
+            Button action = new Button();
+            configureMembershipAction(action, membership);
+            action.setVisible(editable);
+            action.setManaged(editable);
+            action.setOnAction(event -> changeMembership(action, members, membership,
+                    owner.id(), error, reload));
+            BorderPane header = new BorderPane(period, null, action, null, null);
+            VBox card = new VBox(6, header, UiComponents.cardLabel(
+                    membership.status(LocalDate.now()).name(), "record-meta"));
+            card.getStyleClass().add("record-card");
+            return card;
+        });
+        list.setPrefHeight(220);
+        return list;
     }
 
-    private static void addMembershipColumn(TableView<Membership> table, String title,
-            java.util.function.Function<Membership, String> value) {
-        TableColumn<Membership, String> column = new TableColumn<>(title);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        table.getColumns().add(column);
+    private static void changeMembership(Button button, OwnerMemberService members,
+            Membership membership, long ownerId, Label error, Runnable reload) {
+        if (membership.active()) {
+            confirmDeactivation(button, members, membership, ownerId, reload);
+            return;
+        }
+        error.setText("");
+        button.setText("Reactivating…");
+        run(button, () -> members.setMembershipActive(membership.id(), true, ownerId),
+                ignored -> reload.run(), exception -> {
+                    configureMembershipAction(button, membership);
+                    error.setText(message(exception));
+                });
     }
 
     private static void configureMembershipAction(Button button, Membership membership) {
         button.getStyleClass().removeAll("primary-button", "danger-button", "secondary-button");
-        if (membership == null) {
-            button.setText("Select a Membership");
-            button.getStyleClass().add("secondary-button");
-            button.setDisable(true);
-        } else if (membership.active()) {
+        if (membership.active()) {
             button.setText("Deactivate");
             button.getStyleClass().add("danger-button");
             button.setDisable(false);
@@ -588,13 +556,6 @@ final class OwnerMembersView {
             });
         });
         dialog.showAndWait();
-    }
-
-    private static void addPaymentColumn(TableView<MemberPayment> table, String title,
-            java.util.function.Function<MemberPayment, String> value) {
-        TableColumn<MemberPayment, String> column = new TableColumn<>(title);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        table.getColumns().add(column);
     }
 
     private static String formatDate(LocalDate date) {

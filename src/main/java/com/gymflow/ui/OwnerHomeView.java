@@ -5,20 +5,17 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.Locale;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.model.Account;
 import com.gymflow.model.MembershipOverview;
 import com.gymflow.visit.OwnerVisitService;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.ListView;
 import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
@@ -66,7 +63,7 @@ final class OwnerHomeView {
         Label sectionTitle = new Label("Member overview");
         sectionTitle.getStyleClass().add("section-title");
         UiComponents.preserveLabelHeight(sectionTitle);
-        TableView<MembershipOverview> memberOverview = memberOverviewTable();
+        ListView<MembershipOverview> memberOverview = memberOverviewList();
         OwnerMembersView.run(null, members::ownerDashboard, dashboard -> {
             totalMembers.setText(Long.toString(dashboard.totalMembers()));
             activeMemberships.setText(Long.toString(dashboard.activeMemberships()));
@@ -100,29 +97,22 @@ final class OwnerHomeView {
         return root;
     }
 
-    private static TableView<MembershipOverview> memberOverviewTable() {
-        TableView<MembershipOverview> table = new TableView<>();
-        table.setPlaceholder(new Label("No Members found"));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        addColumn(table, "Member", 220,
-                item -> item.memberName() + " · " + item.memberNumber());
-        addColumn(table, "Contact", 220, MembershipOverview::memberEmail);
-        addColumn(table, "Membership", 220, item -> item.membership() == null ? "—"
-                : OwnerFinancesView.formatMembershipPeriod(item.membership().startDate(),
-                        item.membership().expiryDate()));
-        addColumn(table, "Status", 120, item -> item.membership() == null ? "NONE"
-                : item.membership().status(LocalDate.now()).name());
-        table.setPrefHeight(260);
-        return table;
-    }
-
-    private static void addColumn(TableView<MembershipOverview> table, String title, double width,
-            Function<MembershipOverview, String> value) {
-        TableColumn<MembershipOverview, String> column = new TableColumn<>(title);
-        column.setMinWidth(width);
-        column.setPrefWidth(width);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        table.getColumns().add(column);
+    private static ListView<MembershipOverview> memberOverviewList() {
+        ListView<MembershipOverview> list = UiComponents.cardList("No Members found", item -> {
+            Label title = UiComponents.cardLabel(
+                    item.memberName() + " · " + item.memberNumber(), "record-title");
+            Label email = UiComponents.cardLabel(item.memberEmail(), "record-meta");
+            Label membership = UiComponents.cardLabel(item.membership() == null ? "No Membership"
+                    : OwnerFinancesView.formatMembershipPeriod(item.membership().startDate(),
+                            item.membership().expiryDate()), "record-value");
+            Label status = UiComponents.cardLabel(item.membership() == null ? "NONE"
+                    : item.membership().status(LocalDate.now()).name(), "status-badge");
+            VBox card = new VBox(6, title, email, membership, status);
+            card.getStyleClass().add("record-card");
+            return card;
+        });
+        list.setPrefHeight(320);
+        return list;
     }
 
 }

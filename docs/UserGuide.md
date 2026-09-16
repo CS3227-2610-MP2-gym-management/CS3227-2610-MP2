@@ -77,7 +77,7 @@ values. Give the initial password to the Member securely outside GymFlow.
 
 ### Editing a Member
 
-Select a Member row to open the Member profile page. The profile page shows the Member number, contact details,
+Select a Member card to open the Member profile page. The profile page shows the Member number, contact details,
 Membership history, Visit history, and read-only Payment history. Select `Back to Members` to return to the list.
 
 Select `Edit` on the profile page to update email, full name, phone number, and optional date of birth. The edit view
@@ -107,8 +107,8 @@ the calendar controls. The suggested start is the day after the latest active pe
 exists; the suggested expiry is one month later. Enter a positive SGD amount, choose `CASH`, `CARD`, or `TRANSFER`, and
 optionally enter a reference.
 
-Active Membership periods cannot overlap. A deactivated period may be replaced by a new overlapping period. Select a
-Membership row and use `Deactivate` to stop it granting gym access without disabling the Member account or removing
+Active Membership periods cannot overlap. A deactivated period may be replaced by a new overlapping period. Use the
+`Deactivate` action on a Membership card to stop it granting gym access without disabling the Member account or removing
 history. A current or future deactivated period may be reactivated when it does not overlap another active period.
 Expired periods cannot be reactivated; add a new Membership instead.
 
@@ -125,7 +125,7 @@ with its Member, Membership period, SGD amount, method, payment time, and option
 email and select `Search`, or press Enter. Clearing the search displays every Payment again.
 
 The Expenses tab lists operating expenses by date, amount, method, category, and optional description. Choose a
-category or `All Categories` to filter the table. To add an expense:
+category or `All Categories` to filter the cards. To add an expense:
 
 1. Select `Add Expense` in the Expenses tab.
 2. Select today or an earlier date from the calendar.
@@ -141,7 +141,7 @@ are not available.
 
 The Announcements page separates notices into `Published` and `Withdrawn` tabs. Select `Publish Announcement`, enter
 a required title and content, then publish it. Validation errors remain in the dialog without clearing the entered
-text. Select a row to read the complete announcement.
+text. Select a card to read the complete announcement.
 
 From a published announcement's detail page, select `Withdraw` and confirm to stop displaying it to Members. Withdrawn
 notices remain available to the Owner as read-only history. Announcements cannot be edited or permanently deleted;
@@ -153,11 +153,11 @@ The Visits page provides two tabs. `All Visits` contains completed and ongoing v
 contains only Members whose Visit has no exit time. Search by Member name or email and select `Search`, or press Enter.
 Clearing the search restores all records in the selected tab.
 
-Each row shows the Member number and name, entry time, exit time, and duration. An ongoing Visit displays
+Each card shows the Member number and name, entry time, exit time, and duration. An ongoing Visit displays
 `Currently inside` and `Ongoing`. Times use the computer's local time zone. The same read-only history is available
 from the Member's profile page.
 
-To correct a record, select it and choose `Correct Selected Visit`. The Owner may change its entry time and may add,
+To correct a record, select `Correct` on its card. The Owner may change its entry time and may add,
 change, or clear its exit time. Every correction requires a reason. Clearing the exit marks the Member as currently
 inside and is rejected if that Member already has another open Visit. Previous correction information is shown when
 the record is corrected again; GymFlow retains the latest correction rather than a complete audit history. Owners

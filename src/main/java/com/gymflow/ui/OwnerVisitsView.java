@@ -7,17 +7,14 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import com.gymflow.model.Account;
 import com.gymflow.model.Visit;
 import com.gymflow.model.VisitOverview;
 import com.gymflow.visit.OwnerVisitService;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -27,11 +24,10 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
@@ -55,24 +51,24 @@ final class OwnerVisitsView {
         HBox searchBar = new HBox(10, search, searchButton);
         HBox.setHgrow(search, Priority.ALWAYS);
 
-        TableView<VisitOverview> allTable = visitTable("No Visits found");
-        TableView<VisitOverview> currentTable = visitTable("No Members are currently visiting");
-        Tab allTab = new Tab("All Visits", allTable);
-        Tab currentTab = new Tab("Currently Visiting", currentTable);
+        Runnable[] refresh = new Runnable[1];
+        ListView<VisitOverview> allList = visitList("No Visits found", visits, owner,
+                () -> refresh[0].run());
+        ListView<VisitOverview> currentList = visitList("No Members are currently visiting",
+                visits, owner, () -> refresh[0].run());
+        Tab allTab = new Tab("All Visits", allList);
+        Tab currentTab = new Tab("Currently Visiting", currentList);
         TabPane tabs = new TabPane(allTab, currentTab);
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-        Button correct = new Button("Correct Selected Visit");
-        correct.getStyleClass().add("primary-button");
-        correct.setDisable(true);
 
         Label error = new Label();
         error.getStyleClass().add("dialog-error");
         UiComponents.preserveLabelHeight(error);
         long[] searchVersion = {0};
-        Runnable refresh = () -> {
+        refresh[0] = () -> {
             long request = ++searchVersion[0];
             boolean currentOnly = tabs.getSelectionModel().getSelectedItem() == currentTab;
-            TableView<VisitOverview> target = currentOnly ? currentTable : allTable;
+            ListView<VisitOverview> target = currentOnly ? currentList : allList;
             String query = search.getText();
             error.setText("");
             OwnerMembersView.run(null, () -> visits.searchVisits(query, currentOnly), result -> {
@@ -85,34 +81,19 @@ final class OwnerVisitsView {
                 }
             });
         };
-        Runnable updateAction = () -> correct.setDisable(selectedVisit(
-                tabs, currentTab, allTable, currentTable) == null);
-        allTable.getSelectionModel().selectedItemProperty().addListener(
-                (observable, previous, selected) -> updateAction.run());
-        currentTable.getSelectionModel().selectedItemProperty().addListener(
-                (observable, previous, selected) -> updateAction.run());
-        correct.setOnAction(event -> {
-            VisitOverview selected = selectedVisit(tabs, currentTab, allTable, currentTable);
-            if (selected != null) {
-                showCorrectionDialog(correct, visits, selected, owner, refresh);
-            }
-        });
-        searchButton.setOnAction(event -> refresh.run());
-        search.setOnAction(event -> refresh.run());
+        searchButton.setOnAction(event -> refresh[0].run());
+        search.setOnAction(event -> refresh[0].run());
         search.textProperty().addListener((observable, previous, current) -> {
             if (!previous.isBlank() && current.isBlank()) {
-                refresh.run();
+                refresh[0].run();
             }
         });
         tabs.getSelectionModel().selectedItemProperty().addListener(
                 (observable, previous, selected) -> {
-                    updateAction.run();
-                    refresh.run();
+                    refresh[0].run();
                 });
 
-        HBox actions = new HBox(correct);
-        actions.setAlignment(Pos.CENTER_RIGHT);
-        VBox card = UiComponents.card(searchBar, error, tabs, actions);
+        VBox card = UiComponents.card(searchBar, error, tabs);
         VBox.setVgrow(tabs, Priority.ALWAYS);
         VBox content = new VBox(20,
                 UiComponents.header("Visits", "Review gym attendance and current visitors", null), card);
@@ -123,28 +104,32 @@ final class OwnerVisitsView {
         root.setId("owner-visits-screen");
         root.setLeft(UiComponents.ownerSidebar("Visits", navigate, resetGymFlow, logout));
         root.setCenter(UiComponents.scrollable(content));
-        Platform.runLater(refresh);
+        Platform.runLater(refresh[0]);
         return root;
     }
 
-    private static TableView<VisitOverview> visitTable(String emptyMessage) {
-        TableView<VisitOverview> table = new TableView<>();
-        table.setPlaceholder(new Label(emptyMessage));
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        addColumn(table, "Member No.", VisitOverview::memberNumber);
-        addColumn(table, "Member", VisitOverview::memberName);
-        addColumn(table, "Entry time", item -> VisitFormat.entryTime(item.visit().enteredAt()));
-        addColumn(table, "Exit time", item -> VisitFormat.exitTime(item.visit().exitedAt()));
-        addColumn(table, "Duration", item -> VisitFormat.duration(
-                item.visit().enteredAt(), item.visit().exitedAt()));
-        addColumn(table, "Correction", item -> item.visit().correctedAt() == null ? "—" : "Corrected");
-        return table;
-    }
-
-    private static VisitOverview selectedVisit(TabPane tabs, Tab currentTab,
-            TableView<VisitOverview> allTable, TableView<VisitOverview> currentTable) {
-        return (tabs.getSelectionModel().getSelectedItem() == currentTab ? currentTable : allTable)
-                .getSelectionModel().getSelectedItem();
+    private static ListView<VisitOverview> visitList(String emptyMessage,
+            OwnerVisitService visits, Account owner, Runnable refresh) {
+        return UiComponents.cardList(emptyMessage, item -> {
+            Label title = UiComponents.cardLabel(
+                    item.memberName() + " · " + item.memberNumber(), "record-title");
+            Button correct = new Button("Correct");
+            correct.getStyleClass().add("secondary-button");
+            correct.setOnAction(event -> showCorrectionDialog(correct, visits, item, owner, refresh));
+            BorderPane header = new BorderPane(title, null, correct, null, null);
+            Visit visit = item.visit();
+            VBox card = new VBox(6, header,
+                    UiComponents.cardLabel("Entry: " + VisitFormat.entryTime(visit.enteredAt()),
+                            "record-meta"),
+                    UiComponents.cardLabel("Exit: " + VisitFormat.exitTime(visit.exitedAt())
+                            + " · " + VisitFormat.duration(visit.enteredAt(), visit.exitedAt()),
+                            "record-value"));
+            if (visit.correctedAt() != null) {
+                card.getChildren().add(UiComponents.cardLabel("Corrected", "record-meta"));
+            }
+            card.getStyleClass().add("record-card");
+            return card;
+        });
     }
 
     private static void showCorrectionDialog(Node ownerNode, OwnerVisitService visits,
@@ -283,10 +268,4 @@ final class OwnerVisitsView {
         field.requestFocus();
     }
 
-    private static void addColumn(TableView<VisitOverview> table, String title,
-            Function<VisitOverview, String> value) {
-        TableColumn<VisitOverview, String> column = new TableColumn<>(title);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        table.getColumns().add(column);
-    }
 }

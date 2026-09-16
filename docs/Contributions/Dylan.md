@@ -23,6 +23,7 @@ feature is merged.
 | Expense management | Immutable operating Expenses, category filtering, Finances tabs, and all-time net summary | `091d31b`, `593b36a`, `ad3b355`, PR #7 |
 | Announcement management | Owner publication, withdrawal, active notices, and retained history | `e1603c8`, PR #8 |
 | Application themes | Persistent light/dark mode across screens and dialogs | `feature/potatoad88-dark-mode` |
+| Record-card interface | Virtualized, responsive card lists replacing dense tables across Owner and Member screens | `feature/potatoad88-ui-improvements` |
 
 ## Team-level engineering
 
