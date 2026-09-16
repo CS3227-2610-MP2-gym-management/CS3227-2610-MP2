@@ -131,6 +131,16 @@ Supported categories are `MAINTENANCE`, `UTILITIES`, `EQUIPMENT`, `SUPPLIES`, `R
 support creation and viewing only; they cannot be edited or deleted. Income is also read-only, and refunds and exports
 are not available.
 
+## Managing Announcements
+
+The Announcements page separates notices into `Published` and `Withdrawn` tabs. Select `Publish Announcement`, enter
+a required title and content, then publish it. Validation errors remain in the dialog without clearing the entered
+text. Select a row to read the complete announcement.
+
+From a published announcement's detail page, select `Withdraw` and confirm to stop displaying it to Members. Withdrawn
+notices remain available to the Owner as read-only history. Announcements cannot be edited or permanently deleted;
+publish a replacement when a notice needs correction.
+
 ## Reviewing Visits
 
 The Visits page provides two tabs. `All Visits` contains completed and ongoing visits, while `Currently Visiting`
@@ -154,7 +164,8 @@ membership, visit, and profile information. Its entry and exit buttons do not re
 
 ## Resetting GymFlow
 
-`Reset GymFlow` on Owner Home permanently deletes the Owner account and every record stored in the GymFlow database.
+`Reset GymFlow`, directly above `Return to Login` in every Owner sidebar, permanently deletes the Owner account and
+every record stored in the GymFlow database. It is not available on Member screens.
 
 1. Select `Reset GymFlow`.
 2. Enter the current Owner password.

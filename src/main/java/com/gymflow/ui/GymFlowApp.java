@@ -3,6 +3,7 @@ package com.gymflow.ui;
 import java.nio.file.Path;
 
 import com.gymflow.auth.AuthenticationService;
+import com.gymflow.announcement.OwnerAnnouncementService;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.OwnerMemberService;
@@ -15,6 +16,7 @@ public final class GymFlowApp extends Application {
     private static final double MINIMUM_WIDTH = 1050;
     static final double MINIMUM_HEIGHT = 700;
     private AuthenticationService authentication;
+    private OwnerAnnouncementService announcements;
     private OwnerExpenseService expenses;
     private boolean ownerExists;
     private OwnerMemberService members;
@@ -26,6 +28,7 @@ public final class GymFlowApp extends Application {
         GymFlowDatabase database = new GymFlowDatabase(Path.of("data", "gymflow.db"));
         database.initialize();
         authentication = new AuthenticationService(database);
+        announcements = new OwnerAnnouncementService(database);
         expenses = new OwnerExpenseService(database);
         members = new OwnerMemberService(database);
         visits = new OwnerVisitService(database);
@@ -43,7 +46,7 @@ public final class GymFlowApp extends Application {
         stage.setMinWidth(MINIMUM_WIDTH);
         stage.setMinHeight(MINIMUM_HEIGHT);
 
-        new AppView(stage, authentication, members, expenses, visits, ownerExists);
+        new AppView(stage, authentication, members, expenses, visits, announcements, ownerExists);
         stage.show();
     }
 

@@ -54,7 +54,7 @@ import javafx.scene.layout.VBox;
 
 final class OwnerMembersView {
     private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Finances", "Visits");
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
     private static final DateTimeFormatter PAYMENT_TIME =
             DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a").withZone(ZoneId.systemDefault());
     private static final NumberFormat SGD = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-SG"));
@@ -63,7 +63,7 @@ final class OwnerMembersView {
     }
 
     static Parent create(OwnerMemberService members, OwnerVisitService visits, Account owner,
-            Consumer<Screen> navigate, Runnable logout) {
+            Consumer<Screen> navigate, Consumer<Node> resetGymFlow, Runnable logout) {
         BorderPane root = new BorderPane();
         root.setId("owner-members-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Members",
@@ -73,8 +73,9 @@ final class OwnerMembersView {
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
                 case "Finances" -> Screen.OWNER_FINANCES;
                 case "Visits" -> Screen.OWNER_VISITS;
+                case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
                 default -> Screen.OWNER_MEMBERS;
-                }), logout));
+                }), resetGymFlow, logout));
 
         showMemberList(root, members, visits, owner);
         return root;

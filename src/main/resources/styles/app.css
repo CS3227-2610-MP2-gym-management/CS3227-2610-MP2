@@ -158,6 +158,7 @@
 }
 
 .logout-button {
+    -fx-alignment: center;
     -fx-border-color: #40506a;
     -fx-border-radius: 8px;
 }

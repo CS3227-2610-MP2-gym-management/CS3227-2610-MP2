@@ -30,7 +30,7 @@ launched. Passwords are salted and hashed; plain-text passwords are not stored.
 
 ## Reset GymFlow
 
-Owner Home includes `Reset GymFlow` for returning the application to a clean testing state. Enter the current Owner
+Every Owner sidebar includes `Reset GymFlow` for returning the installation to a clean state. Enter the current Owner
 password and the exact confirmation text `RESET`.
 
 This action is irreversible. It removes the Owner account and every database-backed gym record, including members,

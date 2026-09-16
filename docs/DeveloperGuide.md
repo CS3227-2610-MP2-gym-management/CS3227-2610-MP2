@@ -68,6 +68,10 @@ Owner and the target is a Member. The Owner's password is not requested again be
 role check already authorize the operation; full GymFlow reset retains its stronger reauthentication guard because it
 deletes every record.
 
+The Owner sidebar exposes the full reset from every Owner screen through one shared dialog. The dialog still requires
+the current Owner password and exact `RESET` confirmation; moving the entry point does not weaken authorization. The
+Member sidebar does not receive this action.
+
 `Account` and `Role` are the implemented names for the design's `User` and `UserRole` entities. Memberships store one
 purchased access period, and each has exactly one Payment. Membership and Payment creation uses one transaction.
 Existing databases are upgraded by an idempotent schema-version migration that adds the required timestamps without
@@ -111,6 +115,11 @@ Deactivating a Membership deliberately does not close an existing open Visit. Th
 in until the Member-side exit workflow supplies the real exit time; otherwise deactivation would fabricate attendance
 data. Deactivation makes `hasValidMembership(memberId, date)` return false for subsequent entry attempts while leaving
 the Member account and existing Visit history unchanged.
+
+Announcements use a separate concrete store and service because they are gym-wide records rather than Member-owned
+data. Schema version 5 adds the `announcements` table. Publication and withdrawal verify an active Owner in the write
+query. Withdrawal sets `withdrawn_at` and `updated_at` instead of deleting the record. `listPublished()` is the shared
+read-only contract for the future Member interface; read/unread tracking and Member UI remain outside this branch.
 
 ## Build, testing, and CI
 

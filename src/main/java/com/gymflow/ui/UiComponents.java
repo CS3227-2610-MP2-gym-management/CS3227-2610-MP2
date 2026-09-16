@@ -33,6 +33,12 @@ final class UiComponents {
 
     static VBox sidebar(String role, List<String> items, String activeItem,
             Set<String> enabledItems, Consumer<String> navigate, Runnable returnToLogin) {
+        return sidebar(role, items, activeItem, enabledItems, navigate, null, returnToLogin);
+    }
+
+    static VBox sidebar(String role, List<String> items, String activeItem,
+            Set<String> enabledItems, Consumer<String> navigate,
+            Consumer<Node> resetGymFlow, Runnable returnToLogin) {
         Label brand = new Label("GYMFLOW");
         brand.getStyleClass().add("sidebar-brand");
         Label roleLabel = new Label(role.toUpperCase());
@@ -58,7 +64,15 @@ final class UiComponents {
         logout.setOnAction(event -> returnToLogin.run());
         logout.setAccessibleText("Return to the login preview screen");
 
-        VBox sidebar = new VBox(12, brand, roleLabel, navigation, spacer, logout);
+        VBox sidebar = new VBox(12, brand, roleLabel, navigation, spacer);
+        if (resetGymFlow != null) {
+            Button reset = new Button("Reset GymFlow");
+            reset.setMaxWidth(Double.MAX_VALUE);
+            reset.getStyleClass().add("danger-button");
+            reset.setOnAction(event -> resetGymFlow.accept(reset));
+            sidebar.getChildren().add(reset);
+        }
+        sidebar.getChildren().add(logout);
         sidebar.getStyleClass().add("sidebar");
         sidebar.setPrefWidth(230);
         sidebar.setMinWidth(210);
