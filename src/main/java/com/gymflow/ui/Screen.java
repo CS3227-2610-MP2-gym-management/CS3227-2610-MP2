@@ -8,5 +8,6 @@ public enum Screen {
     OWNER_MEMBERSHIPS,
     OWNER_FINANCES,
     OWNER_VISITS,
+    OWNER_ANNOUNCEMENTS,
     MEMBER_HOME
 }

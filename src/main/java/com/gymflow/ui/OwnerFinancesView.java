@@ -50,7 +50,7 @@ import javafx.scene.layout.VBox;
 final class OwnerFinancesView {
     private static final String ALL_CATEGORIES = "All Categories";
     private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Finances", "Visits");
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
     private static final DateTimeFormatter PAID_AT =
             DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.ENGLISH)
                     .withZone(ZoneId.systemDefault());
@@ -87,6 +87,7 @@ final class OwnerFinancesView {
                 case "Members" -> Screen.OWNER_MEMBERS;
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
                 case "Visits" -> Screen.OWNER_VISITS;
+                case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
                 default -> Screen.OWNER_FINANCES;
                 }), logout));
         root.setCenter(UiComponents.scrollable(content));

@@ -21,6 +21,7 @@ feature is merged.
 | Payments overview | Read-only global Payment ledger with Member search and Membership links | Current record-management branch |
 | Owner overview | Live Member, Membership, all-time financial, visitor, and recent-Member summaries | Current record-management branch |
 | Expense management | Immutable operating Expenses, category filtering, Finances tabs, and all-time net summary | Current expense-management branch |
+| Announcement management | Owner publication, withdrawal, active notices, and retained history | Current announcement-management branch |
 
 ## Team-level engineering
 

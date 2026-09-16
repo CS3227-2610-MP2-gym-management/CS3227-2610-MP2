@@ -112,6 +112,11 @@ in until the Member-side exit workflow supplies the real exit time; otherwise de
 data. Deactivation makes `hasValidMembership(memberId, date)` return false for subsequent entry attempts while leaving
 the Member account and existing Visit history unchanged.
 
+Announcements use a separate concrete store and service because they are gym-wide records rather than Member-owned
+data. Schema version 5 adds the `announcements` table. Publication and withdrawal verify an active Owner in the write
+query. Withdrawal sets `withdrawn_at` and `updated_at` instead of deleting the record. `listPublished()` is the shared
+read-only contract for the future Member interface; read/unread tracking and Member UI remain outside this branch.
+
 ## Build, testing, and CI
 
 Gradle compiles against Java 25 and runs JUnit 5 and Checkstyle:

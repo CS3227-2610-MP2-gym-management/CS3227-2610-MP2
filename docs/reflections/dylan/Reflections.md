@@ -98,6 +98,10 @@ relationship. The agent resisted forcing expenses into the existing Payment tabl
 budget, recurrence, edit, and delete workflows. The resulting Finances screen reuses existing income behaviour while
 adding only the categories, all-recorded-time total, and immutable creation flow required by the Owner story.
 
+Announcement management followed the same focused approach. The agent used `withdrawnAt` to preserve history without
+introducing a general audit or read-tracking system. The shared published-list query is sufficient for later Member UI,
+while the Owner feature remains responsible only for publication and withdrawal.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

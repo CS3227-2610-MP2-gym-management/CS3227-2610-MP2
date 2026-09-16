@@ -36,7 +36,7 @@ import javafx.scene.layout.VBox;
 
 final class OwnerHomeView {
     private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Finances", "Visits");
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
     private static final NumberFormat SGD =
             NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-SG"));
 
@@ -123,6 +123,7 @@ final class OwnerHomeView {
                 case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
                 case "Finances" -> Screen.OWNER_FINANCES;
                 case "Visits" -> Screen.OWNER_VISITS;
+                case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
                 default -> Screen.OWNER_HOME;
                 }),
                 returnToLogin));
