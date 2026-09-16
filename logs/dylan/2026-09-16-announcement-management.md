@@ -15,6 +15,7 @@ this branch.
 - Added Published and Withdrawn tabs, full detail views, inline publish validation, and withdrawal confirmation.
 - Exposed `listPublished()` as the shared contract for the future Member interface.
 - Reused existing background-task, dialog, navigation, table, scrolling, and clipping-safe UI patterns.
+- Relocated the guarded full-data reset from the Overview testing card to every Owner sidebar.
 
 ## Verification required
 

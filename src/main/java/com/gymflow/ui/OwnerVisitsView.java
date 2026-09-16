@@ -51,7 +51,7 @@ final class OwnerVisitsView {
     }
 
     static Parent create(OwnerVisitService visits, Account owner,
-            Consumer<Screen> navigate, Runnable logout) {
+            Consumer<Screen> navigate, Consumer<Node> resetGymFlow, Runnable logout) {
         TextField search = new TextField();
         search.setPromptText("Search by member name or email");
         Button searchButton = new Button("Search");
@@ -134,7 +134,7 @@ final class OwnerVisitsView {
                 case "Finances" -> Screen.OWNER_FINANCES;
                 case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
                 default -> Screen.OWNER_VISITS;
-                }), logout));
+                }), resetGymFlow, logout));
         root.setCenter(UiComponents.scrollable(content));
         Platform.runLater(refresh);
         return root;

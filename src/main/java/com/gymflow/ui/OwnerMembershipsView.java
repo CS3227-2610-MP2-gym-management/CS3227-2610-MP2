@@ -11,6 +11,7 @@ import com.gymflow.model.MembershipOverview;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -30,7 +31,8 @@ final class OwnerMembershipsView {
     private OwnerMembershipsView() {
     }
 
-    static Parent create(OwnerMemberService members, Consumer<Screen> navigate, Runnable logout) {
+    static Parent create(OwnerMemberService members, Consumer<Screen> navigate,
+            Consumer<Node> resetGymFlow, Runnable logout) {
         TextField search = new TextField();
         search.setPromptText("Search by member name or email");
         Button searchButton = new Button("Search");
@@ -83,7 +85,7 @@ final class OwnerMembershipsView {
                 case "Visits" -> Screen.OWNER_VISITS;
                 case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
                 default -> Screen.OWNER_MEMBERSHIPS;
-                }), logout));
+                }), resetGymFlow, logout));
         root.setCenter(UiComponents.scrollable(content));
         Platform.runLater(refresh);
         return root;

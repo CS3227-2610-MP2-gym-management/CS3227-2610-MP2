@@ -45,11 +45,11 @@ final class OwnerAnnouncementsView {
     }
 
     static Parent create(OwnerAnnouncementService announcements, Account owner,
-            Consumer<Screen> navigate, Runnable logout) {
+            Consumer<Screen> navigate, Consumer<Node> resetGymFlow, Runnable logout) {
         BorderPane root = new BorderPane();
         root.setId("owner-announcements-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Announcements",
-                Set.copyOf(NAVIGATION), item -> navigate.accept(screen(item)), logout));
+                Set.copyOf(NAVIGATION), item -> navigate.accept(screen(item)), resetGymFlow, logout));
         showList(root, announcements, owner);
         return root;
     }

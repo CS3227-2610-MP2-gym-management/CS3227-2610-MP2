@@ -164,7 +164,8 @@ membership, visit, and profile information. Its entry and exit buttons do not re
 
 ## Resetting GymFlow
 
-`Reset GymFlow` on Owner Home permanently deletes the Owner account and every record stored in the GymFlow database.
+`Reset GymFlow`, directly above `Return to Login` in every Owner sidebar, permanently deletes the Owner account and
+every record stored in the GymFlow database. It is not available on Member screens.
 
 1. Select `Reset GymFlow`.
 2. Enter the current Owner password.

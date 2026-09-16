@@ -63,7 +63,7 @@ final class OwnerMembersView {
     }
 
     static Parent create(OwnerMemberService members, OwnerVisitService visits, Account owner,
-            Consumer<Screen> navigate, Runnable logout) {
+            Consumer<Screen> navigate, Consumer<Node> resetGymFlow, Runnable logout) {
         BorderPane root = new BorderPane();
         root.setId("owner-members-screen");
         root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Members",
@@ -75,7 +75,7 @@ final class OwnerMembersView {
                 case "Visits" -> Screen.OWNER_VISITS;
                 case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
                 default -> Screen.OWNER_MEMBERS;
-                }), logout));
+                }), resetGymFlow, logout));
 
         showMemberList(root, members, visits, owner);
         return root;

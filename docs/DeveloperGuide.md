@@ -68,6 +68,10 @@ Owner and the target is a Member. The Owner's password is not requested again be
 role check already authorize the operation; full GymFlow reset retains its stronger reauthentication guard because it
 deletes every record.
 
+The Owner sidebar exposes the full reset from every Owner screen through one shared dialog. The dialog still requires
+the current Owner password and exact `RESET` confirmation; moving the entry point does not weaken authorization. The
+Member sidebar does not receive this action.
+
 `Account` and `Role` are the implemented names for the design's `User` and `UserRole` entities. Memberships store one
 purchased access period, and each has exactly one Payment. Membership and Payment creation uses one transaction.
 Existing databases are upgraded by an idempotent schema-version migration that adds the required timestamps without

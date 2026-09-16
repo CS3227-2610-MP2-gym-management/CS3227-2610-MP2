@@ -63,7 +63,7 @@ final class OwnerFinancesView {
     }
 
     static Parent create(OwnerMemberService members, OwnerExpenseService expenses,
-            Account owner, Consumer<Screen> navigate, Runnable logout) {
+            Account owner, Consumer<Screen> navigate, Consumer<Node> resetGymFlow, Runnable logout) {
         Tab incomeTab = new Tab("Income");
         Tab expensesTab = new Tab("Expenses");
         TabPane tabs = new TabPane(incomeTab, expensesTab);
@@ -89,7 +89,7 @@ final class OwnerFinancesView {
                 case "Visits" -> Screen.OWNER_VISITS;
                 case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
                 default -> Screen.OWNER_FINANCES;
-                }), logout));
+                }), resetGymFlow, logout));
         root.setCenter(UiComponents.scrollable(content));
         return root;
     }

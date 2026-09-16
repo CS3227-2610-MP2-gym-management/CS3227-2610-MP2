@@ -11,7 +11,7 @@ feature is merged.
 | --- | --- | --- |
 | Initial UI | Login, Owner Home, and Member Home JavaFX previews with single-window navigation | `adfd335` |
 | Owner authentication | First-run Owner setup, secure login and logout, one-Owner constraint | `871ea27`, PR #1 |
-| Application reset | Password-and-`RESET` guarded transactional database reset | `871ea27`, PR #1 |
+| Application reset | Password-and-`RESET` guarded transactional database reset and Owner-sidebar access | `871ea27`, current announcement branch |
 | Code cleanup | Removed test-only persistence API and low-value reflection test | `b6c168a`, PR #1 |
 | Member management | Atomic onboarding, Singapore profile validation, search, full-page profiles, payment history, and in-page editing | `3d4b995`, PR #2 |
 | Membership management | Membership overview, renewal Payments, activation controls, validity contract, and schema migration | `c95711e`, PR #3 |
