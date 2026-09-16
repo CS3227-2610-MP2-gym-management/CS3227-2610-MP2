@@ -102,6 +102,17 @@ Announcement management followed the same focused approach. The agent used `with
 introducing a general audit or read-tracking system. The shared published-list query is sufficient for later Member UI,
 while the Owner feature remains responsible only for publication and withdrawal.
 
+Dark mode reused the approach that had already worked in MP1: one application-level style class, Java Preferences for
+local persistence, and centralized CSS overrides. Keeping the toggle in the persistent application shell avoided
+adding theme state and callbacks to every screen. The agent still needed explicit guidance to preserve the established
+text-clipping workaround while changing shared UI styling, showing why visual regression checks remain important even
+when automated tests and Checkstyle pass.
+
+The record-list redesign reused JavaFX `ListView` virtualization instead of placing every card in a `VBox`. One shared
+cell renderer supplies consistent wrapping, empty states, keyboard focus, and light/dark styling while each screen keeps
+only its domain-specific card contents and actions. This avoided changing stores or services for a presentation-only
+feature and prevented long lists from creating every card at once.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

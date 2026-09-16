@@ -3,19 +3,22 @@ package com.gymflow.ui;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -101,6 +104,61 @@ final class UiComponents {
         return card;
     }
 
+    static <T> ListView<T> cardList(String emptyMessage, Function<T, Node> renderer) {
+        ListView<T> list = new ListView<>();
+        list.getStyleClass().add("card-list");
+        list.setPlaceholder(emptyState(emptyMessage));
+        list.setCellFactory(ignored -> new ListCell<>() {
+            @Override
+            protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(null);
+                Node graphic = empty || item == null ? null : renderer.apply(item);
+                if (graphic instanceof Region region) {
+                    region.setMaxWidth(Double.MAX_VALUE);
+                }
+                setGraphic(graphic);
+            }
+        });
+        return list;
+    }
+
+    static VBox emptyState(String message) {
+        Label title = new Label(message);
+        title.getStyleClass().add("empty-title");
+        VBox empty = new VBox(title);
+        empty.getStyleClass().add("empty-state");
+        empty.setAlignment(Pos.CENTER);
+        return empty;
+    }
+
+    static Label cardLabel(String text, String styleClass) {
+        Label label = new Label(text);
+        label.getStyleClass().add(styleClass);
+        label.setWrapText(true);
+        label.setMaxWidth(Double.MAX_VALUE);
+        preserveLabelHeight(label);
+        return label;
+    }
+
+    static void collapseWhenEmpty(Label label) {
+        label.managedProperty().bind(label.textProperty().isNotEmpty());
+        label.visibleProperty().bind(label.textProperty().isNotEmpty());
+    }
+
+    static void makeActionable(Node card, String accessibleText, Runnable action) {
+        card.getStyleClass().add("record-card-actionable");
+        card.setFocusTraversable(true);
+        card.setAccessibleRole(AccessibleRole.BUTTON);
+        card.setAccessibleText(accessibleText);
+        card.setOnMouseClicked(event -> action.run());
+        card.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER) {
+                action.run();
+            }
+        });
+    }
+
     static VBox statCard(String labelText, Label value) {
         Label label = new Label(labelText);
         label.getStyleClass().add("stat-label");
@@ -113,18 +171,6 @@ final class UiComponents {
         card.setPrefWidth(220);
         card.setMaxWidth(Double.MAX_VALUE);
         return card;
-    }
-
-    static TableView<Void> emptyTable(String message, String... columnNames) {
-        TableView<Void> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label(message));
-        table.setPrefHeight(260);
-        for (String columnName : columnNames) {
-            TableColumn<Void, String> column = new TableColumn<>(columnName);
-            table.getColumns().add(column);
-        }
-        return table;
     }
 
     static HBox header(String titleText, String subtitleText, Node action) {
@@ -156,6 +202,9 @@ final class UiComponents {
         dialog.getDialogPane().getStylesheets().add(
                 GymFlowApp.class.getResource("/styles/app.css").toExternalForm());
         dialog.getDialogPane().getStyleClass().addAll("gymflow-dialog", styleClass);
+        if (Theme.isDark(ownerWindow.getScene().getRoot().getStyleClass())) {
+            dialog.getDialogPane().getStyleClass().add("dark");
+        }
         dialog.setOnShown(event -> {
             Stage window = (Stage) dialog.getDialogPane().getScene().getWindow();
             double maximumHeight = ownerWindow.getHeight();

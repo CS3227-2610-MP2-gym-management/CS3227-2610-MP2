@@ -3,7 +3,8 @@
 ## Architecture
 
 GymFlow is a modular Java SE 25 and JavaFX 25 desktop application. It uses a single local SQLite database and one
-JavaFX `Scene`; `AppView` replaces the scene root when navigating so screen changes do not create extra windows.
+JavaFX `Scene`; `AppView` replaces the centre of a persistent application shell when navigating so screen changes do
+not create extra windows. The shell owns the global theme control and applies one `dark` style class to every screen.
 
 The current code is divided by responsibility:
 
@@ -18,6 +19,10 @@ The current code is divided by responsibility:
 Concrete classes are used instead of repository interfaces or factories because each responsibility currently has one
 implementation. New abstractions should be introduced only when a second implementation or a real testing boundary
 requires one.
+
+The selected theme is stored with Java `Preferences`, independently of the SQLite application data. Dialogs use their
+own JavaFX scenes, so `UiComponents.styleDialog` copies the active `dark` class from the owning application shell.
+Theme colours remain centralized in `app.css`; individual views do not contain theme-specific styling.
 
 ## Authentication
 
@@ -57,7 +62,9 @@ Member at least 12 years old. JavaFX dialogs provide immediate input restriction
 authoritative boundary. Dialog submit events are consumed until asynchronous persistence succeeds, preserving input
 and displaying validation failures inline.
 
-Owner Member management uses a list-detail pattern. The Members list performs search and creation. Selecting a row opens
+Owner Member management uses a list-detail pattern. Virtualized JavaFX `ListView` card lists display every record type,
+wrap long values, and retain vertical scrolling at the minimum window size. The Members list performs search and
+creation. Selecting a card opens
 an in-page profile view with read-only payment history, while profile editing happens in the same page instead of a
 separate edit dialog.
 
@@ -89,7 +96,7 @@ remain the only Payment creation paths.
 
 `OwnerMemberStore.ownerDashboard` supplies the Owner overview without another service layer. It counts registered
 Member profiles and distinct Members with an active Membership covering today, and totals every recorded Payment.
-It also returns the five most recently created Members. Each row selects the currently valid active
+It also returns the five most recently created Members. Each overview card selects the currently valid active
 Membership first, otherwise the nearest upcoming active Membership, otherwise the latest historical Membership.
 `OwnerVisitService.currentVisitorCount` remains the source of the separate open-Visit count.
 

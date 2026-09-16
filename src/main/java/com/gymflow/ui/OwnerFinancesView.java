@@ -7,7 +7,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import com.gymflow.expense.AddExpenseRequest;
 import com.gymflow.expense.OwnerExpenseService;
@@ -18,7 +17,6 @@ import com.gymflow.model.ExpenseCategory;
 import com.gymflow.model.PaymentMethod;
 import com.gymflow.model.PaymentOverview;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -31,10 +29,9 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
@@ -68,17 +65,15 @@ final class OwnerFinancesView {
         incomeTab.setContent(incomeContent(members));
         expensesTab.setContent(expenseContent(expenses, owner, expensesTab));
 
-        VBox card = UiComponents.card(tabs);
         VBox.setVgrow(tabs, Priority.ALWAYS);
         VBox content = new VBox(20,
-                UiComponents.header("Finances", "Review membership income and operating expenses", null), card);
+                UiComponents.header("Finances", "Review membership income and operating expenses", null), tabs);
         content.setPadding(new Insets(36));
-        VBox.setVgrow(card, Priority.ALWAYS);
 
         BorderPane root = new BorderPane();
         root.setId("owner-finances-screen");
         root.setLeft(UiComponents.ownerSidebar("Finances", navigate, resetGymFlow, logout));
-        root.setCenter(UiComponents.scrollable(content));
+        root.setCenter(content);
         return root;
     }
 
@@ -90,7 +85,8 @@ final class OwnerFinancesView {
         HBox searchBar = new HBox(10, search, searchButton);
         HBox.setHgrow(search, Priority.ALWAYS);
         Label error = errorLabel();
-        TableView<PaymentOverview> table = paymentTable();
+        UiComponents.collapseWhenEmpty(error);
+        ListView<PaymentOverview> list = paymentList();
         long[] version = {0};
         Runnable refresh = () -> {
             long request = ++version[0];
@@ -98,7 +94,7 @@ final class OwnerFinancesView {
             error.setText("");
             OwnerMembersView.run(null, () -> members.searchPayments(query), result -> {
                 if (request == version[0]) {
-                    table.getItems().setAll(result);
+                    list.getItems().setAll(result);
                 }
             }, exception -> {
                 if (request == version[0]) {
@@ -113,8 +109,8 @@ final class OwnerFinancesView {
                 refresh.run();
             }
         });
-        VBox content = new VBox(12, searchBar, error, table);
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox content = new VBox(12, searchBar, error, list);
+        VBox.setVgrow(list, Priority.ALWAYS);
         Platform.runLater(refresh);
         return content;
     }
@@ -137,7 +133,8 @@ final class OwnerFinancesView {
         toolbar.setAlignment(Pos.CENTER_LEFT);
 
         Label error = errorLabel();
-        TableView<Expense> table = expenseTable();
+        UiComponents.collapseWhenEmpty(error);
+        ListView<Expense> list = expenseList();
         long[] version = {0};
         Runnable refresh = () -> {
             long request = ++version[0];
@@ -147,7 +144,7 @@ final class OwnerFinancesView {
                     ? expenses.listExpenses()
                     : expenses.listExpensesByCategory(categoryValue(selected)), result -> {
                         if (request == version[0]) {
-                            table.getItems().setAll(result);
+                            list.getItems().setAll(result);
                         }
                     }, exception -> {
                         if (request == version[0]) {
@@ -160,8 +157,8 @@ final class OwnerFinancesView {
             expensesTab.getTabPane().getSelectionModel().select(expensesTab);
             showAddExpense(add, expenses, owner, refresh);
         });
-        VBox content = new VBox(12, toolbar, error, table);
-        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox content = new VBox(12, toolbar, error, list);
+        VBox.setVgrow(list, Priority.ALWAYS);
         Platform.runLater(refresh);
         return content;
     }
@@ -237,32 +234,39 @@ final class OwnerFinancesView {
         dialog.showAndWait();
     }
 
-    private static TableView<PaymentOverview> paymentTable() {
-        TableView<PaymentOverview> table = new TableView<>();
-        table.setPlaceholder(new Label("No Payments found"));
-        addColumn(table, "Member No.", 110, PaymentOverview::memberNumber);
-        addColumn(table, "Member", 160, PaymentOverview::memberName);
-        addColumn(table, "Membership", 220, item -> formatMembershipPeriod(
-                item.membershipStart(), item.membershipExpiry()));
-        addColumn(table, "Amount", 105, item -> SGD.format(item.payment().amount()));
-        addColumn(table, "Method", 100, item -> item.payment().method().name());
-        addColumn(table, "Paid at", 190, item -> PAID_AT.format(item.payment().paidAt()));
-        addColumn(table, "Reference", 180, item -> item.payment().reference().isBlank()
-                ? "—" : item.payment().reference());
-        return table;
+    private static ListView<PaymentOverview> paymentList() {
+        return UiComponents.cardList("No Payments found", item -> {
+            Label title = UiComponents.cardLabel(
+                    item.memberName() + " · " + item.memberNumber(), "record-title");
+            Label amount = UiComponents.cardLabel(SGD.format(item.payment().amount()), "record-value");
+            BorderPane header = new BorderPane(title, null, amount, null, null);
+            return card(header,
+                    "Membership: " + formatMembershipPeriod(item.membershipStart(), item.membershipExpiry()),
+                    "Paid: " + PAID_AT.format(item.payment().paidAt())
+                            + " · " + item.payment().method().name(),
+                    "Reference: " + (item.payment().reference().isBlank()
+                            ? "—" : item.payment().reference()));
+        });
     }
 
-    private static TableView<Expense> expenseTable() {
-        TableView<Expense> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.setPlaceholder(new Label("No Expenses found"));
-        addColumn(table, "Date", 140, item -> DATE.format(item.expenseDate()));
-        addColumn(table, "Amount", 120, item -> SGD.format(item.amount()));
-        addColumn(table, "Method", 120, item -> item.method().name());
-        addColumn(table, "Category", 160, item -> categoryLabel(item.category()));
-        addColumn(table, "Description", 300,
-                item -> item.description().isBlank() ? "—" : item.description());
-        return table;
+    private static ListView<Expense> expenseList() {
+        return UiComponents.cardList("No Expenses found", item -> {
+            Label title = UiComponents.cardLabel(categoryLabel(item.category()), "record-title");
+            Label amount = UiComponents.cardLabel(SGD.format(item.amount()), "record-value");
+            BorderPane header = new BorderPane(title, null, amount, null, null);
+            return card(header,
+                    DATE.format(item.expenseDate()) + " · " + item.method().name(),
+                    item.description().isBlank() ? "No description" : item.description());
+        });
+    }
+
+    private static VBox card(Node header, String... details) {
+        VBox card = new VBox(6, header);
+        for (String detail : details) {
+            card.getChildren().add(UiComponents.cardLabel(detail, "record-meta"));
+        }
+        card.getStyleClass().add("record-card");
+        return card;
     }
 
     static String formatMembershipPeriod(LocalDate start, LocalDate expiry) {
@@ -319,12 +323,4 @@ final class OwnerFinancesView {
         }
     }
 
-    private static <T> void addColumn(TableView<T> table, String title, double width,
-            Function<T, String> value) {
-        TableColumn<T, String> column = new TableColumn<>(title);
-        column.setMinWidth(width);
-        column.setPrefWidth(width);
-        column.setCellValueFactory(cell -> new ReadOnlyStringWrapper(value.apply(cell.getValue())));
-        table.getColumns().add(column);
-    }
 }
