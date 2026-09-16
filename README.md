@@ -17,6 +17,8 @@ Project documentation:
 - [Agentic SE Reflections](docs/Reflections.md)
 - [AI Interaction Logs](logs/README.md)
 
+Product website: [GymFlow on GitHub Pages](https://cs3227-2610-mp2-gym-management.github.io/CS3227-2610-MP2/)
+
 ## Owner setup and login
 
 On the first launch, GymFlow asks you to create the installation's single Owner account. Enter an email address and a
@@ -30,6 +32,9 @@ preview temporarily.
 
 GymFlow stores local application data in `data/gymflow.db`, relative to the directory from which the application is
 launched. Passwords are salted and hashed; plain-text passwords are not stored.
+
+Basic diagnostic monitoring writes rotating files under `logs/gymflow-0.log` through `logs/gymflow-2.log`. These
+files record startup and sanitized unexpected-error types, not passwords or form contents, and are ignored by Git.
 
 ## Reset GymFlow
 
@@ -69,3 +74,5 @@ the operating system and processor architecture:
 ```shell
 java -jar release/GymFlow-macos-arm64.jar
 ```
+
+GitHub Actions deploys the product website from `site/` and runs a scheduled availability check against the live URL.

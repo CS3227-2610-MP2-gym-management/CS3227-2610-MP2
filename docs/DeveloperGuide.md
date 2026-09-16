@@ -14,6 +14,7 @@ The current code is divided by responsibility:
 - `com.gymflow.expense`: Owner-side operating-expense validation and queries.
 - `com.gymflow.model`: shared account and role data.
 - `com.gymflow.member`: Owner-side Member onboarding and profile rules.
+- `com.gymflow.monitoring`: local startup and unexpected-error diagnostics.
 - `com.gymflow.visit`: read-only Owner attendance queries.
 
 Concrete classes are used instead of repository interfaces or factories because each responsibility currently has one
@@ -140,7 +141,15 @@ Gradle compiles against Java 25 and runs JUnit 5 and Checkstyle:
 matching JavaFX and SQLite native libraries; the verification task checks required resources and native contents.
 
 GitHub Actions runs checks and the matching packaging task on all four operating-system targets. CodeQL analyzes Java
-on pushes, pull requests, and a weekly schedule.
+on pushes, pull requests, and a weekly schedule. A separate workflow deploys the dependency-free `site/` directory
+to GitHub Pages after changes reach `master`, while a scheduled workflow requests the live URL every six hours and
+fails visibly when it cannot obtain a successful response.
+
+`AppMonitoring` uses the JDK logging API rather than another dependency. Application startup and sanitized uncaught
+exception types are written to three rotating files, each limited to approximately 1 MB, under `logs/`. Exception
+messages are deliberately excluded because they could contain values entered into a form. Runtime `.log` files are
+ignored by Git and are separate from the reviewed Markdown AI interaction summaries stored in the same top-level
+directory.
 
 ## Development process
 

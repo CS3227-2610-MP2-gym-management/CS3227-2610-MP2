@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GymFlow is a JavaFX desktop application for small-gym membership, finance, attendance, and announcement management.">
+  <title>GymFlow · Desktop gym management</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <nav aria-label="Primary navigation">
+      <a class="brand" href="#top">GYMFLOW</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="#test">Test</a>
+        <a href="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2">GitHub</a>
+      </div>
+    </nav>
+    <div class="hero-content" id="top">
+      <p class="eyebrow">JavaFX desktop application</p>
+      <h1>Run a small gym from one clear workspace.</h1>
+      <p class="lead">GymFlow brings members, memberships, finances, attendance, and announcements together in a local-first Owner dashboard.</p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2/releases">View releases</a>
+        <a class="button secondary" href="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2/blob/master/docs/UserGuide.md">Read the user guide</a>
+      </div>
+      <div class="status" aria-label="Project status">
+        <img alt="Tests workflow status" src="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2/actions/workflows/test.yml/badge.svg?branch=master">
+        <img alt="Website uptime workflow status" src="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2/actions/workflows/uptime.yml/badge.svg?branch=master">
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section" id="features">
+      <p class="eyebrow">Owner workspace</p>
+      <h2>The essentials, without the clutter.</h2>
+      <div class="grid">
+        <article><h3>Members</h3><p>Create searchable profiles, validate Singapore contact details, and securely reset credentials.</p></article>
+        <article><h3>Memberships</h3><p>Record immutable purchases and payments, derive access status, and manage activation.</p></article>
+        <article><h3>Finances</h3><p>Review membership income, add operating expenses, and understand the all-time net position.</p></article>
+        <article><h3>Visits</h3><p>See current visitors and attendance history, with reasoned Owner corrections when needed.</p></article>
+        <article><h3>Announcements</h3><p>Publish gym-wide notices and withdraw them without deleting their history.</p></article>
+        <article><h3>Local and private</h3><p>Keep data in SQLite on the installation, with salted PBKDF2 password hashes and no cloud account.</p></article>
+      </div>
+    </section>
+
+    <section class="section split" id="install">
+      <div>
+        <p class="eyebrow">Installation</p>
+        <h2>Choose the JAR for your computer.</h2>
+        <p>GymFlow targets Java SE 25 and packages JavaFX and SQLite native libraries for Windows x64, Linux x64, macOS x64, and macOS ARM64.</p>
+      </div>
+      <div class="steps">
+        <div><span>1</span><p>Install Java 25.</p></div>
+        <div><span>2</span><p>Download the matching JAR from the latest GitHub Release.</p></div>
+        <div><span>3</span><p>Run <code>java -jar GymFlow-&lt;platform&gt;.jar</code>.</p></div>
+        <div><span>4</span><p>Create the installation's Owner account on first launch.</p></div>
+      </div>
+    </section>
+
+    <section class="section" id="test">
+      <p class="eyebrow">Testing and operations</p>
+      <h2>Built to be checked.</h2>
+      <div class="grid compact">
+        <article><h3>Automated checks</h3><p>JUnit and Checkstyle run with <code>./gradlew clean check</code>.</p></article>
+        <article><h3>Platform builds</h3><p><code>./gradlew releaseJars</code> verifies all four self-contained distributions.</p></article>
+        <article><h3>Monitoring</h3><p>Rotating local logs capture sanitized failures, while GitHub Actions checks this site every six hours.</p></article>
+      </div>
+      <div class="doc-links">
+        <a href="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2/blob/master/docs/UserGuide.md">User Guide</a>
+        <a href="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2/blob/master/docs/DeveloperGuide.md">Developer Guide</a>
+        <a href="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2/blob/master/docs/Reflections.md">Agentic SE Reflections</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>GymFlow · CS3227 MP2</p>
+    <a href="https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2">Source and documentation</a>
+  </footer>
+</body>
+</html>

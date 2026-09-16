@@ -1,0 +1,20 @@
+name: Website Uptime
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check GymFlow website
+        run: >-
+          curl --fail --silent --show-error --location
+          --retry 3 --retry-all-errors
+          https://cs3227-2610-mp2-gym-management.github.io/CS3227-2610-MP2/

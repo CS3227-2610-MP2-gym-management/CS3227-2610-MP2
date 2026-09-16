@@ -7,6 +7,7 @@ import com.gymflow.auth.AuthenticationService;
 import com.gymflow.announcement.OwnerAnnouncementService;
 import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.model.Account;
+import com.gymflow.model.Role;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.visit.OwnerVisitService;
 import javafx.scene.Parent;
@@ -67,28 +68,32 @@ public final class AppView {
     public void show(Screen screen) {
         Parent root = switch (Objects.requireNonNull(screen)) {
         case LOGIN -> createLogin();
-        case OWNER_HOME -> session == null
+        case OWNER_HOME -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerHomeView.create(members, expenses, visits, session,
                         this::show, this::showReset, this::logout);
-        case OWNER_MEMBERS -> session == null
+        case OWNER_MEMBERS -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerMembersView.create(members, visits, session, this::show, this::showReset, this::logout);
-        case OWNER_MEMBERSHIPS -> session == null
+        case OWNER_MEMBERSHIPS -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerMembershipsView.create(members, this::show, this::showReset, this::logout);
-        case OWNER_FINANCES -> session == null
+        case OWNER_FINANCES -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerFinancesView.create(members, expenses, session, this::show, this::showReset, this::logout);
-        case OWNER_VISITS -> session == null
+        case OWNER_VISITS -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerVisitsView.create(visits, session, this::show, this::showReset, this::logout);
-        case OWNER_ANNOUNCEMENTS -> session == null
+        case OWNER_ANNOUNCEMENTS -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerAnnouncementsView.create(announcements, session, this::show, this::showReset, this::logout);
         case MEMBER_HOME -> MemberHomeView.create(() -> show(Screen.LOGIN));
         };
         shell.setCenter(root);
+    }
+
+    static boolean isOwnerSession(Account account) {
+        return account != null && account.role() == Role.OWNER;
     }
 
     private Parent createLogin() {

@@ -7,6 +7,7 @@ import com.gymflow.announcement.OwnerAnnouncementService;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.OwnerMemberService;
+import com.gymflow.monitoring.AppMonitoring;
 import com.gymflow.visit.OwnerVisitService;
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -56,6 +57,11 @@ public final class GymFlowApp extends Application {
      * @param args command-line arguments
      */
     public static void main(String[] args) {
-        launch(args);
+        AppMonitoring.start(Path.of("logs"));
+        try {
+            launch(args);
+        } finally {
+            AppMonitoring.stop();
+        }
     }
 }

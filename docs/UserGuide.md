@@ -19,6 +19,10 @@ java -jar GymFlow-macos-arm64.jar
 Replace the filename with the JAR downloaded for your platform. GymFlow stores its local database at
 `data/gymflow.db`, relative to the directory from which it is launched.
 
+GymFlow also creates rotating diagnostic files named `gymflow-0.log` through `gymflow-2.log` in the local `logs/`
+directory. If the application exits unexpectedly, include these files when reporting the problem. They contain
+startup events and sanitized error types, not passwords or values entered into forms.
+
 ## First-launch Owner setup
 
 When no Owner exists, the opening screen displays `Set up GymFlow`.

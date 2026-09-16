@@ -6,3 +6,6 @@ slice. These are summaries rather than complete chat transcripts.
 Each log must include its goal, important prompts, skills used, decisions, corrections, affected components, test
 evidence, and commit or PR references. Newly generated logs remain marked `Pending <member> review` until that member
 checks them against the original interaction.
+
+GymFlow runtime diagnostics also use this directory, but `gymflow-*.log` files are local, generated, and excluded
+from version control. They are not AI interaction summaries.
