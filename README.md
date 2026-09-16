@@ -3,9 +3,9 @@
 GymFlow is a JavaFX desktop application for a small gym. It provides separate experiences for gym owners and gym
 members.
 
-The current version supports local Owner account setup and login plus Owner-managed Member onboarding, profiles,
-Membership periods, income Payments, and operating Expenses. The Member dashboard remains a development preview while Member features are added
-separately.
+The current version supports local Owner account setup and login, Member onboarding and profiles, Membership periods,
+income and expenses, Visit oversight and correction, gym announcements, and guarded factory reset. The Member
+dashboard remains a development preview while Member features are added separately.
 
 Project documentation:
 
@@ -19,8 +19,8 @@ Project documentation:
 On the first launch, GymFlow asks you to create the installation's single Owner account. Enter an email address and a
 password between 12 and 128 characters. GymFlow opens Owner Home after successful setup.
 
-On later launches, sign in with the same Owner email and password. Email matching is case-insensitive. Use `Log out`
-in the Owner sidebar to clear the current session and return to Login.
+On later launches, sign in with the same Owner email and password. Email matching is case-insensitive. Use
+`Return to Login` in the Owner sidebar to clear the current session.
 
 Member authentication is not implemented yet. The Login screen therefore retains a clearly labelled Member dashboard
 preview temporarily.
@@ -33,8 +33,8 @@ launched. Passwords are salted and hashed; plain-text passwords are not stored.
 Every Owner sidebar includes `Reset GymFlow` for returning the installation to a clean state. Enter the current Owner
 password and the exact confirmation text `RESET`.
 
-This action is irreversible. It removes the Owner account and every database-backed gym record, including members,
-memberships, payments, visits, and workouts. After reset, GymFlow returns to first-launch Owner setup.
+This action is irreversible. It removes the Owner account and every database-backed gym record, including Members,
+Memberships, Payments, Expenses, Visits, and Announcements. After reset, GymFlow returns to first-launch Owner setup.
 
 ## Requirements
 

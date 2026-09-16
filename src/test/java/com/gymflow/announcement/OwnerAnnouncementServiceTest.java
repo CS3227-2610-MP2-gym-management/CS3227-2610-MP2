@@ -77,11 +77,33 @@ class OwnerAnnouncementServiceTest {
 
         assertNotNull(withdrawn.withdrawnAt());
         assertEquals(withdrawn.withdrawnAt(), withdrawn.updatedAt());
+        assertEquals(second.title(), withdrawn.title());
+        assertEquals(second.content(), withdrawn.content());
+        assertEquals(second.createdByUserId(), withdrawn.createdByUserId());
+        assertEquals(second.publishedAt(), withdrawn.publishedAt());
+        assertEquals(second.createdAt(), withdrawn.createdAt());
         assertEquals(List.of(first.id()), announcements.listPublished().stream()
                 .map(Announcement::id).toList());
         assertEquals(List.of(second.id()), announcements.listWithdrawn().stream()
                 .map(Announcement::id).toList());
         assertThrows(IllegalArgumentException.class,
                 () -> announcements.withdraw(second.id(), owner.id()));
+    }
+
+    @Test
+    void rejectsWithdrawalByMissingOrInactiveOwnerWithoutChangingAnnouncement() throws Exception {
+        Announcement published = announcements.publish("Notice", "Still visible", owner.id());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> announcements.withdraw(published.id(), 999));
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile);
+                var statement = connection.createStatement()) {
+            statement.executeUpdate("UPDATE accounts SET is_active = 0 WHERE id = " + owner.id());
+        }
+        assertThrows(IllegalArgumentException.class,
+                () -> announcements.withdraw(published.id(), owner.id()));
+        assertEquals(List.of(published.id()), announcements.listPublished().stream()
+                .map(Announcement::id).toList());
+        assertEquals(List.of(), announcements.listWithdrawn());
     }
 }

@@ -5,9 +5,7 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -49,8 +47,6 @@ import javafx.scene.layout.VBox;
 /** Owner income and operating-expense ledgers. */
 final class OwnerFinancesView {
     private static final String ALL_CATEGORIES = "All Categories";
-    private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
     private static final DateTimeFormatter PAID_AT =
             DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.ENGLISH)
                     .withZone(ZoneId.systemDefault());
@@ -81,15 +77,7 @@ final class OwnerFinancesView {
 
         BorderPane root = new BorderPane();
         root.setId("owner-finances-screen");
-        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Finances",
-                Set.copyOf(NAVIGATION), item -> navigate.accept(switch (item) {
-                case "Overview" -> Screen.OWNER_HOME;
-                case "Members" -> Screen.OWNER_MEMBERS;
-                case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
-                case "Visits" -> Screen.OWNER_VISITS;
-                case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
-                default -> Screen.OWNER_FINANCES;
-                }), resetGymFlow, logout));
+        root.setLeft(UiComponents.ownerSidebar("Finances", navigate, resetGymFlow, logout));
         root.setCenter(UiComponents.scrollable(content));
         return root;
     }

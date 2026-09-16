@@ -6,8 +6,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -43,8 +41,6 @@ import javafx.scene.layout.VBox;
 
 /** Owner overview of completed and ongoing gym Visits. */
 final class OwnerVisitsView {
-    private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
     private static final DateTimeFormatter LOCAL_TIME = DateTimeFormatter.ISO_LOCAL_TIME;
 
     private OwnerVisitsView() {
@@ -125,16 +121,7 @@ final class OwnerVisitsView {
 
         BorderPane root = new BorderPane();
         root.setId("owner-visits-screen");
-        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Visits",
-                Set.copyOf(NAVIGATION),
-                item -> navigate.accept(switch (item) {
-                case "Overview" -> Screen.OWNER_HOME;
-                case "Members" -> Screen.OWNER_MEMBERS;
-                case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
-                case "Finances" -> Screen.OWNER_FINANCES;
-                case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
-                default -> Screen.OWNER_VISITS;
-                }), resetGymFlow, logout));
+        root.setLeft(UiComponents.ownerSidebar("Visits", navigate, resetGymFlow, logout));
         root.setCenter(UiComponents.scrollable(content));
         Platform.runLater(refresh);
         return root;

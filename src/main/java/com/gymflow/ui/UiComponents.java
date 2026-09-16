@@ -24,16 +24,32 @@ import javafx.stage.Window;
 import javafx.stage.Stage;
 
 final class UiComponents {
+    private static final List<String> OWNER_NAVIGATION =
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
+
     private UiComponents() {
     }
 
     static VBox sidebar(String role, List<String> items, String activeItem, Runnable returnToLogin) {
-        return sidebar(role, items, activeItem, Set.of(activeItem), item -> { }, returnToLogin);
+        return sidebar(role, items, activeItem, Set.of(activeItem), item -> { }, null, returnToLogin);
     }
 
-    static VBox sidebar(String role, List<String> items, String activeItem,
-            Set<String> enabledItems, Consumer<String> navigate, Runnable returnToLogin) {
-        return sidebar(role, items, activeItem, enabledItems, navigate, null, returnToLogin);
+    static VBox ownerSidebar(String activeItem, Consumer<Screen> navigate,
+            Consumer<Node> resetGymFlow, Runnable returnToLogin) {
+        return sidebar("Owner", OWNER_NAVIGATION, activeItem, Set.copyOf(OWNER_NAVIGATION),
+                item -> navigate.accept(ownerScreen(item)), resetGymFlow, returnToLogin);
+    }
+
+    static Screen ownerScreen(String item) {
+        return switch (item) {
+        case "Overview" -> Screen.OWNER_HOME;
+        case "Members" -> Screen.OWNER_MEMBERS;
+        case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
+        case "Finances" -> Screen.OWNER_FINANCES;
+        case "Visits" -> Screen.OWNER_VISITS;
+        case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
+        default -> throw new IllegalArgumentException("Unknown Owner navigation item: " + item);
+        };
     }
 
     static VBox sidebar(String role, List<String> items, String activeItem,
@@ -83,10 +99,6 @@ final class UiComponents {
         VBox card = new VBox(12, content);
         card.getStyleClass().add("card");
         return card;
-    }
-
-    static VBox statCard(String labelText) {
-        return statCard(labelText, new Label("—"));
     }
 
     static VBox statCard(String labelText, Label value) {

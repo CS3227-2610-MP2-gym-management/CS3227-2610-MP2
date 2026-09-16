@@ -82,7 +82,7 @@ schema migration test to preserve version-2 records, retained only the latest co
 existing one-open-Visit index to reject invalid reopening. This kept the feature aligned with the specific Owner story
 while still recording when, why, and by whom the latest correction was made.
 
-The global Payments page reused the existing immutable Payment records instead of introducing editing, refunds, date
+The Finances page's Income tab reused the existing immutable Payment records instead of introducing editing, refunds, date
 filters, or a new service layer. One joined projection supplies the Owner table with Member and Membership context,
 while the existing Owner Member store remains the single query boundary. This was a direct application of Ponytail's
 YAGNI constraint: expose the information already available before adding new financial workflows.

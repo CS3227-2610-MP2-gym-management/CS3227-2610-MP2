@@ -35,7 +35,7 @@ Email addresses are matched without regard to letter case. After successful setu
 On subsequent launches, enter the Owner email and password and select `Sign In`. Invalid credentials display
 `Invalid email or password` without identifying which value was incorrect.
 
-Select `Log out` in the Owner sidebar to clear the current session and return to Login.
+Select `Return to Login` in the Owner sidebar to clear the current session.
 
 ## Owner Home
 
@@ -44,10 +44,10 @@ Membership, the current visitor count, all recorded income and expenses, and the
 are displayed in SGD and cover all records currently stored in GymFlow. The Member overview lists the five most
 recently created Members with their most relevant Membership period and its derived status.
 
-Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, or `Visits` to
-review attendance. Select
-`Create Member` to open the creation form directly; after a successful creation, GymFlow opens the Members page.
-Select `Finances` to review membership income and operating expenses.
+Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, `Finances` to
+review membership income and operating expenses, `Visits` to review attendance, or `Announcements` to manage gym
+notices. Select `Create Member` to open the creation form directly; after a successful creation, GymFlow opens the
+Members page.
 
 ## Managing Members
 

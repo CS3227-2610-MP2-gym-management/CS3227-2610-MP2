@@ -83,7 +83,7 @@ prevent authentication. `OwnerMemberService.hasValidMembership(memberId, date)` 
 Member entry validation; it returns true when any active Membership covers the date inclusively.
 
 `PaymentOverview` joins an immutable `MemberPayment` to the Member identity and purchased Membership period required by
-the Owner Payments page. `OwnerMemberStore.searchPayments` matches Member name or email only and orders records by
+the Owner Finances page's Income tab. `OwnerMemberStore.searchPayments` matches Member name or email only and orders records by
 payment time and ID descending. The global page is deliberately read-only; Member onboarding and Membership renewal
 remain the only Payment creation paths.
 

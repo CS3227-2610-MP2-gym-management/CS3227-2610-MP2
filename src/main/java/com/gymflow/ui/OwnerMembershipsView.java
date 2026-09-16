@@ -1,8 +1,6 @@
 package com.gymflow.ui;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -25,9 +23,6 @@ import javafx.scene.layout.VBox;
 
 /** Owner Membership overview and search screen. */
 final class OwnerMembershipsView {
-    private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
-
     private OwnerMembershipsView() {
     }
 
@@ -76,16 +71,7 @@ final class OwnerMembershipsView {
 
         BorderPane root = new BorderPane();
         root.setId("owner-memberships-screen");
-        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Memberships",
-                Set.copyOf(NAVIGATION),
-                item -> navigate.accept(switch (item) {
-                case "Overview" -> Screen.OWNER_HOME;
-                case "Members" -> Screen.OWNER_MEMBERS;
-                case "Finances" -> Screen.OWNER_FINANCES;
-                case "Visits" -> Screen.OWNER_VISITS;
-                case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
-                default -> Screen.OWNER_MEMBERSHIPS;
-                }), resetGymFlow, logout));
+        root.setLeft(UiComponents.ownerSidebar("Memberships", navigate, resetGymFlow, logout));
         root.setCenter(UiComponents.scrollable(content));
         Platform.runLater(refresh);
         return root;

@@ -11,17 +11,17 @@ feature is merged.
 | --- | --- | --- |
 | Initial UI | Login, Owner Home, and Member Home JavaFX previews with single-window navigation | `adfd335` |
 | Owner authentication | First-run Owner setup, secure login and logout, one-Owner constraint | `871ea27`, PR #1 |
-| Application reset | Password-and-`RESET` guarded transactional database reset and Owner-sidebar access | `871ea27`, current announcement branch |
+| Application reset | Password-and-`RESET` guarded transactional database reset and Owner-sidebar access | `871ea27`, `3e8c1dc`, PR #8 |
 | Code cleanup | Removed test-only persistence API and low-value reflection test | `b6c168a`, PR #1 |
 | Member management | Atomic onboarding, Singapore profile validation, search, full-page profiles, payment history, and in-page editing | `3d4b995`, PR #2 |
 | Membership management | Membership overview, renewal Payments, activation controls, validity contract, and schema migration | `c95711e`, PR #3 |
 | Visit oversight | All/current Visit review, per-Member history, and current visitor count | `732dc64`, PR #4 |
 | Member password reset | Owner-authorized Member credential replacement with fresh PBKDF2 salts | `65871d7`, PR #5 |
-| Visit correction | Owner correction of Visit timestamps with latest reason and responsible Owner | Current record-management branch |
-| Payments overview | Read-only global Payment ledger with Member search and Membership links | Current record-management branch |
-| Owner overview | Live Member, Membership, all-time financial, visitor, and recent-Member summaries | Current record-management branch |
-| Expense management | Immutable operating Expenses, category filtering, Finances tabs, and all-time net summary | Current expense-management branch |
-| Announcement management | Owner publication, withdrawal, active notices, and retained history | Current announcement-management branch |
+| Visit correction | Owner correction of Visit timestamps with latest reason and responsible Owner | `2b7c76a`, PR #6 |
+| Payments overview | Read-only global Payment ledger with Member search and Membership links | `596ac0d`, PR #6 |
+| Owner overview | Live Member, Membership, all-time financial, visitor, and recent-Member summaries | `3a26cb7`, PR #6 |
+| Expense management | Immutable operating Expenses, category filtering, Finances tabs, and all-time net summary | `091d31b`, `593b36a`, `ad3b355`, PR #7 |
+| Announcement management | Owner publication, withdrawal, active notices, and retained history | `e1603c8`, PR #8 |
 
 ## Team-level engineering
 

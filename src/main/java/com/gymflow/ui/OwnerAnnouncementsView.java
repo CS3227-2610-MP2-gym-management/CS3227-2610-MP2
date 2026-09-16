@@ -2,9 +2,7 @@ package com.gymflow.ui;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -36,8 +34,6 @@ import javafx.scene.layout.VBox;
 
 /** Owner publication and withdrawal interface for gym announcements. */
 final class OwnerAnnouncementsView {
-    private static final List<String> NAVIGATION = List.of(
-            "Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter
             .ofPattern("d MMM yyyy, h:mm a", Locale.ENGLISH).withZone(ZoneId.systemDefault());
 
@@ -48,8 +44,7 @@ final class OwnerAnnouncementsView {
             Consumer<Screen> navigate, Consumer<Node> resetGymFlow, Runnable logout) {
         BorderPane root = new BorderPane();
         root.setId("owner-announcements-screen");
-        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Announcements",
-                Set.copyOf(NAVIGATION), item -> navigate.accept(screen(item)), resetGymFlow, logout));
+        root.setLeft(UiComponents.ownerSidebar("Announcements", navigate, resetGymFlow, logout));
         showList(root, announcements, owner);
         return root;
     }
@@ -236,17 +231,6 @@ final class OwnerAnnouncementsView {
     private static String preview(Announcement announcement) {
         String content = announcement.content().replaceAll("\\s+", " ");
         return content.length() <= 80 ? content : content.substring(0, 77) + "…";
-    }
-
-    private static Screen screen(String item) {
-        return switch (item) {
-        case "Overview" -> Screen.OWNER_HOME;
-        case "Members" -> Screen.OWNER_MEMBERS;
-        case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
-        case "Finances" -> Screen.OWNER_FINANCES;
-        case "Visits" -> Screen.OWNER_VISITS;
-        default -> Screen.OWNER_ANNOUNCEMENTS;
-        };
     }
 
     private static void addColumn(TableView<Announcement> table, String title, double width,

@@ -3,9 +3,7 @@ package com.gymflow.ui;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -28,8 +26,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 final class OwnerHomeView {
-    private static final List<String> NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
     private static final NumberFormat SGD =
             NumberFormat.getCurrencyInstance(Locale.forLanguageTag("en-SG"));
 
@@ -98,17 +94,7 @@ final class OwnerHomeView {
         BorderPane root = new BorderPane();
         root.setId("owner-home-screen");
         root.getStyleClass().add("dashboard-screen");
-        root.setLeft(UiComponents.sidebar("Owner", NAVIGATION, "Overview",
-                Set.copyOf(NAVIGATION),
-                item -> navigate.accept(switch (item) {
-                case "Members" -> Screen.OWNER_MEMBERS;
-                case "Memberships" -> Screen.OWNER_MEMBERSHIPS;
-                case "Finances" -> Screen.OWNER_FINANCES;
-                case "Visits" -> Screen.OWNER_VISITS;
-                case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
-                default -> Screen.OWNER_HOME;
-                }), resetGymFlow,
-                returnToLogin));
+        root.setLeft(UiComponents.ownerSidebar("Overview", navigate, resetGymFlow, returnToLogin));
         root.setCenter(UiComponents.scrollable(content));
         root.setAccessibleText("GymFlow owner dashboard preview");
         return root;
