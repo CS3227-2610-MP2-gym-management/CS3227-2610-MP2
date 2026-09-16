@@ -1,6 +1,7 @@
 package com.gymflow.ui;
 
 import java.util.Objects;
+import java.util.prefs.Preferences;
 
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.announcement.OwnerAnnouncementService;
@@ -11,11 +12,18 @@ import com.gymflow.visit.OwnerVisitService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.Node;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
-/** Owns the single application scene and switches its root view. */
+/** Owns the single application scene, navigation, and visual theme. */
 public final class AppView {
-    private final Scene scene;
+    private static final String DARK_MODE = "darkMode";
+
+    private final BorderPane shell = new BorderPane();
+    private final Preferences preferences = Preferences.userNodeForPackage(AppView.class);
     private final AuthenticationService authentication;
     private final OwnerAnnouncementService announcements;
     private final OwnerExpenseService expenses;
@@ -23,6 +31,7 @@ public final class AppView {
     private final OwnerVisitService visits;
     private Account session;
     private boolean ownerExists;
+    private Theme theme;
 
     /**
      * Creates the application view for a stage.
@@ -39,10 +48,15 @@ public final class AppView {
         this.members = Objects.requireNonNull(members);
         this.visits = Objects.requireNonNull(visits);
         this.ownerExists = ownerExists;
-        scene = new Scene(createLogin(), 1280, 800);
+        theme = preferences.getBoolean(DARK_MODE, false) ? Theme.DARK : Theme.LIGHT;
+        shell.getStyleClass().add("app-shell");
+        shell.setTop(themeBar());
+        Scene scene = new Scene(shell, 1280, 800);
         scene.getStylesheets().add(Objects.requireNonNull(
                 GymFlowApp.class.getResource("/styles/app.css")).toExternalForm());
         stage.setScene(scene);
+        applyTheme();
+        show(Screen.LOGIN);
     }
 
     /**
@@ -74,7 +88,7 @@ public final class AppView {
                 : OwnerAnnouncementsView.create(announcements, session, this::show, this::showReset, this::logout);
         case MEMBER_HOME -> MemberHomeView.create(() -> show(Screen.LOGIN));
         };
-        scene.setRoot(root);
+        shell.setCenter(root);
     }
 
     private Parent createLogin() {
@@ -101,5 +115,33 @@ public final class AppView {
 
     private void showReset(Node ownerNode) {
         OwnerResetDialog.show(ownerNode, authentication, session, this::resetCompleted);
+    }
+
+    private HBox themeBar() {
+        ToggleButton toggle = new ToggleButton();
+        toggle.getStyleClass().add("theme-toggle");
+        toggle.setSelected(theme == Theme.DARK);
+        toggle.setTooltip(new Tooltip());
+        updateThemeButton(toggle);
+        toggle.setOnAction(event -> {
+            theme = theme.toggle();
+            preferences.putBoolean(DARK_MODE, theme == Theme.DARK);
+            applyTheme();
+            updateThemeButton(toggle);
+        });
+        HBox bar = new HBox(toggle);
+        bar.getStyleClass().add("theme-bar");
+        return bar;
+    }
+
+    private void applyTheme() {
+        theme.applyTo(shell.getStyleClass());
+    }
+
+    private void updateThemeButton(ToggleButton toggle) {
+        String target = theme == Theme.DARK ? "Light mode" : "Dark mode";
+        toggle.setText((theme == Theme.DARK ? "☀  " : "☾  ") + target);
+        toggle.setAccessibleText("Switch to " + target.toLowerCase());
+        toggle.getTooltip().setText("Switch to " + target.toLowerCase());
     }
 }

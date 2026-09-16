@@ -3,7 +3,8 @@
 ## Architecture
 
 GymFlow is a modular Java SE 25 and JavaFX 25 desktop application. It uses a single local SQLite database and one
-JavaFX `Scene`; `AppView` replaces the scene root when navigating so screen changes do not create extra windows.
+JavaFX `Scene`; `AppView` replaces the centre of a persistent application shell when navigating so screen changes do
+not create extra windows. The shell owns the global theme control and applies one `dark` style class to every screen.
 
 The current code is divided by responsibility:
 
@@ -18,6 +19,10 @@ The current code is divided by responsibility:
 Concrete classes are used instead of repository interfaces or factories because each responsibility currently has one
 implementation. New abstractions should be introduced only when a second implementation or a real testing boundary
 requires one.
+
+The selected theme is stored with Java `Preferences`, independently of the SQLite application data. Dialogs use their
+own JavaFX scenes, so `UiComponents.styleDialog` copies the active `dark` class from the owning application shell.
+Theme colours remain centralized in `app.css`; individual views do not contain theme-specific styling.
 
 ## Authentication
 

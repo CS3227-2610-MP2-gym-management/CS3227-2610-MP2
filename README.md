@@ -7,6 +7,9 @@ The current version supports local Owner account setup and login, Member onboard
 income and expenses, Visit oversight and correction, gym announcements, and guarded factory reset. The Member
 dashboard remains a development preview while Member features are added separately.
 
+Use the theme control at the top of the window to switch between light and dark mode. GymFlow remembers the selected
+theme for future launches on the same computer.
+
 Project documentation:
 
 - [User Guide](docs/UserGuide.md)

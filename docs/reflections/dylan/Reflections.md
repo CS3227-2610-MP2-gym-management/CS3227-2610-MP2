@@ -102,6 +102,12 @@ Announcement management followed the same focused approach. The agent used `with
 introducing a general audit or read-tracking system. The shared published-list query is sufficient for later Member UI,
 while the Owner feature remains responsible only for publication and withdrawal.
 
+Dark mode reused the approach that had already worked in MP1: one application-level style class, Java Preferences for
+local persistence, and centralized CSS overrides. Keeping the toggle in the persistent application shell avoided
+adding theme state and callbacks to every screen. The agent still needed explicit guidance to preserve the established
+text-clipping workaround while changing shared UI styling, showing why visual regression checks remain important even
+when automated tests and Checkstyle pass.
+
 ## Lessons and future improvements
 
 - Agent instructions work best when they define ownership boundaries and explicit exclusions.

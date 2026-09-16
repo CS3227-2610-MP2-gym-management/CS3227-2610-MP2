@@ -37,6 +37,12 @@ On subsequent launches, enter the Owner email and password and select `Sign In`.
 
 Select `Return to Login` in the Owner sidebar to clear the current session.
 
+## Light and dark themes
+
+Use `Dark mode` or `Light mode` at the top-right of the window to change the appearance of GymFlow. The control is
+available on every screen, including Login. GymFlow stores the selection locally and restores it on future launches.
+Changing the theme does not affect gym records or other installations of the application.
+
 ## Owner Home
 
 Owner Home displays the total number of registered Members, the number of Members with a currently valid active

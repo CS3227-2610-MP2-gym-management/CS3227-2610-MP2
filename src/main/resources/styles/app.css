@@ -360,3 +360,228 @@
     -fx-text-fill: #1f55ba;
     -fx-font-weight: bold;
 }
+
+.theme-bar {
+    -fx-alignment: center-right;
+    -fx-background-color: #f8fafc;
+    -fx-border-color: transparent transparent #e4e9f1 transparent;
+    -fx-padding: 8px 20px;
+}
+
+.theme-toggle {
+    -fx-background-color: #eef4ff;
+    -fx-border-color: #cbdaf8;
+    -fx-border-radius: 8px;
+    -fx-text-fill: #1f55ba;
+}
+
+.dark.app-shell,
+.dark .dashboard-screen,
+.dark .page-content,
+.dark .content-scroll,
+.dark .content-scroll > .viewport,
+.dark.gymflow-dialog {
+    -fx-background-color: #111827;
+}
+
+.dark .theme-bar {
+    -fx-background-color: #18212f;
+    -fx-border-color: transparent transparent #334155 transparent;
+}
+
+.dark.gymflow-dialog > .button-bar > .container {
+    -fx-background-color: #18212f;
+    -fx-border-color: #334155 transparent transparent transparent;
+}
+
+.dark .login-screen {
+    -fx-background-color: linear-gradient(to bottom right, #101827, #111827 58%, #172033);
+}
+
+.dark .login-panel,
+.dark .card,
+.dark .dialog-content {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #3b4a5f;
+}
+
+.dark .login-title,
+.dark .page-title,
+.dark .section-title,
+.dark .stat-value,
+.dark .dialog-title,
+.dark .dialog-form-label,
+.dark .detail-text,
+.dark .label {
+    -fx-text-fill: #f8fafc;
+}
+
+.dark .muted-text,
+.dark .page-subtitle,
+.dark .stat-label,
+.dark .dialog-subtitle,
+.dark .preview-label,
+.dark .role-label,
+.dark .table-view .placeholder .label {
+    -fx-text-fill: #aebdd0;
+}
+
+.dark .status-badge {
+    -fx-background-color: #493d22;
+    -fx-text-fill: #fde68a;
+}
+
+.dark .text-field,
+.dark .password-field,
+.dark .combo-box,
+.dark .date-picker,
+.dark .text-area,
+.dark .text-area .content,
+.dark.gymflow-dialog .combo-box,
+.dark.gymflow-dialog .date-picker,
+.dark.gymflow-dialog .text-area,
+.dark.gymflow-dialog .text-area .content {
+    -fx-background-color: #2a3749;
+    -fx-border-color: #46566c;
+    -fx-text-fill: #f8fafc;
+    -fx-prompt-text-fill: #91a0b5;
+}
+
+.dark .text-field:focused,
+.dark .password-field:focused,
+.dark .combo-box:focused,
+.dark .date-picker:focused,
+.dark .text-area:focused {
+    -fx-background-color: #344258;
+    -fx-border-color: #60a5fa;
+}
+
+.dark .combo-box .list-cell,
+.dark .date-picker .text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #f8fafc;
+}
+
+.dark .combo-box-popup .list-view,
+.dark .combo-box-popup .list-cell,
+.dark .date-picker-popup {
+    -fx-background-color: #2a3749;
+    -fx-border-color: #46566c;
+}
+
+.dark .combo-box-popup .list-cell:filled:hover,
+.dark .combo-box-popup .list-cell:filled:selected,
+.dark .date-picker-popup .day-cell:hover,
+.dark .date-picker-popup .selected {
+    -fx-background-color: #334e72;
+}
+
+.dark .date-picker-popup .day-cell,
+.dark .date-picker-popup .month-year-pane,
+.dark .date-picker-popup .spinner .button {
+    -fx-background-color: #2a3749;
+    -fx-text-fill: #e5edf7;
+}
+
+.dark .secondary-button,
+.dark .theme-toggle,
+.dark .phone-prefix {
+    -fx-background-color: #2a3749;
+    -fx-border-color: #46566c;
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .table-view {
+    -fx-background-color: #1f2937;
+    -fx-border-color: #3b4a5f;
+}
+
+.dark .table-view .column-header-background,
+.dark .table-view .column-header,
+.dark .table-view .filler {
+    -fx-background-color: #273449;
+}
+
+.dark .table-view .column-header .label {
+    -fx-text-fill: #e5edf7;
+}
+
+.dark .table-row-cell {
+    -fx-background-color: #1f2937;
+    -fx-table-cell-border-color: #334155;
+}
+
+.dark .table-row-cell:filled:hover {
+    -fx-background-color: #273449;
+}
+
+.dark .table-row-cell:filled:selected {
+    -fx-background-color: #334e72;
+}
+
+.dark .table-cell {
+    -fx-text-fill: #e5edf7;
+}
+
+.dark .tab-pane .tab-content-area {
+    -fx-border-color: #3b4a5f;
+}
+
+.dark .tab-pane .tab {
+    -fx-background-color: #2a3749;
+}
+
+.dark .tab-pane .tab .tab-label {
+    -fx-text-fill: #d7e0ed;
+}
+
+.dark .tab-pane .tab:selected {
+    -fx-background-color: #2864dc;
+}
+
+.dark .dialog-warning {
+    -fx-background-color: #432727;
+    -fx-border-color: #7f3d3d;
+    -fx-text-fill: #fecaca;
+}
+
+.dark .error-text,
+.dark .dialog-error {
+    -fx-text-fill: #fca5a5;
+}
+
+.dark .success-text {
+    -fx-text-fill: #86efac;
+}
+
+.dark .check-box {
+    -fx-text-fill: #e5edf7;
+}
+
+.dark .check-box .box {
+    -fx-background-color: #2a3749;
+    -fx-border-color: #46566c;
+    -fx-border-radius: 3px;
+}
+
+.dark .check-box:selected .mark {
+    -fx-background-color: #f8fafc;
+}
+
+.dark .scroll-bar:vertical,
+.dark .scroll-bar:horizontal,
+.dark .scroll-bar .track,
+.dark .scroll-bar .increment-button,
+.dark .scroll-bar .decrement-button {
+    -fx-background-color: #18212f;
+}
+
+.dark .scroll-bar .thumb {
+    -fx-background-color: #526179;
+    -fx-background-radius: 999px;
+}
+
+.dark .scroll-bar .increment-arrow,
+.dark .scroll-bar .decrement-arrow {
+    -fx-background-color: #aebdd0;
+}

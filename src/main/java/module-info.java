@@ -2,6 +2,7 @@
  * Provides the GymFlow JavaFX desktop application.
  */
 module com.gymflow {
+    requires java.prefs;
     requires java.sql;
     requires javafx.controls;
     requires org.xerial.sqlitejdbc;

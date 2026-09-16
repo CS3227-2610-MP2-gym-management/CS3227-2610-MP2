@@ -156,6 +156,9 @@ final class UiComponents {
         dialog.getDialogPane().getStylesheets().add(
                 GymFlowApp.class.getResource("/styles/app.css").toExternalForm());
         dialog.getDialogPane().getStyleClass().addAll("gymflow-dialog", styleClass);
+        if (Theme.isDark(ownerWindow.getScene().getRoot().getStyleClass())) {
+            dialog.getDialogPane().getStyleClass().add("dark");
+        }
         dialog.setOnShown(event -> {
             Stage window = (Stage) dialog.getDialogPane().getScene().getWindow();
             double maximumHeight = ownerWindow.getHeight();
