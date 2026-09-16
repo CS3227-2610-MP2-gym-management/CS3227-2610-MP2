@@ -35,6 +35,7 @@ final class OwnerMembershipsView {
         Label error = new Label();
         error.getStyleClass().add("dialog-error");
         UiComponents.preserveLabelHeight(error);
+        UiComponents.collapseWhenEmpty(error);
         ListView<MembershipOverview> list = membershipList();
         long[] searchVersion = {0};
         Runnable refresh = () -> {
@@ -59,17 +60,17 @@ final class OwnerMembershipsView {
             }
         });
 
-        VBox card = UiComponents.card(searchBar, error, list);
+        VBox records = new VBox(12, searchBar, error, list);
         VBox.setVgrow(list, Priority.ALWAYS);
         VBox content = new VBox(20,
-                UiComponents.header("Memberships", "Review all purchased Membership periods", null), card);
+                UiComponents.header("Memberships", "Review all purchased Membership periods", null), records);
         content.setPadding(new Insets(36));
-        VBox.setVgrow(card, Priority.ALWAYS);
+        VBox.setVgrow(records, Priority.ALWAYS);
 
         BorderPane root = new BorderPane();
         root.setId("owner-memberships-screen");
         root.setLeft(UiComponents.ownerSidebar("Memberships", navigate, resetGymFlow, logout));
-        root.setCenter(UiComponents.scrollable(content));
+        root.setCenter(content);
         Platform.runLater(refresh);
         return root;
     }

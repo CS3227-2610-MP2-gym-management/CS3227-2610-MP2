@@ -44,42 +44,60 @@ final class OwnerVisitsView {
 
     static Parent create(OwnerVisitService visits, Account owner,
             Consumer<Screen> navigate, Consumer<Node> resetGymFlow, Runnable logout) {
+        Runnable[] allRefresh = new Runnable[1];
+        Runnable[] currentRefresh = new Runnable[1];
+        ListView<VisitOverview> allList = visitList("No Visits found", visits, owner,
+                () -> allRefresh[0].run());
+        ListView<VisitOverview> currentList = visitList("No Members are currently visiting",
+                visits, owner, () -> currentRefresh[0].run());
+        Tab allTab = new Tab("All Visits",
+                tabContent(visits, false, allList, allRefresh));
+        Tab currentTab = new Tab("Currently Visiting",
+                tabContent(visits, true, currentList, currentRefresh));
+        TabPane tabs = new TabPane(allTab, currentTab);
+        tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        VBox.setVgrow(tabs, Priority.ALWAYS);
+        VBox content = new VBox(20,
+                UiComponents.header("Visits", "Review gym attendance and current visitors", null), tabs);
+        content.setPadding(new Insets(36));
+
+        BorderPane root = new BorderPane();
+        root.setId("owner-visits-screen");
+        root.setLeft(UiComponents.ownerSidebar("Visits", navigate, resetGymFlow, logout));
+        root.setCenter(content);
+        Platform.runLater(() -> {
+            allRefresh[0].run();
+            currentRefresh[0].run();
+        });
+        return root;
+    }
+
+    private static VBox tabContent(OwnerVisitService visits, boolean currentOnly,
+            ListView<VisitOverview> list, Runnable[] refresh) {
         TextField search = new TextField();
         search.setPromptText("Search by member name or email");
         Button searchButton = new Button("Search");
         searchButton.getStyleClass().add("secondary-button");
         HBox searchBar = new HBox(10, search, searchButton);
         HBox.setHgrow(search, Priority.ALWAYS);
-
-        Runnable[] refresh = new Runnable[1];
-        ListView<VisitOverview> allList = visitList("No Visits found", visits, owner,
-                () -> refresh[0].run());
-        ListView<VisitOverview> currentList = visitList("No Members are currently visiting",
-                visits, owner, () -> refresh[0].run());
-        Tab allTab = new Tab("All Visits", allList);
-        Tab currentTab = new Tab("Currently Visiting", currentList);
-        TabPane tabs = new TabPane(allTab, currentTab);
-        tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-
         Label error = new Label();
         error.getStyleClass().add("dialog-error");
         UiComponents.preserveLabelHeight(error);
-        long[] searchVersion = {0};
+        UiComponents.collapseWhenEmpty(error);
+        long[] version = {0};
         refresh[0] = () -> {
-            long request = ++searchVersion[0];
-            boolean currentOnly = tabs.getSelectionModel().getSelectedItem() == currentTab;
-            ListView<VisitOverview> target = currentOnly ? currentList : allList;
-            String query = search.getText();
+            long request = ++version[0];
             error.setText("");
-            OwnerMembersView.run(null, () -> visits.searchVisits(query, currentOnly), result -> {
-                if (request == searchVersion[0]) {
-                    target.getItems().setAll(result);
-                }
-            }, exception -> {
-                if (request == searchVersion[0]) {
-                    error.setText("Unable to access GymFlow data");
-                }
-            });
+            OwnerMembersView.run(null, () -> visits.searchVisits(search.getText(), currentOnly),
+                    result -> {
+                        if (request == version[0]) {
+                            list.getItems().setAll(result);
+                        }
+                    }, exception -> {
+                        if (request == version[0]) {
+                            error.setText("Unable to access GymFlow data");
+                        }
+                    });
         };
         searchButton.setOnAction(event -> refresh[0].run());
         search.setOnAction(event -> refresh[0].run());
@@ -88,24 +106,9 @@ final class OwnerVisitsView {
                 refresh[0].run();
             }
         });
-        tabs.getSelectionModel().selectedItemProperty().addListener(
-                (observable, previous, selected) -> {
-                    refresh[0].run();
-                });
-
-        VBox card = UiComponents.card(searchBar, error, tabs);
-        VBox.setVgrow(tabs, Priority.ALWAYS);
-        VBox content = new VBox(20,
-                UiComponents.header("Visits", "Review gym attendance and current visitors", null), card);
-        content.setPadding(new Insets(36));
-        VBox.setVgrow(card, Priority.ALWAYS);
-
-        BorderPane root = new BorderPane();
-        root.setId("owner-visits-screen");
-        root.setLeft(UiComponents.ownerSidebar("Visits", navigate, resetGymFlow, logout));
-        root.setCenter(UiComponents.scrollable(content));
-        Platform.runLater(refresh[0]);
-        return root;
+        VBox content = new VBox(12, searchBar, error, list);
+        VBox.setVgrow(list, Priority.ALWAYS);
+        return content;
     }
 
     private static ListView<VisitOverview> visitList(String emptyMessage,

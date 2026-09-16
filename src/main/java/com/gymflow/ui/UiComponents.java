@@ -141,6 +141,11 @@ final class UiComponents {
         return label;
     }
 
+    static void collapseWhenEmpty(Label label) {
+        label.managedProperty().bind(label.textProperty().isNotEmpty());
+        label.visibleProperty().bind(label.textProperty().isNotEmpty());
+    }
+
     static void makeActionable(Node card, String accessibleText, Runnable action) {
         card.getStyleClass().add("record-card-actionable");
         card.setFocusTraversable(true);

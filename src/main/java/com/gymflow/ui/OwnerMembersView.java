@@ -69,8 +69,8 @@ final class OwnerMembersView {
     private static void showMemberList(BorderPane root, OwnerMemberService members,
             OwnerVisitService visits, Account owner) {
         Runnable backToList = () -> showMemberList(root, members, visits, owner);
-        root.setCenter(UiComponents.scrollable(memberList(members, owner,
-                member -> showMemberDetails(root, members, visits, owner, member, backToList))));
+        root.setCenter(memberList(members, owner,
+                member -> showMemberDetails(root, members, visits, owner, member, backToList)));
     }
 
     private static VBox memberList(OwnerMemberService members, Account owner, Consumer<Member> openMember) {
@@ -85,6 +85,7 @@ final class OwnerMembersView {
         Button create = new Button("Create Member");
         create.getStyleClass().add("primary-button");
         Label error = dialogError();
+        UiComponents.collapseWhenEmpty(error);
 
         long[] searchVersion = {0};
         Runnable refresh = () -> {
@@ -110,13 +111,12 @@ final class OwnerMembersView {
         });
         create.setOnAction(event -> showCreateMember(create, members, owner, refresh));
 
-        HBox actions = new HBox(10, create);
-        VBox card = UiComponents.card(searchBar, error, list, actions);
+        VBox records = new VBox(12, searchBar, error, list);
         VBox.setVgrow(list, Priority.ALWAYS);
         VBox content = new VBox(20, UiComponents.header("Members",
-                "Create, search, and open Member profiles", null), card);
+                "Create, search, and open Member profiles", create), records);
         content.setPadding(new Insets(36));
-        VBox.setVgrow(card, Priority.ALWAYS);
+        VBox.setVgrow(records, Priority.ALWAYS);
         Platform.runLater(refresh);
         return content;
     }

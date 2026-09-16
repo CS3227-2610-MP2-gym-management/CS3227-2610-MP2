@@ -209,7 +209,7 @@
 
 .tab-pane .tab {
     -fx-background-color: #eef2f7;
-    -fx-background-radius: 8px 8px 0 0;
+    -fx-background-radius: 8px;
     -fx-padding: 8px 16px;
 }
 
@@ -227,8 +227,8 @@
 }
 
 .tab-pane .tab-content-area {
-    -fx-border-color: #e4e9f1;
-    -fx-border-radius: 0 8px 8px 8px;
+    -fx-background-color: transparent;
+    -fx-padding: 12px 0 0 0;
 }
 
 .gymflow-dialog {
@@ -541,10 +541,6 @@
     -fx-background-color: #2a3749;
     -fx-border-color: #46566c;
     -fx-text-fill: #93c5fd;
-}
-
-.dark .tab-pane .tab-content-area {
-    -fx-border-color: #3b4a5f;
 }
 
 .dark .tab-pane .tab {

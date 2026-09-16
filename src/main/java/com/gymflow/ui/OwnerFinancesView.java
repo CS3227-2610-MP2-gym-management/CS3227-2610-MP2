@@ -65,17 +65,15 @@ final class OwnerFinancesView {
         incomeTab.setContent(incomeContent(members));
         expensesTab.setContent(expenseContent(expenses, owner, expensesTab));
 
-        VBox card = UiComponents.card(tabs);
         VBox.setVgrow(tabs, Priority.ALWAYS);
         VBox content = new VBox(20,
-                UiComponents.header("Finances", "Review membership income and operating expenses", null), card);
+                UiComponents.header("Finances", "Review membership income and operating expenses", null), tabs);
         content.setPadding(new Insets(36));
-        VBox.setVgrow(card, Priority.ALWAYS);
 
         BorderPane root = new BorderPane();
         root.setId("owner-finances-screen");
         root.setLeft(UiComponents.ownerSidebar("Finances", navigate, resetGymFlow, logout));
-        root.setCenter(UiComponents.scrollable(content));
+        root.setCenter(content);
         return root;
     }
 
@@ -87,6 +85,7 @@ final class OwnerFinancesView {
         HBox searchBar = new HBox(10, search, searchButton);
         HBox.setHgrow(search, Priority.ALWAYS);
         Label error = errorLabel();
+        UiComponents.collapseWhenEmpty(error);
         ListView<PaymentOverview> list = paymentList();
         long[] version = {0};
         Runnable refresh = () -> {
@@ -134,6 +133,7 @@ final class OwnerFinancesView {
         toolbar.setAlignment(Pos.CENTER_LEFT);
 
         Label error = errorLabel();
+        UiComponents.collapseWhenEmpty(error);
         ListView<Expense> list = expenseList();
         long[] version = {0};
         Runnable refresh = () -> {

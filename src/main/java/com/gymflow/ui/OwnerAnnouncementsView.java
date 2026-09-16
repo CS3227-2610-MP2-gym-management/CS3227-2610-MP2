@@ -57,13 +57,11 @@ final class OwnerAnnouncementsView {
         Button publish = new Button("Publish Announcement");
         publish.getStyleClass().add("primary-button");
         publish.setOnAction(event -> showPublish(publish, service, owner, refresh[0]));
-        VBox card = UiComponents.card(tabs);
         VBox.setVgrow(tabs, Priority.ALWAYS);
         VBox content = new VBox(20,
-                UiComponents.header("Announcements", "Publish notices for gym Members", publish), card);
+                UiComponents.header("Announcements", "Publish notices for gym Members", publish), tabs);
         content.setPadding(new Insets(36));
-        VBox.setVgrow(card, Priority.ALWAYS);
-        root.setCenter(UiComponents.scrollable(content));
+        root.setCenter(content);
         Platform.runLater(refresh[0]);
     }
 
@@ -72,6 +70,7 @@ final class OwnerAnnouncementsView {
         Label error = new Label();
         error.getStyleClass().add("dialog-error");
         UiComponents.preserveLabelHeight(error);
+        UiComponents.collapseWhenEmpty(error);
         ListView<Announcement> list = announcementList(withdrawn, announcement ->
                 showDetail(root, service, owner, announcement));
         long[] version = {0};
