@@ -7,5 +7,5 @@ Each log must include its goal, important prompts, skills used, decisions, corre
 evidence, and commit or PR references. Newly generated logs remain marked `Pending <member> review` until that member
 checks them against the original interaction.
 
-GymFlow runtime diagnostics also use this directory, but `gymflow-*.log` files are local, generated, and excluded
-from version control. They are not AI interaction summaries.
+This directory is reserved for AI interaction summaries. Generated GymFlow runtime diagnostics are stored separately
+under `data/logs/` and excluded from version control.

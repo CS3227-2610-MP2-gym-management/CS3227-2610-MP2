@@ -57,7 +57,7 @@ public final class GymFlowApp extends Application {
      * @param args command-line arguments
      */
     public static void main(String[] args) {
-        AppMonitoring.start(Path.of("logs"));
+        AppMonitoring.start(Path.of("data", "logs"));
         try {
             launch(args);
         } finally {

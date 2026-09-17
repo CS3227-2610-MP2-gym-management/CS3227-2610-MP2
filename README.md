@@ -33,7 +33,8 @@ preview temporarily.
 GymFlow stores local application data in `data/gymflow.db`, relative to the directory from which the application is
 launched. Passwords are salted and hashed; plain-text passwords are not stored.
 
-Basic diagnostic monitoring writes rotating files under `logs/gymflow-0.log` through `logs/gymflow-2.log`. These
+Basic diagnostic monitoring writes rotating files under `data/logs/gymflow-0.log` through
+`data/logs/gymflow-2.log`. These
 files record startup and sanitized unexpected-error types, not passwords or form contents, and are ignored by Git.
 
 ## Reset GymFlow

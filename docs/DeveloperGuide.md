@@ -146,10 +146,10 @@ to GitHub Pages after changes reach `master`, while a scheduled workflow request
 fails visibly when it cannot obtain a successful response.
 
 `AppMonitoring` uses the JDK logging API rather than another dependency. Application startup and sanitized uncaught
-exception types are written to three rotating files, each limited to approximately 1 MB, under `logs/`. Exception
+exception types are written to three rotating files, each limited to approximately 1 MB, under `data/logs/`. Exception
 messages are deliberately excluded because they could contain values entered into a form. Runtime `.log` files are
-ignored by Git and are separate from the reviewed Markdown AI interaction summaries stored in the same top-level
-directory.
+ignored by Git under `data/logs/`, while the separate top-level `logs/` directory contains only reviewed Markdown AI
+interaction summaries required by the assignment.
 
 ## Development process
 
