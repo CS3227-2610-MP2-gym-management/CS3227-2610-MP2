@@ -1,7 +1,5 @@
 # Owner Setup, Login, and Reset
 
-> Verification status: Pending Dylan review
-
 ## Goal
 
 Add the first functional Owner authentication slice without implementing Member authentication or domain features.

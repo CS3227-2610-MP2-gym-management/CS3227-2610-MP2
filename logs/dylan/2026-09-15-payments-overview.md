@@ -1,7 +1,5 @@
 # Owner Payments Overview Interaction Summary
 
-> Verification status: Pending Dylan review
-
 ## Goal
 
 Enable the existing Owner Payments navigation item using the Payment, Membership, and Member data already recorded by

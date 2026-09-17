@@ -1,7 +1,5 @@
 # Owner-Managed Member Password Interaction Summary
 
-> Verification status: Pending Dylan review
-
 ## Goal
 
 Allow the Owner to choose each new Member's initial password and replace it later without implementing Member-facing

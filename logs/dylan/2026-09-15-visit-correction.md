@@ -1,7 +1,5 @@
 # Owner Visit Correction Interaction Summary
 
-> Verification status: Pending Dylan review
-
 ## Goal
 
 Allow the Owner to correct inaccurate or incomplete Visit timestamps without taking over Member entry and exit.

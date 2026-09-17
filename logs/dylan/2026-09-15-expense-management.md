@@ -1,7 +1,5 @@
 # Owner Expense Management Interaction Summary
 
-> Verification status: Pending Dylan review
-
 ## Request and decisions
 
 Dylan requested Owner entry of maintenance, utility, and similar operating expenditures. The design keeps membership

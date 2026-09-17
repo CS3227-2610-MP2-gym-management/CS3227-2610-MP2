@@ -1,7 +1,5 @@
 # Owner Membership Management
 
-> Verification status: Automated checks pending final run; pending Dylan's manual UI review
-
 ## Goal
 
 Implement Owner-side Membership management and a shared validity contract without implementing Member-facing flows.

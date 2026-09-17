@@ -1,7 +1,5 @@
 # Owner Overview Interaction Summary
 
-> Verification status: Pending Dylan review
-
 ## Request and decisions
 
 Dylan asked to replace the Owner overview placeholders using the Member, Membership, Payment, and Visit data already

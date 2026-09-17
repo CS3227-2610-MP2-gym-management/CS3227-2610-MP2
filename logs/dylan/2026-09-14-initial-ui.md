@@ -1,7 +1,5 @@
 # Initial GymFlow UI
 
-> Verification status: Pending Dylan review
-
 ## Goal
 
 Create the initial JavaFX project and three static screens: Login, Owner Home, and Member Home.

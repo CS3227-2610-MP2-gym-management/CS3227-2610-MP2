@@ -1,7 +1,5 @@
 # Owner Announcement Management Interaction Summary
 
-> Verification status: Pending Dylan review
-
 ## Request and decisions
 
 Dylan requested gym-wide Owner announcements with retained withdrawal history. Announcements may be published or

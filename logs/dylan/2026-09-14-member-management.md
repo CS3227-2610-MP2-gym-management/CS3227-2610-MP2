@@ -1,7 +1,5 @@
 # Owner Member Management
 
-> Verification status: Automated checks passed; pending Dylan's manual UI review
-
 ## Goal
 
 Implement Owner-side Member onboarding, search, and profile editing without implementing Member-facing workflows.
