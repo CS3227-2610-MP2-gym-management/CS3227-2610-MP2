@@ -64,6 +64,10 @@ Members page.
 The Members page lists each Member's number, name, email, and phone number. Enter all or part of a Member's name or
 email and select `Search`, or press Enter in the search field. A blank search displays every Member again.
 
+Select `Export CSV` to save exactly the Member cards currently displayed. This means a search can be used to export a
+subset. The export contains Member number, name, email, phone number, and date of birth; it excludes passwords and
+internal database IDs.
+
 ### Creating a Member
 
 1. Select `Create Member`.
@@ -138,8 +142,9 @@ category or `All Categories` to filter the cards. To add an expense:
 5. Optionally enter a description, then select `Add Expense`.
 
 Supported categories are `MAINTENANCE`, `UTILITIES`, `EQUIPMENT`, `SUPPLIES`, `RENT`, and `OTHER`. Expenses currently
-support creation and viewing only; they cannot be edited or deleted. Income is also read-only, and refunds and exports
-are not available.
+support creation and viewing only; they cannot be edited, deleted, or exported. Income is also read-only. While the
+Income tab is selected, use `Export CSV` to save exactly the Payment cards currently displayed after searching.
+Refunds are not available.
 
 ## Managing Announcements
 
@@ -157,6 +162,9 @@ The Visits page provides two tabs. `All Visits` contains completed and ongoing v
 contains only Members whose Visit has no exit time. Search by Member name or email and select `Search`, or press Enter.
 Clearing the search restores all records in the selected tab.
 
+Select `Export CSV` to save exactly the Visit cards displayed in the selected tab. `All Visits` and `Currently
+Visiting` therefore produce separate snapshots, and a search can further limit either export.
+
 Each card shows the Member number and name, entry time, exit time, and duration. An ongoing Visit displays
 `Currently inside` and `Ongoing`. Times use the computer's local time zone. The same read-only history is available
 from the Member's profile page.
@@ -166,6 +174,10 @@ change, or clear its exit time. Every correction requires a reason. Clearing the
 inside and is rejected if that Member already has another open Visit. Previous correction information is shown when
 the record is corrected again; GymFlow retains the latest correction rather than a complete audit history. Owners
 cannot create new Visits directly.
+
+CSV exports use portable ISO dates and UTC timestamps. Open Visits leave exit and duration cells blank. GymFlow asks
+where to save each UTF-8 `.csv` file and safely escapes commas, quotation marks, line breaks, Unicode text, and values
+that spreadsheet applications could otherwise interpret as formulas. Canceling the save window creates no file.
 
 ## Member dashboard preview
 

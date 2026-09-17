@@ -131,6 +131,18 @@ decimal places are rejected. Expense editing and deletion are intentionally outs
 The Owner dashboard derives total Members, currently valid Memberships, open Visits, total income, total Expenses,
 net income, and the five newest Members from the same database records shown elsewhere in the application.
 
+### CSV export
+
+`CsvExporter` is a package-private UI utility because exports operate on the projections already loaded by each
+screen; they do not require another service or persistence query. Members, Income Payments, and Visits snapshot the
+currently displayed `ListView` items before starting a background write. Consequently, the exported rows reflect the
+active search and, for Visits, the selected tab even if the interface changes while the file is being written.
+
+Files use UTF-8, CRLF records, ISO dates, and UTC ISO-8601 timestamps. Standard CSV quoting protects commas, quotation
+marks, and line breaks. Text beginning with `=`, `+`, `-`, or `@` receives a leading apostrophe to prevent spreadsheet
+formula interpretation. Optional values become empty cells; credentials and internal numeric IDs are never exported.
+The implementation uses the JDK writer and JavaFX `FileChooser`, avoiding a CSV dependency for three fixed schemas.
+
 ### Announcements
 
 Announcements are published by an active Owner. Withdrawal sets `withdrawn_at` and `updated_at` instead of deleting
@@ -234,7 +246,7 @@ Automated test responsibilities are grouped as follows:
 | Members and Memberships | Validation, atomic onboarding, search, renewal, overlap, activation, Payments, dashboard |
 | Visits | Search, current visitors, history, ordering, correction rules, and open-Visit uniqueness |
 | Expenses and Announcements | Authorization, validation, ordering, totals, filtering, publishing, and withdrawal |
-| UI helpers | Theme behavior, resources, card components, financial input, Visit formatting, Owner route guard |
+| UI helpers | Theme behavior, resources, card components, financial input, Visit formatting, Owner route guard, CSV encoding |
 | Monitoring and packaging | Sanitized rotating logs and required release-JAR contents |
 
 JavaFX layout, keyboard focus, dialogs, scrolling, theme contrast, and native launch remain manual-test concerns.

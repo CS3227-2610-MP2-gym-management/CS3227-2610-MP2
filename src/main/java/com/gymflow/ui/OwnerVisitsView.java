@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.gymflow.model.Account;
@@ -56,9 +57,18 @@ final class OwnerVisitsView {
                 tabContent(visits, true, currentList, currentRefresh));
         TabPane tabs = new TabPane(allTab, currentTab);
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        Button export = new Button("Export CSV");
+        export.getStyleClass().add("secondary-button");
+        Label exportStatus = UiComponents.statusLabel();
+        export.setOnAction(event -> exportVisits(export, exportStatus,
+                tabs.getSelectionModel().getSelectedItem() == currentTab ? currentList : allList,
+                tabs.getSelectionModel().getSelectedItem() == currentTab));
+        tabs.getSelectionModel().selectedItemProperty().addListener(
+                (observable, previous, selected) -> exportStatus.setText(""));
         VBox.setVgrow(tabs, Priority.ALWAYS);
         VBox content = new VBox(20,
-                UiComponents.header("Visits", "Review gym attendance and current visitors", null), tabs);
+                UiComponents.header("Visits", "Review gym attendance and current visitors", export),
+                exportStatus, tabs);
         content.setPadding(new Insets(36));
 
         BorderPane root = new BorderPane();
@@ -70,6 +80,34 @@ final class OwnerVisitsView {
             currentRefresh[0].run();
         });
         return root;
+    }
+
+    private static void exportVisits(Button export, Label status,
+            ListView<VisitOverview> list, boolean currentlyVisiting) {
+        List<VisitOverview> snapshot = List.copyOf(list.getItems());
+        if (snapshot.isEmpty()) {
+            UiComponents.showStatus(status, "No records to export", true);
+            return;
+        }
+        String kind = currentlyVisiting ? "current" : "all";
+        var file = UiComponents.chooseCsv(export,
+                "gymflow-visits-" + kind + "-" + LocalDate.now() + ".csv");
+        if (file == null) {
+            return;
+        }
+        status.setText("");
+        export.setText("Exporting…");
+        OwnerMembersView.run(export, () -> {
+            CsvExporter.writeVisits(file, snapshot);
+            return snapshot.size();
+        }, count -> {
+            export.setText("Export CSV");
+            UiComponents.showStatus(status,
+                    "Exported " + count + " records to " + file.getFileName(), false);
+        }, exception -> {
+            export.setText("Export CSV");
+            UiComponents.showStatus(status, "Unable to export CSV", true);
+        });
     }
 
     private static VBox tabContent(OwnerVisitService visits, boolean currentOnly,

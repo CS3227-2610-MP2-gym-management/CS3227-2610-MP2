@@ -1,5 +1,6 @@
 package com.gymflow.ui;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -24,6 +25,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 final class UiComponents {
@@ -144,6 +146,29 @@ final class UiComponents {
     static void collapseWhenEmpty(Label label) {
         label.managedProperty().bind(label.textProperty().isNotEmpty());
         label.visibleProperty().bind(label.textProperty().isNotEmpty());
+    }
+
+    static Label statusLabel() {
+        Label label = new Label();
+        label.setWrapText(true);
+        preserveLabelHeight(label);
+        collapseWhenEmpty(label);
+        return label;
+    }
+
+    static void showStatus(Label label, String message, boolean error) {
+        label.getStyleClass().removeAll("dialog-error", "success-text");
+        label.getStyleClass().add(error ? "dialog-error" : "success-text");
+        label.setText(message);
+    }
+
+    static Path chooseCsv(Node ownerNode, String initialFileName) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Export CSV");
+        chooser.setInitialFileName(initialFileName);
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV files", "*.csv"));
+        var selected = chooser.showSaveDialog(ownerNode.getScene().getWindow());
+        return selected == null ? null : CsvExporter.csvPath(selected.toPath());
     }
 
     static void makeActionable(Node card, String accessibleText, Runnable action) {

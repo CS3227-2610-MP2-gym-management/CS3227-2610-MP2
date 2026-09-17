@@ -83,7 +83,7 @@ Shared storage and service contracts may exist before the corresponding Member i
 
 | ID      | User story                                                                                                          | Status  |
 | ------- | ------------------------------------------------------------------------------------------------------------------- | ------- |
-| O-P2-01 | As a gym Owner, I want to export Member, Payment, or Visit records as CSV files for external analysis or archiving. | Planned |
+| O-P2-01 | As a gym Owner, I want to export Member, Payment, or Visit records as CSV files for external analysis or archiving. | Implemented |
 | O-P2-02 | As a gym Owner, I want to identify peak usage periods so that I can make operational decisions.                     | Planned |
 | O-P2-03 | As a gym Owner, I want to view an audit history of important administrative changes.                                | Planned |
 
@@ -95,4 +95,5 @@ Shared storage and service contracts may exist before the corresponding Member i
   status values.
 - Membership and Payment purchase history is immutable. Renewal creates another Membership and Payment.
 - A Membership deactivated while its Member is inside does not invent an exit time or close the existing Visit.
+- CSV exports are snapshots of the currently displayed Member, Payment, or Visit records after search and tab filters.
 - Member-facing login, dashboards, attendance submission, workouts, and body metrics remain outside Dylan's Owner scope.

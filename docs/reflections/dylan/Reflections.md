@@ -63,6 +63,12 @@ database test drove an idempotent timestamp migration. The
 roles. These tests provided stronger evidence for destructive and persistence-heavy behaviour than manual happy-path
 testing alone.
 
+For CSV export, a failing-test-first pass exposed a subtle security requirement: Singapore phone numbers begin with
+`+`, which spreadsheet programs may interpret as a formula. The exporter test therefore verifies the same leading-
+apostrophe protection used for `=`, `-`, and `@`, in addition to commas, quotation marks, line breaks, Unicode, nulls,
+fixed-decimal amounts, and UTC timestamps. This was a case where a small pure-function test caught behavior that a
+visual export check could easily miss.
+
 **Limitations and correction.** Passing tests did not guarantee correct JavaFX behaviour. During authentication UI
 integration, the agent initially risked reading control values from a background thread. Reviewing the complete data
 flow moved control reads back to the JavaFX Application Thread while leaving hashing and database access in background

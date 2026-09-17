@@ -5,7 +5,8 @@ members.
 
 The current version supports local Owner account setup and login, Member onboarding and profiles, Membership periods,
 income and expenses, Visit oversight and correction, gym announcements, and guarded factory reset. The Member
-dashboard remains a development preview while Member features are added separately.
+dashboard remains a development preview while Member features are added separately. Owners can export the currently
+displayed Member, Income Payment, and Visit records as CSV files.
 
 Use the theme control at the top of the window to switch between light and dark mode. GymFlow remembers the selected
 theme for future launches on the same computer.
