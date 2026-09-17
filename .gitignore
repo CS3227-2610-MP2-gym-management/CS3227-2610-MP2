@@ -1,5 +1,7 @@
 .gradle/
 build/
+bin/
+*.class
 out/
 release/
 /data/
