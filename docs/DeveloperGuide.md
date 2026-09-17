@@ -1,173 +1,268 @@
 # GymFlow Developer Guide
 
+## Product and technology
+
+GymFlow is a local-first Java SE 25 desktop application for a small gym. The current release provides Owner account
+setup and login, Member administration, Membership and Payment records, Expenses, Visit oversight and correction,
+Announcements, application reset, and persistent light/dark themes. Member authentication and operational Member
+workflows are still under development; `MemberHomeView` remains a static preview.
+
+The application uses JavaFX 25 for its interface, SQLite through Xerial JDBC for persistence, Gradle for builds and
+packaging, JUnit 6 for automated tests, and Checkstyle for source checks. It does not require a server or network
+connection during normal use.
+
 ## Architecture
 
-GymFlow is a modular Java SE 25 and JavaFX 25 desktop application. It uses a single local SQLite database and one
-JavaFX `Scene`; `AppView` replaces the centre of a persistent application shell when navigating so screen changes do
-not create extra windows. The shell owns the global theme control and applies one `dark` style class to every screen.
+GymFlow follows a small layered design with one composition root and concrete implementations:
 
-The current code is divided by responsibility:
+```text
+GymFlowApp
+    |
+    v
+AppView and JavaFX views              navigation, session guard, presentation
+    |
+    v
+Authentication and Owner services     validation, authorization, use-case rules
+    |
+    v
+SQLite stores                         queries, transactions, row mapping
+    |
+    v
+GymFlowDatabase -> data/gymflow.db    schema, migrations, connections, reset
 
-- `com.gymflow.ui`: application startup, navigation, and JavaFX views.
-- `com.gymflow.auth`: password hashing and authentication rules.
-- `com.gymflow.data`: SQLite initialization and account persistence.
-- `com.gymflow.expense`: Owner-side operating-expense validation and queries.
-- `com.gymflow.model`: shared account and role data.
-- `com.gymflow.member`: Owner-side Member onboarding and profile rules.
-- `com.gymflow.monitoring`: local startup and unexpected-error diagnostics.
-- `com.gymflow.visit`: read-only Owner attendance queries.
-
-Concrete classes are used instead of repository interfaces or factories because each responsibility currently has one
-implementation. New abstractions should be introduced only when a second implementation or a real testing boundary
-requires one.
-
-The selected theme is stored with Java `Preferences`, independently of the SQLite application data. Dialogs use their
-own JavaFX scenes, so `UiComponents.styleDialog` copies the active `dark` class from the owning application shell.
-Theme colours remain centralized in `app.css`; individual views do not contain theme-specific styling.
-
-## Authentication
-
-An installation supports one Owner account. On first launch, `GymFlowApp` initializes `data/gymflow.db` and the Login
-screen switches to setup mode when no Owner exists.
-
-Passwords are hashed with PBKDF2-HMAC-SHA256 using 600,000 iterations, a random 16-byte salt, and a 32-byte derived
-hash. The database stores the Base64-encoded hash and salt, never the plain-text password. Verification uses a
-constant-time hash comparison. Authentication and reset database work run outside the JavaFX application thread.
-
-## Persistence
-
-`GymFlowDatabase` owns schema initialization and full reset. SQLite foreign-key enforcement is enabled for each
-connection. The current schema contains `accounts` with:
-
-- a case-insensitively unique normalized email;
-- password hash, salt, and iteration count;
-- `OWNER` or `MEMBER` role;
-- active flag plus creation and update timestamps;
-- a partial unique index allowing only one Owner.
-
-Reset discovers all non-SQLite tables and recreates the centralized schema inside one transaction. If recreation
-fails, SQLite rolls back the operation rather than leaving a partially cleared database.
-
-Member onboarding adds `member_profiles`, `memberships`, and `payments`. `member_profiles.account_id` is both its
-primary key and a foreign key to a `MEMBER` account. Each initial Membership belongs to one profile, and its Payment is
-linked by a unique membership ID. Payment amounts are stored as integer SGD cents.
-
-`OwnerMemberStore` creates the account, generated member number, profile, initial Membership, and Payment in one SQLite
-transaction. `OwnerMemberService` validates input and clears the caller's password array. Member search escapes SQL
-wildcards and matches name or email without regard to case. Payment history is loaded through the Membership link:
-`member_profiles.account_id` to `memberships.member_account_id` to `payments.membership_id`.
-
-Member profile validation is centralized in `OwnerMemberService`. Phone numbers are limited to eight-digit Singapore
-numbers beginning with `3`, `6`, `8`, or `9` and normalized to `+65 XXXX XXXX`. An optional date of birth must make the
-Member at least 12 years old. JavaFX dialogs provide immediate input restrictions, but the service remains the
-authoritative boundary. Dialog submit events are consumed until asynchronous persistence succeeds, preserving input
-and displaying validation failures inline.
-
-Owner Member management uses a list-detail pattern. Virtualized JavaFX `ListView` card lists display every record type,
-wrap long values, and retain vertical scrolling at the minimum window size. The Members list performs search and
-creation. Selecting a card opens
-an in-page profile view with read-only payment history, while profile editing happens in the same page instead of a
-separate edit dialog.
-
-Member password replacement follows the same security boundary as onboarding. `OwnerMemberService` validates the new
-password, creates a fresh PBKDF2 hash and salt, and clears the caller's character array on every outcome.
-`OwnerMemberStore` updates only the credential columns and account update timestamp when the requester is an active
-Owner and the target is a Member. The Owner's password is not requested again because the Owner session and store-level
-role check already authorize the operation; full GymFlow reset retains its stronger reauthentication guard because it
-deletes every record.
-
-The Owner sidebar exposes the full reset from every Owner screen through one shared dialog. The dialog still requires
-the current Owner password and exact `RESET` confirmation; moving the entry point does not weaken authorization. The
-Member sidebar does not receive this action.
-
-`Account` and `Role` are the implemented names for the design's `User` and `UserRole` entities. Memberships store one
-purchased access period, and each has exactly one Payment. Membership and Payment creation uses one transaction.
-Existing databases are upgraded by an idempotent schema-version migration that adds the required timestamps without
-deleting records.
-
-Membership display status is derived from its active flag and dates rather than stored. New active periods cannot
-overlap another active period for the same Member. Deactivation does not change `accounts.is_active`, so it does not
-prevent authentication. `OwnerMemberService.hasValidMembership(memberId, date)` is the shared contract for future
-Member entry validation; it returns true when any active Membership covers the date inclusively.
-
-`PaymentOverview` joins an immutable `MemberPayment` to the Member identity and purchased Membership period required by
-the Owner Finances page's Income tab. `OwnerMemberStore.searchPayments` matches Member name or email only and orders records by
-payment time and ID descending. The global page is deliberately read-only; Member onboarding and Membership renewal
-remain the only Payment creation paths.
-
-`OwnerMemberStore.ownerDashboard` supplies the Owner overview without another service layer. It counts registered
-Member profiles and distinct Members with an active Membership covering today, and totals every recorded Payment.
-It also returns the five most recently created Members. Each overview card selects the currently valid active
-Membership first, otherwise the nearest upcoming active Membership, otherwise the latest historical Membership.
-`OwnerVisitService.currentVisitorCount` remains the source of the separate open-Visit count.
-
-Operating Expenses are stored separately because they have no Member or Membership relationship. `OwnerExpenseService`
-validates immutable additions and exposes all/category listings plus the all-recorded-time total.
-`OwnerExpenseStore` stores amounts as integer SGD cents and verifies the recording account is an active Owner. Expense
-editing and deletion are intentionally not implemented. The Owner overview subtracts the Expense total from membership
-income to derive the all-recorded-time net value.
-
-The shared `Visit` record maps to the `visits` table. `Account`, `Role`, and `member_account_id` are the implemented
-names for the design's `User`, `UserRole`, and `Visit.memberId` concepts. A null `exited_at` derives the currently
-checked-in state. A partial unique index prevents more than one open Visit per Member, and a table constraint prevents
-an exit from preceding entry. Visit timestamps use fixed UTC ISO-8601 millisecond form
-`yyyy-MM-dd'T'HH:mm:ss.SSS'Z'`; this makes the database constraint and ordering exact at the supported precision.
-`OwnerVisitService` exposes all/current searches, per-Member history, the current visitor count, and Owner correction.
-Schema version 3 adds nullable latest-correction metadata and transactionally rebuilds version-2 Visit tables while
-preserving their rows. A correction atomically replaces the timestamps and latest reason after confirming an active
-Owner, valid timestamp order, and a real change. The existing unique index also prevents a correction from reopening a
-Visit when that Member already has another open Visit. Member-side entry and exit orchestration is intentionally left
-to the Member feature owner, who can use the existing Membership-validity contract before inserting a Visit.
-
-Deactivating a Membership deliberately does not close an existing open Visit. The Member remains currently checked
-in until the Member-side exit workflow supplies the real exit time; otherwise deactivation would fabricate attendance
-data. Deactivation makes `hasValidMembership(memberId, date)` return false for subsequent entry attempts while leaving
-the Member account and existing Visit history unchanged.
-
-Announcements use a separate concrete store and service because they are gym-wide records rather than Member-owned
-data. Schema version 5 adds the `announcements` table. Publication and withdrawal verify an active Owner in the write
-query. Withdrawal sets `withdrawn_at` and `updated_at` instead of deleting the record. `listPublished()` is the shared
-read-only contract for the future Member interface; read/unread tracking and Member UI remain outside this branch.
-
-## Build, testing, and CI
-
-Gradle compiles against Java 25 and runs JUnit 5 and Checkstyle:
-
-```shell
-./gradlew clean check
+Shared model records and enums are used across the service, persistence, and UI layers.
 ```
 
-`releaseJars` produces Windows x64, Linux x64, macOS x64, and macOS ARM64 executable JARs. Each JAR includes the
-matching JavaFX and SQLite native libraries; the verification task checks required resources and native contents.
+The UI does not issue SQL. Views call services, services validate inputs and delegate to concrete stores, and stores
+own persistence operations. Repository interfaces, factories, and dependency-injection frameworks are intentionally
+omitted because each responsibility currently has one implementation.
 
-GitHub Actions runs checks and the matching packaging task on all four operating-system targets. CodeQL analyzes Java
-on pushes, pull requests, and a weekly schedule. A separate workflow deploys the dependency-free `site/` directory
-to GitHub Pages after changes reach `master`, while a scheduled workflow requests the live URL every six hours and
-fails visibly when it cannot obtain a successful response.
+### Package responsibilities
 
-`AppMonitoring` uses the JDK logging API rather than another dependency. Application startup and sanitized uncaught
-exception types are written to three rotating files, each limited to approximately 1 MB, under `data/logs/`. Exception
-messages are deliberately excluded because they could contain values entered into a form. Runtime `.log` files are
-ignored by Git under `data/logs/`, while the separate top-level `logs/` directory contains only reviewed Markdown AI
-interaction summaries required by the assignment.
+| Package | Responsibility |
+| --- | --- |
+| `com.gymflow.ui` | Application startup, navigation, JavaFX screens, dialogs, formatting, and themes |
+| `com.gymflow.auth` | Password hashing, Owner setup, authentication, and reset authorization |
+| `com.gymflow.member` | Owner-side Member, Membership, Payment, and dashboard rules |
+| `com.gymflow.expense` | Owner-side Expense validation and queries |
+| `com.gymflow.visit` | Owner-side Visit searches, counts, history, and corrections |
+| `com.gymflow.announcement` | Announcement publication, listing, and withdrawal |
+| `com.gymflow.data` | SQLite schema management, stores, transactions, and row mapping |
+| `com.gymflow.model` | Shared immutable records and fixed-value enums |
+| `com.gymflow.monitoring` | Local startup and sanitized unexpected-error diagnostics |
 
-## Development process
+### Application shell and navigation
 
-Features are developed on role-and-feature-specific branches and reviewed before merging into `master`. Behavioural
-changes use a failing-test-first workflow. AI interaction summaries are stored under `logs/<member>/`, and generated
-summaries remain marked pending until the named team member verifies them.
+`GymFlowApp` initializes the database and services before constructing `AppView`. `AppView` owns one JavaFX `Scene`
+and replaces the centre of a persistent shell when navigating, so screen changes do not create extra windows. Every
+Owner route checks that the in-memory session exists and has the `OWNER` role. Store-level active-Owner checks repeat
+authorization for persistent write operations rather than trusting the UI alone.
 
-Documentation must describe the latest released behaviour precisely. Update this guide and the User Guide in the same
-feature branch as any affected behaviour.
+The shell also owns the theme control. Java `Preferences` stores the selected theme independently of gym data, and
+`UiComponents.styleDialog` applies the current theme to dialogs because each JavaFX dialog has its own scene.
+
+## Main components
+
+### Authentication and accounts
+
+An installation supports one Owner account. On first launch, the Login screen enters setup mode when no Owner exists.
+Emails are trimmed, lowercased, and stored under a case-insensitive uniqueness constraint.
+
+Passwords use PBKDF2-HMAC-SHA256 with 600,000 iterations, a random 16-byte salt, and a 32-byte derived hash. Only the
+Base64-encoded hash and salt are stored. Verification uses a constant-time comparison, and services clear submitted
+password character arrays on every outcome. Hashing and database operations run outside the JavaFX Application
+Thread.
+
+The full reset requires the current Owner password and exact `RESET` confirmation. `GymFlowDatabase` drops and
+recreates all application tables inside one transaction, allowing SQLite to roll back a failed reset.
+
+### Members, Memberships, and Payments
+
+Member onboarding creates an account, generated Member number, profile, initial Membership, and Payment in one
+transaction. Profile validation is authoritative in `OwnerMemberService`:
+
+- Email must contain exactly one `@` with text on both sides and is normalized to lowercase.
+- Phone numbers are eight-digit Singapore numbers beginning with `3`, `6`, `8`, or `9` and are stored as
+  `+65 XXXX XXXX`.
+- Date of birth is optional; when supplied, the Member must be at least 12 years old.
+- Passwords contain 12–128 characters.
+- Monetary amounts are positive, limited to two decimal places, and stored as integer SGD cents.
+
+Member search escapes SQL wildcard characters and matches names or emails without regard to case. Selecting a Member
+card opens an in-page profile containing Membership, Visit, and Payment history. Password reset replaces only the
+credential fields with a freshly salted hash; it does not alter the Member's records or active state.
+
+Each Membership represents one purchased access period and has exactly one immutable Payment. Access on a date is
+derived rather than stored:
+
+```text
+membership.active
+AND membership.startDate <= date
+AND date <= membership.expiryDate
+```
+
+Active periods for the same Member cannot overlap. Renewal creates a new Membership and Payment. Deactivation never
+disables the Member account and does not close an existing Visit. Display values such as `ACTIVE`, `UPCOMING`,
+`EXPIRED`, and `DEACTIVATED` are calculated from the flag and dates.
+
+### Visits
+
+A Visit stores an entry time and an optional exit time. A partial unique SQLite index prevents more than one open
+Visit per Member, while a table constraint prevents an exit from preceding entry. A null exit derives the currently
+checked-in state; no separate Visit status is stored.
+
+Visit timestamps are stored as UTC ISO-8601 instants and displayed in the computer's local time zone. Owners can
+correct entry and exit times with a required reason. GymFlow stores the latest correction time, Owner, and reason,
+rather than maintaining a separate audit-history subsystem. Reopening a Visit is rejected when that Member already
+has another open Visit.
+
+`OwnerMemberService.hasValidMembership(memberId, date)` is the shared eligibility contract for the future Member
+entry workflow. Owner correction intentionally does not revalidate historical Membership eligibility.
+
+### Finances and dashboard
+
+Payments are membership income and can be created only with Member onboarding or a new Membership. The Finances page
+joins each Payment to its Member and Membership period and otherwise keeps it read-only.
+
+Expenses are independent immutable operating records. They contain a date, amount, method, category, optional
+description, recording Owner, and creation time. Future dates, non-positive values, and amounts with more than two
+decimal places are rejected. Expense editing and deletion are intentionally outside the current scope.
+
+The Owner dashboard derives total Members, currently valid Memberships, open Visits, total income, total Expenses,
+net income, and the five newest Members from the same database records shown elsewhere in the application.
+
+### Announcements
+
+Announcements are published by an active Owner. Withdrawal sets `withdrawn_at` and `updated_at` instead of deleting
+the row, preserving Owner-visible history. `OwnerAnnouncementService.listPublished()` is the read-only contract for
+the future Member interface. Read/unread tracking is not required by the current stories.
+
+## Persistence and schema evolution
+
+`GymFlowDatabase` creates parent directories, opens SQLite connections with foreign keys enabled, initializes the
+schema, applies versioned migrations, and performs full reset. The current schema version is 5.
+
+`Account` and `Role` are the implemented names for the design's `User` and `UserRole` concepts.
+`member_account_id` is the database foreign key corresponding to the shared model's `memberId`.
+
+| Table | Main relationship or constraint |
+| --- | --- |
+| `accounts` | Normalized unique email, fixed `OWNER`/`MEMBER` role, one-Owner partial index |
+| `member_profiles` | One-to-one primary/foreign key to a Member account |
+| `memberships` | Many access periods belonging to one Member |
+| `payments` | Exactly one Payment per Membership, recorded by an Owner |
+| `visits` | Member attendance with at most one open Visit |
+| `expenses` | Independent immutable operating costs recorded by an Owner |
+| `announcements` | Gym-wide notices with nullable withdrawal metadata |
+
+Migrations are ordered and idempotent through SQLite `PRAGMA user_version`. They preserve existing rows and update the
+version only after successful work. The Visit migration rebuilds its table transactionally when adding constraints
+that SQLite cannot apply with a simple `ALTER TABLE`. New tables automatically participate in reset because schema
+creation remains centralized.
+
+## Key design decisions
+
+| Decision | Reason and accepted trade-off |
+| --- | --- |
+| One local Owner per installation | Fits one gym and makes first-run setup simple; multi-Owner administration is unsupported |
+| Local SQLite database | Keeps the desktop app self-contained; installations do not share records automatically |
+| Concrete services and stores | Avoids speculative interfaces; add an abstraction only when a second implementation exists |
+| Immutable purchase records | Membership and Payment history remains explainable; corrections require deactivation and replacement |
+| Derived statuses and totals | Prevents stored values drifting from dates and source records; values are recomputed on read |
+| Integer cents for money | Avoids floating-point rounding errors; currency is fixed to SGD |
+| Latest Visit correction metadata | Supports accountability with little schema cost; full correction history is not retained |
+| Platform-specific release JARs | Bundles only matching JavaFX and SQLite natives; four artifacts must be produced |
+
+## Error handling, security, and monitoring
+
+JavaFX forms provide early restrictions, while services repeat validation so invalid values cannot bypass the UI.
+Dialogs consume submit events until background work succeeds, preserving entered values and showing non-sensitive
+inline failures. Multi-record writes use transactions so partial Member, Membership, or Payment records are not left
+behind.
+
+Authentication deliberately returns the same failure for unknown email, incorrect password, and inactive account.
+Plain-text passwords are never stored or logged. Owner pages use a role-aware session guard, and stores independently
+check active-Owner authorization before writes.
+
+`AppMonitoring` uses the JDK logging API and adds no dependency. It writes startup events and sanitized uncaught-error
+types to three rotating files under `data/logs/`, each limited to approximately 1 MB. Exception messages are excluded
+because they could contain form values. Runtime `.log` files and `data/gymflow.db` are ignored by Git; the separate
+top-level `logs/` directory contains reviewed AI interaction summaries.
+
+## Build, testing, CI, and deployment
+
+Useful commands from the repository root are:
+
+```shell
+./gradlew run          # compile and launch on the current platform
+./gradlew test         # run JUnit 6 tests
+./gradlew check        # run tests and Checkstyle
+./gradlew releaseJars  # build and verify all four platform JARs
+```
+
+Windows uses the equivalent commands through `gradlew.bat`. Release tasks produce self-contained JARs for Windows
+x64, Linux x64, macOS x64, and macOS ARM64. `Launcher` provides a plain Java entry point so packaged JARs can reach
+the bundled JavaFX runtime. `verifyReleaseJars` checks the stylesheet, SQLite service metadata, and matching native
+libraries.
+
+Automated test responsibilities are grouped as follows:
+
+| Area | Observable behavior covered |
+| --- | --- |
+| Authentication | Setup, email normalization, credential failures, password hashing, reset authorization |
+| Persistence | Schema creation, migrations, database constraints, transactions, and full reset |
+| Members and Memberships | Validation, atomic onboarding, search, renewal, overlap, activation, Payments, dashboard |
+| Visits | Search, current visitors, history, ordering, correction rules, and open-Visit uniqueness |
+| Expenses and Announcements | Authorization, validation, ordering, totals, filtering, publishing, and withdrawal |
+| UI helpers | Theme behavior, resources, card components, financial input, Visit formatting, Owner route guard |
+| Monitoring and packaging | Sanitized rotating logs and required release-JAR contents |
+
+JavaFX layout, keyboard focus, dialogs, scrolling, theme contrast, and native launch remain manual-test concerns.
+Release verification should cover first-run setup, login, each Owner page, invalid input retention, reset cancellation,
+database persistence after restart, and the matching JAR on each supported platform.
+
+The **Tests** GitHub Actions workflow runs `check` and the matching release task across Windows, Linux, Intel macOS,
+and Apple silicon macOS on pushes and pull requests. **CodeQL** analyzes Java on the same events and weekly. The
+**Pages** workflow deploys the dependency-free `site/` directory from `master`, and **Website Uptime** checks the live
+site every six hours.
+
+## Software engineering process
+
+Work is divided by user role and developed on descriptive feature branches. Changes are reviewed before reaching
+`master`, and behavioral changes use a failing-test-first workflow. A feature is complete when its reachable behavior
+matches the approved stories, relevant automated tests and Checkstyle pass, platform packaging still succeeds, manual
+JavaFX checks are complete, and affected documentation is current.
+
+OpenAI Codex assists with requirements refinement, planning, implementation, testing, debugging, review, and
+documentation. Superpowers supplies structured brainstorming, planning, TDD, debugging, and verification workflows;
+Ponytail reviews changes for unnecessary code and speculative abstractions. Humans retain responsibility for scope,
+design approval, manual acceptance, generated-summary verification, commits, and merges. Interaction summaries live
+under `logs/<member>/` and remain marked pending until the named member reviews them.
+
+## Extension points
+
+- Implement Member authentication by routing an authenticated `MEMBER` session to Member screens while retaining the
+  centralized Owner-role guard.
+- Validate Member entry with `hasValidMembership(memberId, date)` before inserting a Visit, and require an open Visit
+  before exit.
+- Read active notices through `OwnerAnnouncementService.listPublished()` for the future Member dashboard.
+- Keep new schema changes ordered, versioned, transactional, and included in centralized reset.
+- Add new persistence abstractions only when another implementation or a genuine test boundary requires them.
 
 ## Acknowledgements
 
-- The initial visual direction was adapted from Google Stitch mock-ups created for GymFlow; generated HTML was used
+- The initial visual direction was adapted from Google Stitch mock-ups created for GymFlow. Generated HTML was used
   only as a visual reference and was not copied into the JavaFX implementation.
-- OpenAI Codex assisted with planning, implementation, testing, review, and interaction-log summaries.
-- The Ponytail plugin was used to review changes for unnecessary code and speculative abstractions.
-- The Superpowers plugin supplied brainstorming, planning, TDD, debugging, and verification workflows.
-- GymFlow uses OpenJFX and the Xerial SQLite JDBC driver. Their respective projects retain ownership of their code and
+- [OpenAI Codex](https://openai.com/codex/) assisted with planning, implementation, testing, review, and interaction-log
+  summaries. All generated output was reviewed and adapted for this project.
+- The Ponytail plugin guided simplification reviews; no Ponytail source code is included in GymFlow.
+- The Superpowers plugin supplied development-process skills; no Superpowers source code is included in GymFlow.
+- GymFlow uses [OpenJFX](https://openjfx.io/), the
+  [Xerial SQLite JDBC driver](https://github.com/xerial/sqlite-jdbc),
+  [Gradle](https://gradle.org/), and [JUnit](https://junit.org/). Their projects retain ownership of their code and
   licences.
+- Repository automation uses [GitHub Actions](https://github.com/features/actions),
+  [CodeQL](https://codeql.github.com/), and
+  [GitHub Pages](https://docs.github.com/en/pages).
 
 Add every externally reused idea, code fragment, asset, or document to this section when it is introduced.
