@@ -84,6 +84,9 @@ final class OwnerMembersView {
         ListView<Member> list = memberList(openMember);
         Button create = new Button("Create Member");
         create.getStyleClass().add("primary-button");
+        Button export = new Button("Export CSV");
+        export.getStyleClass().add("secondary-button");
+        Label exportStatus = UiComponents.statusLabel();
         Label error = dialogError();
         UiComponents.collapseWhenEmpty(error);
 
@@ -110,15 +113,43 @@ final class OwnerMembersView {
             }
         });
         create.setOnAction(event -> showCreateMember(create, members, owner, refresh));
+        export.setOnAction(event -> exportMembers(export, exportStatus, list));
 
-        VBox records = new VBox(12, searchBar, error, list);
+        HBox actions = new HBox(10, export, create);
+        VBox records = new VBox(12, searchBar, error, exportStatus, list);
         VBox.setVgrow(list, Priority.ALWAYS);
         VBox content = new VBox(20, UiComponents.header("Members",
-                "Create, search, and open Member profiles", create), records);
+                "Create, search, and open Member profiles", actions), records);
         content.setPadding(new Insets(36));
         VBox.setVgrow(records, Priority.ALWAYS);
         Platform.runLater(refresh);
         return content;
+    }
+
+    private static void exportMembers(Button export, Label status, ListView<Member> list) {
+        List<Member> snapshot = List.copyOf(list.getItems());
+        if (snapshot.isEmpty()) {
+            UiComponents.showStatus(status, "No records to export", true);
+            return;
+        }
+        var file = UiComponents.chooseCsv(export,
+                "gymflow-members-" + LocalDate.now() + ".csv");
+        if (file == null) {
+            return;
+        }
+        status.setText("");
+        export.setText("Exporting…");
+        run(export, () -> {
+            CsvExporter.writeMembers(file, snapshot);
+            return snapshot.size();
+        }, count -> {
+            export.setText("Export CSV");
+            UiComponents.showStatus(status,
+                    "Exported " + count + " records to " + file.getFileName(), false);
+        }, exception -> {
+            export.setText("Export CSV");
+            UiComponents.showStatus(status, "Unable to export CSV", true);
+        });
     }
 
     private static ListView<Member> memberList(Consumer<Member> openMember) {

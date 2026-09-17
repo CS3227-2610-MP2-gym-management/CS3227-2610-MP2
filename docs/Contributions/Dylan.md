@@ -22,6 +22,7 @@ feature is merged.
 | Announcement management | Owner publication, withdrawal, active notices, and retained history                                               | `e1603c8`, PR #8                       |
 | Application themes      | Persistent light/dark mode across screens and dialogs                                                             | `32faa8f`, PR #9                       |
 | Record-card interface   | Virtualized, responsive card lists replacing dense tables across Owner and Member screens                         | `d802479`, `c0c0380`, PR #9            |
+| CSV export              | Safe current-view exports for Members, Income Payments, and Visits                                                 | O-P2-01 feature commit                 |
 
 ## Team-level engineering
 

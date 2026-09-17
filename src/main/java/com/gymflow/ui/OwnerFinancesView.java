@@ -61,13 +61,22 @@ final class OwnerFinancesView {
         Tab expensesTab = new Tab("Expenses");
         TabPane tabs = new TabPane(incomeTab, expensesTab);
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        Button export = new Button("Export CSV");
+        export.getStyleClass().add("secondary-button");
+        Label exportStatus = UiComponents.statusLabel();
 
-        incomeTab.setContent(incomeContent(members));
+        incomeTab.setContent(incomeContent(members, export, exportStatus));
         expensesTab.setContent(expenseContent(expenses, owner, expensesTab));
+        tabs.getSelectionModel().selectedItemProperty().addListener((observable, previous, selected) -> {
+            boolean incomeSelected = selected == incomeTab;
+            export.setManaged(incomeSelected);
+            export.setVisible(incomeSelected);
+            exportStatus.setText("");
+        });
 
         VBox.setVgrow(tabs, Priority.ALWAYS);
         VBox content = new VBox(20,
-                UiComponents.header("Finances", "Review membership income and operating expenses", null), tabs);
+                UiComponents.header("Finances", "Review membership income and operating expenses", export), tabs);
         content.setPadding(new Insets(36));
 
         BorderPane root = new BorderPane();
@@ -77,7 +86,7 @@ final class OwnerFinancesView {
         return root;
     }
 
-    private static VBox incomeContent(OwnerMemberService members) {
+    private static VBox incomeContent(OwnerMemberService members, Button export, Label exportStatus) {
         TextField search = new TextField();
         search.setPromptText("Search by member name or email");
         Button searchButton = new Button("Search");
@@ -109,10 +118,38 @@ final class OwnerFinancesView {
                 refresh.run();
             }
         });
-        VBox content = new VBox(12, searchBar, error, list);
+        export.setOnAction(event -> exportPayments(export, exportStatus, list));
+        VBox content = new VBox(12, searchBar, error, exportStatus, list);
         VBox.setVgrow(list, Priority.ALWAYS);
         Platform.runLater(refresh);
         return content;
+    }
+
+    private static void exportPayments(Button export, Label status,
+            ListView<PaymentOverview> list) {
+        var snapshot = java.util.List.copyOf(list.getItems());
+        if (snapshot.isEmpty()) {
+            UiComponents.showStatus(status, "No records to export", true);
+            return;
+        }
+        var file = UiComponents.chooseCsv(export,
+                "gymflow-payments-" + LocalDate.now() + ".csv");
+        if (file == null) {
+            return;
+        }
+        status.setText("");
+        export.setText("Exporting…");
+        OwnerMembersView.run(export, () -> {
+            CsvExporter.writePayments(file, snapshot);
+            return snapshot.size();
+        }, count -> {
+            export.setText("Export CSV");
+            UiComponents.showStatus(status,
+                    "Exported " + count + " records to " + file.getFileName(), false);
+        }, exception -> {
+            export.setText("Export CSV");
+            UiComponents.showStatus(status, "Unable to export CSV", true);
+        });
     }
 
     private static VBox expenseContent(OwnerExpenseService expenses,
