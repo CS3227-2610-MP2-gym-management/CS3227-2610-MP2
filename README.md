@@ -13,6 +13,7 @@ theme for future launches on the same computer.
 Project documentation:
 
 - [User Guide](docs/UserGuide.md)
+- [User Stories](docs/UserStories.md)
 - [Developer Guide](docs/DeveloperGuide.md)
 - [Agentic SE Reflections](docs/Reflections.md)
 - [AI Interaction Logs](logs/README.md)

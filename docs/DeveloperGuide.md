@@ -137,12 +137,32 @@ Announcements are published by an active Owner. Withdrawal sets `withdrawn_at` a
 the row, preserving Owner-visible history. `OwnerAnnouncementService.listPublished()` is the read-only contract for
 the future Member interface. Read/unread tracking is not required by the current stories.
 
+## Domain model
+
+The implemented model follows the agreed entities while using concise Java names. `Account` corresponds to the
+planning document's `User`, `Role` corresponds to `UserRole`, and `Member` combines the account identity with its
+one-to-one `MemberProfile` for Owner-facing reads.
+
+| Entity | Principal fields and relationships | Important rules |
+| --- | --- | --- |
+| `Account` | `id`, normalized `email`, `role`, `active`, `createdAt`, `updatedAt`; secret hash, salt, and iteration fields remain in persistence | Role is `OWNER` or `MEMBER`; email is case-insensitively unique; one Owner per installation |
+| `Member` / `MemberProfile` | Account ID, unique Member number, full name, phone number, optional date of birth | Exists only for a Member account; Singapore phone and minimum-age validation apply |
+| `Membership` | ID, Member ID, start date, expiry date, active flag, creation and update times | Expiry cannot precede start; active periods cannot overlap; status is derived |
+| `MemberPayment` | ID, Membership ID, amount, method, paid time, optional reference, recording Owner, creation time | Exactly one immutable Payment per Membership; positive SGD amount with at most two decimals |
+| `Visit` | ID, Member ID, entry, optional exit, creation time, optional latest correction metadata | At most one open Visit per Member; exit cannot precede entry; all correction fields are present together |
+| `Expense` | ID, date, amount, method, category, optional description, recording Owner, creation time | Immutable, positive SGD amount; date cannot be in the future |
+| `Announcement` | ID, title, content, publication time, creating Owner, optional withdrawal time, creation and update times | Required title and content; withdrawal preserves history instead of deleting the record |
+
+`Role`, `PaymentMethod`, `ExpenseCategory`, and derived `MembershipStatus` are enums because each has a fixed set of
+values. Planned entities such as `MembershipPlan`, `Workout`, `WorkoutSet`, `BodyMetric`, and `AuditLog` are not part of
+the current schema and must not be treated as implemented features. The complete prioritized backlog and implementation
+status are recorded in the [User Stories](UserStories.md).
+
 ## Persistence and schema evolution
 
 `GymFlowDatabase` creates parent directories, opens SQLite connections with foreign keys enabled, initializes the
 schema, applies versioned migrations, and performs full reset. The current schema version is 5.
 
-`Account` and `Role` are the implemented names for the design's `User` and `UserRole` concepts.
 `member_account_id` is the database foreign key corresponding to the shared model's `memberId`.
 
 | Table | Main relationship or constraint |
