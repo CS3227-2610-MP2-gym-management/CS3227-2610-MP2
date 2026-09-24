@@ -12,6 +12,7 @@ import com.gymflow.member.OwnerMemberService;
 import com.gymflow.member.MemberAccountService;
 import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.visit.MemberVisitService;
+import com.gymflow.workout.WorkoutService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.Node;
@@ -34,6 +35,7 @@ public final class AppView {
     private final MemberAccountService memberAccounts;
     private final OwnerVisitService visits;
     private final MemberVisitService memberVisits;
+    private final WorkoutService workouts;
     private Account session;
     private boolean ownerExists;
     private Theme theme;
@@ -45,7 +47,8 @@ public final class AppView {
      */
     public AppView(Stage stage, AuthenticationService authentication,
             OwnerMemberService members, OwnerExpenseService expenses,
-            OwnerVisitService visits, MemberVisitService memberVisits, OwnerAnnouncementService announcements,
+            OwnerVisitService visits, MemberVisitService memberVisits, 
+            WorkoutService workouts, OwnerAnnouncementService announcements,
             MemberAccountService memberAccounts, boolean ownerExists) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
@@ -55,6 +58,7 @@ public final class AppView {
         this.memberAccounts = Objects.requireNonNull(memberAccounts);
         this.visits = Objects.requireNonNull(visits);
         this.memberVisits = Objects.requireNonNull(memberVisits);
+        this.workouts = Objects.requireNonNull(workouts);
         this.ownerExists = ownerExists;
         theme = preferences.getBoolean(DARK_MODE, false) ? Theme.DARK : Theme.LIGHT;
         shell.getStyleClass().add("app-shell");
@@ -103,9 +107,11 @@ public final class AppView {
         case MEMBER_VISITS -> !isMemberSession(session)
                 ? createLogin()
                 : MemberVisitsView.create(memberVisits, session, this::show, this::logout);
-        case MEMBER_WORKOUTS, MEMBER_PROFILE -> !isMemberSession(session)
+        case MEMBER_WORKOUTS -> !isMemberSession(session)
                 ? createLogin()
-                : MemberHomeView.createPlaceholder(screen, this::show, this::logout);
+                : MemberWorkoutsView.create(workouts, session, this::show, this::logout);
+        case MEMBER_PROFILE -> !isMemberSession(session)
+                ? createLogin() : MemberHomeView.createPlaceholder(screen, this::show, this::logout);
         };
         shell.setCenter(root);
     }
