@@ -11,6 +11,7 @@ import com.gymflow.model.Role;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.member.MemberAccountService;
 import com.gymflow.visit.OwnerVisitService;
+import com.gymflow.visit.MemberVisitService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.Node;
@@ -32,6 +33,7 @@ public final class AppView {
     private final OwnerMemberService members;
     private final MemberAccountService memberAccounts;
     private final OwnerVisitService visits;
+    private final MemberVisitService memberVisits;
     private Account session;
     private boolean ownerExists;
     private Theme theme;
@@ -43,7 +45,7 @@ public final class AppView {
      */
     public AppView(Stage stage, AuthenticationService authentication,
             OwnerMemberService members, OwnerExpenseService expenses,
-            OwnerVisitService visits, OwnerAnnouncementService announcements,
+            OwnerVisitService visits, MemberVisitService memberVisits, OwnerAnnouncementService announcements,
             MemberAccountService memberAccounts, boolean ownerExists) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
@@ -52,6 +54,7 @@ public final class AppView {
         this.members = Objects.requireNonNull(members);
         this.memberAccounts = Objects.requireNonNull(memberAccounts);
         this.visits = Objects.requireNonNull(visits);
+        this.memberVisits = Objects.requireNonNull(memberVisits);
         this.ownerExists = ownerExists;
         theme = preferences.getBoolean(DARK_MODE, false) ? Theme.DARK : Theme.LIGHT;
         shell.getStyleClass().add("app-shell");
@@ -93,7 +96,7 @@ public final class AppView {
                 : OwnerAnnouncementsView.create(announcements, session, this::show, this::showReset, this::logout);
         case MEMBER_HOME -> !isMemberSession(session)
                 ? createLogin()
-                : MemberHomeView.create(memberAccounts, session, this::show, this::logout);
+                : MemberHomeView.create(memberAccounts, memberVisits, session, this::show, this::logout);
         case MEMBER_MEMBERSHIP -> !isMemberSession(session)
                 ? createLogin()
                 : MemberMembershipView.create(memberAccounts, session, this::show, this::logout);

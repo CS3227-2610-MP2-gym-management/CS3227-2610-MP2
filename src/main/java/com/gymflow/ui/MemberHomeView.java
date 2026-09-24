@@ -10,10 +10,14 @@ import com.gymflow.model.Account;
 import com.gymflow.model.MemberOverview;
 import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipStatus;
+import com.gymflow.model.MemberVisitState;
+import com.gymflow.visit.MemberVisitService;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
+import javafx.scene.control.Button;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 
@@ -24,11 +28,37 @@ final class MemberHomeView {
     private MemberHomeView() {
     }
 
-    static Parent create(MemberAccountService accounts, Account session,
+    static Parent create(MemberAccountService accounts, MemberVisitService visits, Account session,
             Consumer<Screen> navigate, Runnable logout) {
         Label membership = detail("Loading Membership details…");
         Label profile = detail("Loading profile…");
-        VBox main = new VBox(20, UiComponents.card(section("Membership"), membership),
+        Label visitStatus = detail("Loading Visit state…");
+        Button checkIn = new Button("Check in");
+        Button checkOut = new Button("Check out");
+        checkIn.setAccessibleText("Check in to the gym");
+        checkOut.setAccessibleText("Check out of the gym");
+        checkIn.setDisable(true);
+        checkOut.setDisable(true);
+        Runnable[] refreshVisit = new Runnable[1];
+        refreshVisit[0] = () -> {
+            checkIn.setDisable(true);
+            checkOut.setDisable(true);
+            Thread.startVirtualThread(() -> {
+                try {
+                    MemberVisitState state = visits.currentState(session);
+                    Platform.runLater(() -> setVisitState(visitStatus, checkIn, checkOut, state));
+                } catch (RuntimeException exception) {
+                    Platform.runLater(() -> visitStatus.setText("Unable to load Visit state."));
+                }
+            });
+        };
+        checkIn.setOnAction(event -> changeVisit(visits, session, true, visitStatus,
+                checkIn, checkOut, refreshVisit[0]));
+        checkOut.setOnAction(event -> changeVisit(visits, session, false, visitStatus,
+                checkIn, checkOut, refreshVisit[0]));
+        HBox actions = new HBox(10, checkIn, checkOut);
+        VBox main = new VBox(20, UiComponents.card(section("Gym Visit"), visitStatus, actions),
+                UiComponents.card(section("Membership"), membership),
                 UiComponents.card(section("Profile"), profile));
         main.setMaxWidth(700);
         VBox content = new VBox(20,
@@ -43,7 +73,37 @@ final class MemberHomeView {
             profile.setText(message);
             membership.setText(message);
         }));
+        refreshVisit[0].run();
         return root;
+    }
+
+    private static void changeVisit(MemberVisitService visits, Account session, boolean checkingIn,
+            Label status, Button checkIn, Button checkOut, Runnable refresh) {
+        checkIn.setDisable(true);
+        checkOut.setDisable(true);
+        status.setText(checkingIn ? "Checking in…" : "Checking out…");
+        Thread.startVirtualThread(() -> {
+            try {
+                if (checkingIn) {
+                    visits.checkIn(session);
+                } else {
+                    visits.checkOut(session);
+                }
+                refresh.run();
+            } catch (RuntimeException exception) {
+                Platform.runLater(() -> {
+                    status.setText(exception.getMessage());
+                    refresh.run();
+                });
+            }
+        });
+    }
+
+    private static void setVisitState(Label status, Button checkIn, Button checkOut, MemberVisitState state) {
+        boolean checkedIn = state.checkedIn();
+        status.setText(checkedIn ? "You are currently checked in." : "You are currently checked out.");
+        checkIn.setDisable(checkedIn);
+        checkOut.setDisable(!checkedIn);
     }
 
     static Parent createPlaceholder(Screen screen, Consumer<Screen> navigate, Runnable logout) {
