@@ -27,7 +27,7 @@ Shared storage and service contracts may exist before the corresponding Member i
 | M-P0-05 | As a gym Member, I want to record my departure so that the end of my Visit is retained.                                 | Implemented | An active Member can close only their own open Visit, even after Membership changes. |
 | M-P0-06 | As a gym Member, I want to see whether I am checked in so that I do not submit a duplicate entry or exit.               | Implemented | Current state is derived from an open Visit; only the valid action is enabled.       |
 | M-P0-07 | As a gym Member, I want to view my Visit history so that I can review previous attendance.                              | Planned | Owner-visible history already provides the shared query model.                      |
-| M-P0-08 | As an existing Member, I want to know when renewal is needed and where to renew so that I can restore gym access.        | Implemented | Informational only: Members without a current or upcoming Membership are directed to visit the gym in person; the Owner records the Membership and Payment. |
+| M-P0-08 | As an existing Member, I want to know when renewal is needed and where to renew so that I can restore gym access.        | Implemented | A prominent Home notice and My Membership guidance direct Members without a current or upcoming Membership to visit in person; the Owner records the Membership and Payment. |
 
 ### P1 — Should have
 

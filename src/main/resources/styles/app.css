@@ -203,6 +203,16 @@
     -fx-text-fill: #39465a;
 }
 
+.renewal-notice {
+    -fx-background-color: #fff4d9;
+    -fx-border-color: #d69e2e;
+}
+
+.renewal-notice .section-title,
+.renewal-notice .detail-text {
+    -fx-text-fill: #6b4500;
+}
+
 .tab-pane .tab-header-area .tab-header-background {
     -fx-background-color: transparent;
 }
@@ -480,6 +490,16 @@
 
 .dark .status-badge {
     -fx-background-color: #493d22;
+    -fx-text-fill: #fde68a;
+}
+
+.dark .renewal-notice {
+    -fx-background-color: #493817;
+    -fx-border-color: #d69e2e;
+}
+
+.dark .renewal-notice .section-title,
+.dark .renewal-notice .detail-text {
     -fx-text-fill: #fde68a;
 }
 

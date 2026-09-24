@@ -15,6 +15,7 @@ import com.gymflow.auth.AuthenticationService;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.model.Account;
 import com.gymflow.model.Member;
+import com.gymflow.model.MembershipNoticeState;
 import com.gymflow.model.PaymentMethod;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,10 +33,19 @@ class MemberAccountServiceTest {
         OwnerMemberService ownerMembers = new OwnerMemberService(database);
         Member alice = ownerMembers.createMember(request("alice@example.com", LocalDate.of(2026, 9, 1)), owner.id());
         Member bob = ownerMembers.createMember(request("bob@example.com", LocalDate.of(2026, 8, 1)), owner.id());
+        Member charlie = ownerMembers.createMember(
+                request("charlie@example.com", LocalDate.of(2026, 7, 1)), owner.id());
         ownerMembers.addMembership(new AddMembershipRequest(alice.accountId(), LocalDate.of(2026, 10, 1),
                 LocalDate.of(2026, 10, 31), new BigDecimal("90.00"), PaymentMethod.CARD,
                 Instant.parse("2026-09-20T00:00:00Z"), "R-2"), owner.id());
+        ownerMembers.addMembership(new AddMembershipRequest(bob.accountId(), LocalDate.of(2026, 10, 1),
+                LocalDate.of(2026, 10, 31), new BigDecimal("90.00"), PaymentMethod.CARD,
+                Instant.parse("2026-09-20T00:00:00Z"), "R-3"), owner.id());
         Account actor = authentication.authenticate("alice@example.com", "member password".toCharArray()).orElseThrow();
+        Account bobActor = authentication.authenticate("bob@example.com", "member password".toCharArray())
+                .orElseThrow();
+        Account charlieActor = authentication.authenticate("charlie@example.com", "member password".toCharArray())
+                .orElseThrow();
         MemberAccountService service = new MemberAccountService(database,
                 Clock.fixed(Instant.parse("2026-09-15T00:00:00Z"), ZoneOffset.UTC));
 
@@ -44,6 +54,10 @@ class MemberAccountServiceTest {
         assertEquals(alice, overview.member());
         assertEquals(List.of(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 9, 1)),
                 overview.memberships().stream().map(item -> item.startDate()).toList());
+        assertEquals(MembershipNoticeState.ACTIVE, service.membershipNotice(overview).state());
+        assertEquals(MembershipNoticeState.UPCOMING, service.membershipNotice(service.loadOverview(bobActor)).state());
+        assertEquals(MembershipNoticeState.RENEWAL_NEEDED,
+                service.membershipNotice(service.loadOverview(charlieActor)).state());
         assertThrows(IllegalArgumentException.class, () -> service.loadOverview(owner));
         assertEquals(bob.accountId(), ownerMembers.searchMembers("bob").getFirst().accountId());
     }

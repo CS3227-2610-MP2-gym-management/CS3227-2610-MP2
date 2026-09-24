@@ -85,6 +85,19 @@ Owner deliberately disabled. Before self-registration is implemented, the recomm
 supplement it with an explicit account status such as `PENDING`, `ACTIVE`, and `DEACTIVATED`. The exact status model is
 **Open**, but the two conditions must not be presented to the Owner as if they mean the same thing.
 
+### Member renewal guidance
+
+**Status: Agreed and implemented for the current scope**
+
+- A Member with no active or upcoming Membership receives an attention-level renewal notice on Member Home and the
+  same in-person guidance on My Membership.
+- The notice is derived from Membership history at screen load; it is not a persisted Member, Membership, or Payment
+  status.
+- The notice must be understandable without relying on color alone and must state that check-in is unavailable.
+- It is informational only. It does not create a purchase request, Membership, Payment, or online-payment flow.
+- An active Membership takes precedence over an upcoming Membership. An expiring-soon notice is outside current scope
+  until its threshold and wording are agreed.
+
 ### Membership plans and purchases
 
 **Status: Agreed direction; MembershipPlan remains planned**

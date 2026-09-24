@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import com.gymflow.member.MemberAccountService;
 import com.gymflow.model.Account;
 import com.gymflow.model.Membership;
-import com.gymflow.model.MembershipStatus;
+import com.gymflow.model.MembershipNoticeState;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
@@ -32,11 +32,9 @@ final class MemberMembershipView {
         content.setPadding(new Insets(36));
         Thread.startVirtualThread(() -> MemberHomeView.load(accounts, session, overview -> {
             history.getItems().setAll(overview.memberships());
-            boolean hasEligibleMembership = overview.memberships().stream()
-                    .map(item -> item.status(accounts.today()))
-                    .anyMatch(item -> item == MembershipStatus.ACTIVE || item == MembershipStatus.UPCOMING);
-            status.setText(hasEligibleMembership ? ""
-                    : MemberHomeView.membershipSummary(overview.memberships(), accounts.today()));
+            boolean renewalNeeded = accounts.membershipNotice(overview).state()
+                    == MembershipNoticeState.RENEWAL_NEEDED;
+            status.setText(renewalNeeded ? MemberHomeView.renewalGuidance() : "");
         }, status::setText));
         return MemberHomeView.shell(content, Screen.MEMBER_MEMBERSHIP, navigate, logout);
     }

@@ -7,6 +7,9 @@ import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.data.MemberAccountStore;
 import com.gymflow.model.Account;
 import com.gymflow.model.MemberOverview;
+import com.gymflow.model.MembershipNotice;
+import com.gymflow.model.MembershipNoticeState;
+import com.gymflow.model.MembershipStatus;
 import com.gymflow.model.Role;
 
 /** Authorizes and loads account data used by Member-facing screens. */
@@ -34,6 +37,20 @@ public final class MemberAccountService {
     /** Returns the local date used to derive Membership display statuses. */
     public java.time.LocalDate today() {
         return java.time.LocalDate.now(clock);
+    }
+
+    /** Derives the one Membership state that Member screens should emphasize. */
+    public MembershipNotice membershipNotice(MemberOverview overview) {
+        Objects.requireNonNull(overview);
+        return overview.memberships().stream()
+                .filter(item -> item.status(today()) == MembershipStatus.ACTIVE)
+                .findFirst()
+                .map(item -> new MembershipNotice(MembershipNoticeState.ACTIVE, item))
+                .orElseGet(() -> overview.memberships().stream()
+                        .filter(item -> item.status(today()) == MembershipStatus.UPCOMING)
+                        .findFirst()
+                        .map(item -> new MembershipNotice(MembershipNoticeState.UPCOMING, item))
+                        .orElseGet(() -> new MembershipNotice(MembershipNoticeState.RENEWAL_NEEDED, null)));
     }
 
     private static void requireMember(Account actor) {

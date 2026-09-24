@@ -9,7 +9,8 @@ import com.gymflow.member.MemberAccountService;
 import com.gymflow.model.Account;
 import com.gymflow.model.MemberOverview;
 import com.gymflow.model.Membership;
-import com.gymflow.model.MembershipStatus;
+import com.gymflow.model.MembershipNotice;
+import com.gymflow.model.MembershipNoticeState;
 import com.gymflow.model.MemberVisitState;
 import com.gymflow.visit.MemberVisitService;
 import javafx.application.Platform;
@@ -57,18 +58,21 @@ final class MemberHomeView {
         checkOut.setOnAction(event -> changeVisit(visits, session, false, visitStatus,
                 checkIn, checkOut, refreshVisit[0]));
         HBox actions = new HBox(10, checkIn, checkOut);
+        VBox renewalNotice = renewalNotice();
         VBox main = new VBox(20, UiComponents.card(section("Gym Visit"), visitStatus, actions),
                 UiComponents.card(section("Membership"), membership),
                 UiComponents.card(section("Profile"), profile));
         main.setMaxWidth(700);
         VBox content = new VBox(20,
-                UiComponents.header("Member Home", "Welcome to your GymFlow account", null), main);
+                UiComponents.header("Member Home", "Welcome to your GymFlow account", null), renewalNotice, main);
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));
         BorderPane root = shell(content, Screen.MEMBER_HOME, navigate, logout);
         Thread.startVirtualThread(() -> load(accounts, session, overview -> {
             profile.setText(profileText(overview));
-            membership.setText(membershipSummary(overview.memberships(), accounts.today()));
+            MembershipNotice notice = accounts.membershipNotice(overview);
+            membership.setText(membershipSummary(notice, accounts.today()));
+            showRenewalNotice(renewalNotice, notice);
         }, message -> {
             profile.setText(message);
             membership.setText(message);
@@ -116,7 +120,7 @@ final class MemberHomeView {
     }
 
     static BorderPane shell(VBox content, Screen screen, Consumer<Screen> navigate, Runnable logout) {
-        BorderPane root = new BorderPane(content);
+        BorderPane root = new BorderPane(UiComponents.scrollable(content));
         root.setId("member-" + screen.name().toLowerCase() + "-screen");
         root.getStyleClass().add("dashboard-screen");
         root.setLeft(UiComponents.sidebar("Member", NAVIGATION, navigationItem(screen), Set.copyOf(NAVIGATION),
@@ -141,14 +145,38 @@ final class MemberHomeView {
     }
 
     /** Summarizes the Membership period that currently grants, or will grant, access. */
-    static String membershipSummary(List<Membership> memberships, LocalDate today) {
-        return memberships.stream().filter(item -> item.status(today) == MembershipStatus.ACTIVE).findFirst()
-                .map(item -> membershipText(item, today))
-                .orElseGet(() -> memberships.stream().filter(item -> item.status(today) == MembershipStatus.UPCOMING)
-                        .findFirst().map(item -> "Upcoming Membership%nStart date: %s%nExpiry date: %s".formatted(
-                                item.startDate(), item.expiryDate()))
-                        .orElse("No current or upcoming Membership is recorded. "
-                                + "Visit the gym in person to purchase or renew your Membership."));
+    static String membershipSummary(MembershipNotice notice, LocalDate today) {
+        return switch (notice.state()) {
+        case ACTIVE -> membershipText(notice.membership(), today);
+        case UPCOMING -> "Upcoming Membership%nStart date: %s%nExpiry date: %s".formatted(
+                notice.membership().startDate(), notice.membership().expiryDate());
+        case RENEWAL_NEEDED -> renewalGuidance();
+        };
+    }
+
+    static String renewalGuidance() {
+        return "No current or upcoming Membership is recorded. "
+                + "Visit the gym in person to purchase or renew your Membership.";
+    }
+
+    private static VBox renewalNotice() {
+        Label title = section("⚠ Membership renewal needed");
+        Label body = detail("You do not currently have a Membership that grants access. "
+                + "Visit the gym in person to purchase or renew your Membership. "
+                + "Gym check-in is unavailable until renewal is recorded.");
+        VBox notice = UiComponents.card(title, body);
+        notice.getStyleClass().add("renewal-notice");
+        notice.setMaxWidth(700);
+        notice.setAccessibleText("Membership renewal needed. Gym check-in is unavailable until renewal is recorded.");
+        notice.setManaged(false);
+        notice.setVisible(false);
+        return notice;
+    }
+
+    private static void showRenewalNotice(VBox notice, MembershipNotice membershipNotice) {
+        boolean renewalNeeded = membershipNotice.state() == MembershipNoticeState.RENEWAL_NEEDED;
+        notice.setManaged(renewalNeeded);
+        notice.setVisible(renewalNeeded);
     }
 
     private static String profileText(MemberOverview overview) {
@@ -167,7 +195,7 @@ final class MemberHomeView {
     private static Label detail(String value) {
         Label label = new Label(value);
         label.getStyleClass().add("detail-text");
-        label.setWrapText(true);
+        UiComponents.preserveLabelHeight(label);
         return label;
     }
 

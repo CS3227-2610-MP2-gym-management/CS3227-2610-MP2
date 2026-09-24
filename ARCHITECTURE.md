@@ -29,9 +29,9 @@ JavaFX views
             -> data/gymflow.db
 ```
 
-The completed product also includes Member authentication and screens, self-registration and approval, attendance,
-membership plans, workouts, body-weight tracking, trends, broader statistics, and an administrative audit history.
-The backlog determines when these are implemented.
+The current product includes Member authentication, Member profile and Membership screens, Membership renewal
+guidance, and Member check-in/check-out. Self-registration and approval, Membership plans, workouts, body-weight
+tracking, trends, broader statistics, and an administrative audit history remain backlog work.
 
 Cloud architecture is KIV. A future shared deployment will be online-only and must support concurrent clients, but no
 server framework, protocol, cloud database, or synchronization mechanism has been selected. Keep business rules out
@@ -172,6 +172,12 @@ acceptance criteria are agreed.
 - Refunds, instalments, voids, and payment corrections are open decisions.
 
 Membership display status is derived as `ACTIVE`, `UPCOMING`, `EXPIRED`, or `DEACTIVATED`. It is not persisted.
+
+`MemberAccountService` derives a separate, immutable `MembershipNotice` for Member-facing emphasis: `ACTIVE`,
+`UPCOMING`, or `RENEWAL_NEEDED`. It selects an active period before an upcoming period; otherwise renewal is needed.
+The notice is a read model calculated from the Member's loaded history and injected clock, never a database field.
+Member Home and My Membership must consume this shared result rather than duplicating the decision. A renewal notice is
+informational only and must not create a Membership, Payment, request, or online-payment capability.
 
 ### Gym-entry eligibility and Visit
 
@@ -339,9 +345,9 @@ them. Online-only means failure is surfaced clearly; it does not imply offline w
 | Area | Current state | Intended extension |
 | --- | --- | --- |
 | Owner authentication | Implemented | Preserve one-Owner rule |
-| Member accounts/profiles | Owner creation and editing implemented | Add agreed self-registration/approval and Member login |
+| Member accounts/profiles | Owner creation/editing and Member login/profile views implemented | Add agreed self-registration/approval |
 | Memberships/Payments | Explicit periods and amounts implemented | Add MembershipPlan and purchase snapshots |
-| Member attendance | Shared schema and Owner oversight implemented | Add Member check-in, check-out, state, and history screens |
+| Member attendance | Owner oversight and Member check-in/check-out/state implemented | Add Member history screen |
 | Announcements | Owner management and published query implemented | Display published notices to Members |
 | Expenses/finances | Owner creation, filtering, and totals implemented | Extend only through approved stories |
 | Workouts/body weight | Not implemented | Add focused models, services, stores, views, and derived trends |

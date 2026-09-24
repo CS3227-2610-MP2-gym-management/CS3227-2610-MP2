@@ -102,8 +102,8 @@ corrected without reopening it.
 
 The Owner does not need to enter their own password again because this action is available only inside an authenticated
 Owner session. A successful reset replaces the old Member password without changing the Member's profile, account
-activity, Memberships, Payments, or Visits. Member login routing remains under development; the temporary Member
-preview is still available until that work is complete.
+activity, Memberships, Payments, or Visits. Members can then sign in with the replacement password using the normal
+login screen.
 
 ## Managing Memberships
 
@@ -181,10 +181,15 @@ that spreadsheet applications could otherwise interpret as formulas. Canceling t
 
 ## Member dashboard
 
-After signing in, Members can review their profile, Membership history, and Membership status. The dashboard displays
-an active Membership when one is valid today; otherwise, it displays the next upcoming Membership and its start date.
-When there is no current or upcoming Membership, GymFlow directs the Member to visit the gym in person to purchase or
-renew. This guidance is informational only: it does not create a Membership, Payment, or online purchase request.
+After signing in, Members can review their profile, Membership history, Membership status, and current Visit state.
+The dashboard displays an active Membership when one is valid today; otherwise, it displays the next upcoming
+Membership and its start date.
+
+When there is no current or upcoming Membership, a prominent amber `Membership renewal needed` notice appears at the
+top of Member Home, before the Gym Visit controls. It explains that gym check-in is unavailable and directs the Member
+to visit the gym in person to purchase or renew. The same guidance appears on `My Membership`; historical expired and
+deactivated periods remain visible there. This guidance is informational only: it does not create a Membership,
+Payment, or online purchase request.
 
 ## Resetting GymFlow
 
