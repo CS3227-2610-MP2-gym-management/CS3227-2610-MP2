@@ -3,6 +3,7 @@ package com.gymflow.visit;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.List;
 
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.data.MemberVisitStore;
@@ -31,6 +32,12 @@ public final class MemberVisitService {
     public MemberVisitState currentState(Account actor) {
         requireMember(actor);
         return visits.currentState(actor.id());
+    }
+
+    /** Lists only the authenticated active Member's Visits, newest first. */
+    public List<Visit> history(Account actor) {
+        requireMember(actor);
+        return visits.history(actor.id());
     }
 
     /** Opens a Visit for this active Member when a valid Membership covers today. */

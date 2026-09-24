@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import com.gymflow.model.MemberVisitState;
 import com.gymflow.model.Visit;
@@ -17,10 +18,17 @@ public final class MemberVisitStore {
     private static final DateTimeFormatter TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
     private final GymFlowDatabase database;
+    private final VisitHistoryStore history;
 
     /** Creates a Member Visit store backed by the supplied database. */
     public MemberVisitStore(GymFlowDatabase database) {
         this.database = database;
+        history = new VisitHistoryStore(database);
+    }
+
+    /** Lists this Member's Visits in newest-first order. */
+    public List<Visit> history(long memberId) {
+        return history.history(memberId);
     }
 
     /** Returns the current state derived from the Member's open Visit. */
