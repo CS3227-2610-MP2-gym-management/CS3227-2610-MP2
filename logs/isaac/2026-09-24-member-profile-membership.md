@@ -1,4 +1,4 @@
-# Member Profile and Membership Interaction Summary
+# Add profile and membership history views Summary
 
 ## Goal
 
