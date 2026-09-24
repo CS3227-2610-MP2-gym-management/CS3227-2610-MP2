@@ -87,7 +87,9 @@ public final class AppView {
         case OWNER_ANNOUNCEMENTS -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerAnnouncementsView.create(announcements, session, this::show, this::showReset, this::logout);
-        case MEMBER_HOME -> MemberHomeView.create(() -> show(Screen.LOGIN));
+        case MEMBER_HOME, MEMBER_MEMBERSHIP, MEMBER_VISITS, MEMBER_WORKOUTS, MEMBER_PROFILE -> !isMemberSession(session)
+                ? createLogin()
+                : MemberHomeView.create(screen, this::show, this::logout);
         };
         shell.setCenter(root);
     }
@@ -96,15 +98,18 @@ public final class AppView {
         return account != null && account.role() == Role.OWNER;
     }
 
-    private Parent createLogin() {
-        return LoginView.create(authentication, !ownerExists, this::ownerAuthenticated,
-                () -> show(Screen.MEMBER_HOME));
+    static boolean isMemberSession(Account account) {
+        return account != null && account.role() == Role.MEMBER && account.active();
     }
 
-    private void ownerAuthenticated(Account owner) {
-        session = owner;
+    private Parent createLogin() {
+        return LoginView.create(authentication, !ownerExists, this::authenticated);
+    }
+
+    private void authenticated(Account account) {
+        session = account;
         ownerExists = true;
-        show(Screen.OWNER_HOME);
+        show(account.role() == Role.OWNER ? Screen.OWNER_HOME : Screen.MEMBER_HOME);
     }
 
     private void logout() {

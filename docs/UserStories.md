@@ -20,7 +20,7 @@ Shared storage and service contracts may exist before the corresponding Member i
 
 | ID      | User story                                                                                                              | Status  | Notes                                                                               |
 | ------- | ----------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------- |
-| M-P0-01 | As a gym Member, I want to log in securely so that I can access my personal gym account.                                | Planned | Member accounts and credentials exist, but Member login routing is not implemented. |
+| M-P0-01 | As a gym Member, I want to log in securely so that I can access my personal gym account.                                | Implemented | Active Member credentials authenticate through the normal login form and open Member-only routes. |
 | M-P0-02 | As a gym Member, I want to view my profile and Membership details so that I can confirm that my information is correct. | Planned | Owner-visible profile records already provide the shared data.                      |
 | M-P0-03 | As a gym Member, I want to view my Membership dates and current status so that I know whether I may use the gym.        | Planned | Membership status is derived by the shared model.                                   |
 | M-P0-04 | As a gym Member, I want to record my arrival so that the beginning of my Visit is retained.                             | Planned | The shared Visit schema supports an open Visit.                                     |

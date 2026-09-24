@@ -7,14 +7,12 @@ import java.util.function.Consumer;
 
 import com.gymflow.auth.AuthenticationService;
 import com.gymflow.model.Account;
-import com.gymflow.model.Role;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
-import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -25,7 +23,7 @@ final class LoginView {
     }
 
     static Parent create(AuthenticationService authentication, boolean setupMode,
-            Consumer<Account> ownerAuthenticated, Runnable previewMember) {
+            Consumer<Account> authenticated) {
         Label mark = new Label("GF");
         mark.getStyleClass().add("brand-mark");
         Label brand = new Label("GYMFLOW");
@@ -76,7 +74,7 @@ final class LoginView {
                 Arrays.fill(repeated, '\0');
                 String suppliedEmail = email.getText();
                 run(submit, () -> authentication.createOwner(suppliedEmail, supplied),
-                        ownerAuthenticated, failure -> showError(error, setupMessage(failure)));
+                        authenticated, failure -> showError(error, setupMessage(failure)));
             });
         } else {
             submit.setOnAction(event -> {
@@ -84,8 +82,8 @@ final class LoginView {
                 String suppliedEmail = email.getText();
                 run(submit, () -> authentication.authenticate(suppliedEmail, supplied), result -> {
                     Optional<Account> account = result;
-                    if (account.isPresent() && account.get().role() == Role.OWNER) {
-                        ownerAuthenticated.accept(account.get());
+                    if (account.isPresent()) {
+                        authenticated.accept(account.get());
                     } else {
                         showError(error, "Invalid email or password");
                     }
@@ -99,15 +97,7 @@ final class LoginView {
         accountNote.getStyleClass().add("muted-text");
         accountNote.setWrapText(true);
 
-        Label previewLabel = new Label("DEVELOPMENT PREVIEW");
-        previewLabel.getStyleClass().add("preview-label");
-        Button memberPreview = new Button("Preview Member Dashboard");
-        memberPreview.getStyleClass().add("secondary-button");
-        memberPreview.setOnAction(event -> previewMember.run());
-        memberPreview.setMaxWidth(Double.MAX_VALUE);
-
-        VBox previews = new VBox(8, previewLabel, memberPreview);
-        VBox panel = new VBox(18, identity, title, subtitle, form, accountNote, new Separator(), previews);
+        VBox panel = new VBox(18, identity, title, subtitle, form, accountNote);
         panel.getStyleClass().add("login-panel");
         panel.setMaxWidth(430);
 

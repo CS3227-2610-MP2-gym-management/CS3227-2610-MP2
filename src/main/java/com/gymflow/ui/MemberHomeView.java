@@ -1,6 +1,8 @@
 package com.gymflow.ui;
 
 import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
 
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
@@ -20,7 +22,7 @@ final class MemberHomeView {
     private MemberHomeView() {
     }
 
-    static Parent create(Runnable returnToLogin) {
+    static Parent create(Screen screen, Consumer<Screen> navigate, Runnable logout) {
         Label status = new Label("STATUS PENDING");
         status.getStyleClass().add("status-badge");
         Label membershipTitle = new Label("Membership");
@@ -69,7 +71,7 @@ final class MemberHomeView {
         profileCard.setPrefWidth(260);
 
         VBox content = new VBox(20,
-                UiComponents.header("Member Home", "Welcome to your GymFlow account", null), body);
+                UiComponents.header(title(screen), "Welcome to your GymFlow account", null), body);
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));
         VBox.setVgrow(body, Priority.ALWAYS);
@@ -77,10 +79,44 @@ final class MemberHomeView {
         BorderPane root = new BorderPane();
         root.setId("member-home-screen");
         root.getStyleClass().add("dashboard-screen");
-        root.setLeft(UiComponents.sidebar("Member", NAVIGATION, "Home", returnToLogin));
+        root.setLeft(UiComponents.sidebar("Member", NAVIGATION, navigationItem(screen), Set.copyOf(NAVIGATION),
+                item -> navigate.accept(memberScreen(item)), null, logout));
         root.setCenter(content);
-        root.setAccessibleText("GymFlow member dashboard preview");
+        root.setAccessibleText("GymFlow member dashboard");
         return root;
+    }
+
+    private static String title(Screen screen) {
+        return switch (screen) {
+        case MEMBER_HOME -> "Member Home";
+        case MEMBER_MEMBERSHIP -> "My Membership";
+        case MEMBER_VISITS -> "Gym Visits";
+        case MEMBER_WORKOUTS -> "Workouts";
+        case MEMBER_PROFILE -> "Profile";
+        default -> throw new IllegalArgumentException("Not a Member screen: " + screen);
+        };
+    }
+
+    private static String navigationItem(Screen screen) {
+        return switch (screen) {
+        case MEMBER_HOME -> "Home";
+        case MEMBER_MEMBERSHIP -> "My Membership";
+        case MEMBER_VISITS -> "Gym Visits";
+        case MEMBER_WORKOUTS -> "Workouts";
+        case MEMBER_PROFILE -> "Profile";
+        default -> throw new IllegalArgumentException("Not a Member screen: " + screen);
+        };
+    }
+
+    private static Screen memberScreen(String item) {
+        return switch (item) {
+        case "Home" -> Screen.MEMBER_HOME;
+        case "My Membership" -> Screen.MEMBER_MEMBERSHIP;
+        case "Gym Visits" -> Screen.MEMBER_VISITS;
+        case "Workouts" -> Screen.MEMBER_WORKOUTS;
+        case "Profile" -> Screen.MEMBER_PROFILE;
+        default -> throw new IllegalArgumentException("Unknown Member navigation item: " + item);
+        };
     }
 
     private static Button disabledAction(String text) {

@@ -22,4 +22,17 @@ class AppViewAuthorizationTest {
         assertFalse(AppView.isOwnerSession(member));
         assertFalse(AppView.isOwnerSession(null));
     }
+
+    @Test
+    void allowsOnlyAnActiveMemberSessionToOpenMemberScreens() {
+        Account owner = new Account(1, "owner@example.com", Role.OWNER, true, CREATED_AT, CREATED_AT);
+        Account member = new Account(2, "member@example.com", Role.MEMBER, true, CREATED_AT, CREATED_AT);
+        Account inactiveMember = new Account(3, "inactive@example.com", Role.MEMBER, false,
+                CREATED_AT, CREATED_AT);
+
+        assertTrue(AppView.isMemberSession(member));
+        assertFalse(AppView.isMemberSession(owner));
+        assertFalse(AppView.isMemberSession(inactiveMember));
+        assertFalse(AppView.isMemberSession(null));
+    }
 }
