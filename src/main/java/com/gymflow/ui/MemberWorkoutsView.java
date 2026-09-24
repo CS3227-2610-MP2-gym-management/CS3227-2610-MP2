@@ -5,12 +5,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -54,31 +57,23 @@ final class MemberWorkoutsView {
 
     static Parent create(WorkoutService service, Account session, Consumer<Screen> navigate,
             Runnable logout) {
-        ListView<Workout> list = UiComponents.cardList("No Workouts recorded yet.",
-                MemberWorkoutsView::card);
         Label status = new Label("Loading Workouts…");
         status.getStyleClass().add("muted-text");
+        WorkoutCalendar calendar = new WorkoutCalendar(service, session, status);
         Button add = new Button("Record Workout");
         add.getStyleClass().add("primary-button");
-        add.setOnAction(event -> form(add, service, session, null,
-                () -> load(service, session, list, status)));
-        list.setOnMouseClicked(event -> openSelected(list, service, session,
-                () -> load(service, session, list, status), event.getClickCount()));
+        add.setOnAction(event -> form(add, service, session, null, calendar::load));
+        javafx.scene.layout.Region summarySpacer = new javafx.scene.layout.Region();
+        HBox.setHgrow(summarySpacer, Priority.ALWAYS);
+        HBox summary = new HBox(12, status, summarySpacer, WorkoutCalendar.legend());
+        summary.setAlignment(Pos.CENTER_LEFT);
         VBox content = new VBox(20,
-                UiComponents.header("Workouts", "Completed sessions, newest first", add),
-                UiComponents.card(status, list));
+                UiComponents.header("Workouts", "Select a highlighted date to view its sessions", add),
+                UiComponents.card(summary, calendar.view()));
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));
-        load(service, session, list, status);
+        calendar.load();
         return MemberHomeView.shell(content, Screen.MEMBER_WORKOUTS, navigate, logout);
-    }
-
-    private static void openSelected(ListView<Workout> list, WorkoutService service,
-            Account session, Runnable refresh, int clickCount) {
-        Workout workout = list.getSelectionModel().getSelectedItem();
-        if (workout != null && clickCount == 2) {
-            form(list, service, session, workout, refresh);
-        }
     }
 
     private static VBox card(Workout workout) {
@@ -95,23 +90,152 @@ final class MemberWorkoutsView {
         return card;
     }
 
-    private static void load(WorkoutService service, Account session, ListView<Workout> list,
-            Label status) {
-        Thread.startVirtualThread(() -> {
-            try {
-                List<Workout> workouts = service.history(session);
-                Platform.runLater(() -> showLoadedWorkouts(list, status, workouts));
-            } catch (RuntimeException exception) {
-                Platform.runLater(() -> status.setText("Unable to load your Workouts."));
-            }
-        });
+    static Map<LocalDate, List<Workout>> workoutsByDate(List<Workout> workouts) {
+        Map<LocalDate, List<Workout>> byDate = new TreeMap<>();
+        for (Workout workout : workouts) {
+            LocalDate date = local(workout.endedAt()).toLocalDate();
+            byDate.computeIfAbsent(date, ignored -> new ArrayList<>()).add(workout);
+        }
+        byDate.values().forEach(day -> day.sort(Comparator.comparing(Workout::startedAt)));
+        return byDate;
     }
 
-    private static void showLoadedWorkouts(ListView<Workout> list, Label status,
-            List<Workout> workouts) {
-        list.getItems().setAll(workouts);
-        status.setText(workouts.isEmpty() ? "No Workouts are recorded."
-                : "Double-click a Workout to edit or delete it.");
+    private static void chooseWorkout(Node owner, LocalDate date, List<Workout> workouts,
+            WorkoutService service, Account session, Runnable refresh) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Workouts on " + date.format(DateTimeFormatter.ofPattern("d MMMM uuuu")));
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        ListView<Workout> sessions = UiComponents.cardList("No Workouts recorded yet.",
+                MemberWorkoutsView::card);
+        sessions.getItems().setAll(workouts);
+        sessions.setOnMouseClicked(event -> {
+            Workout selected = sessions.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                close(dialog);
+                form(owner, service, session, selected, refresh);
+            }
+        });
+        Label instruction = new Label("Select a session to edit or delete it.");
+        instruction.getStyleClass().add("muted-text");
+        VBox body = new VBox(12, instruction, sessions);
+        body.setPrefHeight(330);
+        dialog.getDialogPane().setContent(body);
+        UiComponents.styleDialog(dialog, owner, "workout-session-dialog", false);
+        dialog.show();
+    }
+
+    private static final class WorkoutCalendar {
+        private static final String[] WEEKDAYS = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+
+        private final WorkoutService service;
+        private final Account session;
+        private final Label status;
+        private final VBox view = new VBox(12);
+        private final Label monthLabel = new Label();
+        private YearMonth month = YearMonth.now();
+        private Map<LocalDate, List<Workout>> workouts = Map.of();
+
+        WorkoutCalendar(WorkoutService service, Account session, Label status) {
+            this.service = service;
+            this.session = session;
+            this.status = status;
+            view.getStyleClass().add("workout-calendar");
+            view.setAlignment(Pos.CENTER);
+            render();
+        }
+
+        VBox view() {
+            return view;
+        }
+
+        void load() {
+            status.setText("Loading Workouts…");
+            Thread.startVirtualThread(() -> {
+                try {
+                    Map<LocalDate, List<Workout>> loaded = workoutsByDate(service.history(session));
+                    Platform.runLater(() -> {
+                        workouts = loaded;
+                        status.setText(loaded.isEmpty() ? "No Workouts are recorded."
+                                : "Highlighted dates have recorded Workouts.");
+                        render();
+                    });
+                } catch (RuntimeException exception) {
+                    Platform.runLater(() -> status.setText("Unable to load your Workouts."));
+                }
+            });
+        }
+
+        private void render() {
+            Button previous = new Button("‹");
+            previous.setAccessibleText("Previous month");
+            previous.getStyleClass().add("workout-calendar-navigation");
+            previous.setOnAction(event -> {
+                month = month.minusMonths(1);
+                render();
+            });
+            Button next = new Button("›");
+            next.setAccessibleText("Next month");
+            next.getStyleClass().add("workout-calendar-navigation");
+            next.setOnAction(event -> {
+                month = month.plusMonths(1);
+                render();
+            });
+            monthLabel.setText(month.format(DateTimeFormatter.ofPattern("MMMM uuuu")));
+            monthLabel.getStyleClass().setAll("workout-calendar-month");
+            HBox navigation = new HBox(12, previous, monthLabel, next);
+            navigation.setAlignment(Pos.CENTER);
+            GridPane days = new GridPane();
+            days.setHgap(6);
+            days.setVgap(6);
+            days.setAlignment(Pos.CENTER);
+            days.getStyleClass().add("workout-calendar-grid");
+            for (int column = 0; column < WEEKDAYS.length; column++) {
+                Label weekday = new Label(WEEKDAYS[column]);
+                weekday.getStyleClass().add("workout-calendar-weekday");
+                days.add(weekday, column, 0);
+            }
+            int firstColumn = month.atDay(1).getDayOfWeek().getValue() % WEEKDAYS.length;
+            for (int day = 1; day <= month.lengthOfMonth(); day++) {
+                LocalDate date = month.atDay(day);
+                List<Workout> sessions = workouts.getOrDefault(date, List.of());
+                Button dateButton = dateButton(date, sessions);
+                int index = firstColumn + day - 1;
+                days.add(dateButton, index % WEEKDAYS.length, index / WEEKDAYS.length + 1);
+            }
+            view.getChildren().setAll(navigation, days);
+        }
+
+        static HBox legend() {
+            Label single = new Label("One Workout");
+            single.getStyleClass().addAll("workout-calendar-legend", "workout-calendar-legend-single");
+            Label multiple = new Label("Multiple Workouts");
+            multiple.getStyleClass().addAll("workout-calendar-legend", "workout-calendar-legend-multiple");
+            HBox legend = new HBox(12, single, multiple);
+            legend.setAlignment(Pos.CENTER);
+            return legend;
+        }
+
+        private Button dateButton(LocalDate date, List<Workout> sessions) {
+            Button button = new Button(String.valueOf(date.getDayOfMonth()));
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.setPrefHeight(52);
+            button.getStyleClass().add("workout-calendar-date");
+            if (!sessions.isEmpty()) {
+                button.getStyleClass().add(sessions.size() == 1 ? "workout-calendar-single"
+                        : "workout-calendar-multiple");
+                button.setAccessibleText(date + ", " + sessions.size() + " Workouts; select to open");
+                button.setOnMouseClicked(event -> {
+                    if (sessions.size() == 1) {
+                        form(button, service, session, sessions.getFirst(), this::load);
+                    } else {
+                        chooseWorkout(button, date, sessions, service, session, this::load);
+                    }
+                });
+            } else {
+                button.setAccessibleText(date + ", no Workouts");
+            }
+            return button;
+        }
     }
 
     private static void form(Node owner, WorkoutService service, Account session,

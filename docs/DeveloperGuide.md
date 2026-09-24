@@ -178,6 +178,10 @@ one-to-one `MemberProfile` for Owner-facing reads.
 | `Workout` | ID, Member ID, start and end instants, optional notes, ordered sets | End is after start and not in the future; updates atomically replace all sets |
 | `WorkoutSet` | ID, Workout ID, display position, exercise name, repetitions or duration, optional resistance | Exactly one positive measure; resistance is non-negative kilograms |
 
+The Member Workout history is a local-time month calendar. It groups a Workout on the local calendar date of its end
+instant (the date selected in the form), highlights dates with one and multiple sessions differently, and sorts a
+multi-session date's selection overlay by start instant ascending before the existing edit/delete form is opened.
+
 `Role`, `PaymentMethod`, `ExpenseCategory`, and derived `MembershipStatus` are enums because each has a fixed set of
 values. Planned entities such as `MembershipPlan`, `BodyMetric`, and `AuditLog` are not part of the current schema and
 must not be treated as implemented features. The complete prioritized backlog and implementation status are recorded in

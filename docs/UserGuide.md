@@ -191,6 +191,17 @@ to visit the gym in person to purchase or renew. The same guidance appears on `M
 deactivated periods remain visible there. This guidance is informational only: it does not create a Membership,
 Payment, or online purchase request.
 
+## Managing Workouts
+
+Open `Workouts` in the Member sidebar to record a completed session or review earlier sessions. The month calendar
+uses blue for a date with one Workout and green for a date with multiple Workouts. Use the month arrows to review
+other months.
+
+Select a blue date to open that Workout's existing edit form, where its details and sets may be changed or the Workout
+may be deleted. Select a green date to open an overlay listing that date's sessions from earliest start time to latest;
+select a session in the overlay to edit or delete it. Dates with no recorded Workout are not actionable. An overnight
+Workout remains on the selected end date.
+
 ## Resetting GymFlow
 
 `Reset GymFlow`, directly above `Return to Login` in every Owner sidebar, permanently deletes the Owner account and
