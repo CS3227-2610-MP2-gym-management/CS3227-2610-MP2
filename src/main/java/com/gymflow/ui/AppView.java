@@ -9,6 +9,7 @@ import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.model.Account;
 import com.gymflow.model.Role;
 import com.gymflow.member.OwnerMemberService;
+import com.gymflow.member.MemberAccountService;
 import com.gymflow.visit.OwnerVisitService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -29,6 +30,7 @@ public final class AppView {
     private final OwnerAnnouncementService announcements;
     private final OwnerExpenseService expenses;
     private final OwnerMemberService members;
+    private final MemberAccountService memberAccounts;
     private final OwnerVisitService visits;
     private Account session;
     private boolean ownerExists;
@@ -41,12 +43,14 @@ public final class AppView {
      */
     public AppView(Stage stage, AuthenticationService authentication,
             OwnerMemberService members, OwnerExpenseService expenses,
-            OwnerVisitService visits, OwnerAnnouncementService announcements, boolean ownerExists) {
+            OwnerVisitService visits, OwnerAnnouncementService announcements,
+            MemberAccountService memberAccounts, boolean ownerExists) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
         this.announcements = Objects.requireNonNull(announcements);
         this.expenses = Objects.requireNonNull(expenses);
         this.members = Objects.requireNonNull(members);
+        this.memberAccounts = Objects.requireNonNull(memberAccounts);
         this.visits = Objects.requireNonNull(visits);
         this.ownerExists = ownerExists;
         theme = preferences.getBoolean(DARK_MODE, false) ? Theme.DARK : Theme.LIGHT;
@@ -87,9 +91,15 @@ public final class AppView {
         case OWNER_ANNOUNCEMENTS -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerAnnouncementsView.create(announcements, session, this::show, this::showReset, this::logout);
-        case MEMBER_HOME, MEMBER_MEMBERSHIP, MEMBER_VISITS, MEMBER_WORKOUTS, MEMBER_PROFILE -> !isMemberSession(session)
+        case MEMBER_HOME -> !isMemberSession(session)
                 ? createLogin()
-                : MemberHomeView.create(screen, this::show, this::logout);
+                : MemberHomeView.create(memberAccounts, session, this::show, this::logout);
+        case MEMBER_MEMBERSHIP -> !isMemberSession(session)
+                ? createLogin()
+                : MemberMembershipView.create(memberAccounts, session, this::show, this::logout);
+        case MEMBER_VISITS, MEMBER_WORKOUTS, MEMBER_PROFILE -> !isMemberSession(session)
+                ? createLogin()
+                : MemberHomeView.createPlaceholder(screen, this::show, this::logout);
         };
         shell.setCenter(root);
     }

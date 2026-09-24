@@ -1,92 +1,115 @@
 package com.gymflow.ui;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import com.gymflow.member.MemberAccountService;
+import com.gymflow.model.Account;
+import com.gymflow.model.MemberOverview;
+import com.gymflow.model.Membership;
+import com.gymflow.model.MembershipStatus;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+/** Member dashboard showing the authenticated Member's profile and current Membership. */
 final class MemberHomeView {
-    private static final List<String> NAVIGATION =
-            List.of("Home", "My Membership", "Gym Visits", "Workouts", "Profile");
+    static final List<String> NAVIGATION = List.of("Home", "My Membership", "Gym Visits", "Workouts", "Profile");
 
     private MemberHomeView() {
     }
 
-    static Parent create(Screen screen, Consumer<Screen> navigate, Runnable logout) {
-        Label status = new Label("STATUS PENDING");
-        status.getStyleClass().add("status-badge");
-        Label membershipTitle = new Label("Membership");
-        membershipTitle.getStyleClass().add("section-title");
-        Label membershipDates = new Label("Start date  —        Expiry date  —");
-        membershipDates.getStyleClass().add("detail-text");
-        VBox membership = UiComponents.card(membershipTitle, status, membershipDates);
-
-        Label visitTitle = new Label("Gym visit");
-        visitTitle.getStyleClass().add("section-title");
-        Label visitStatus = new Label("You are not currently checked in.");
-        visitStatus.getStyleClass().add("muted-text");
-        Button entry = disabledAction("Submit Entry");
-        Button exit = disabledAction("Submit Exit");
-        HBox visitActions = new HBox(10, entry, exit);
-        VBox visit = UiComponents.card(visitTitle, visitStatus, visitActions);
-
-        GridPane summary = new GridPane();
-        summary.setHgap(16);
-        summary.add(membership, 0, 0);
-        summary.add(visit, 1, 0);
-        GridPane.setHgrow(membership, Priority.ALWAYS);
-        GridPane.setHgrow(visit, Priority.ALWAYS);
-        membership.setMaxWidth(Double.MAX_VALUE);
-        visit.setMaxWidth(Double.MAX_VALUE);
-
-        Label historyTitle = new Label("Recent visits");
-        historyTitle.getStyleClass().add("section-title");
-        ListView<Void> visits = UiComponents.cardList(
-                "No gym visits recorded yet", ignored -> new VBox());
-        visits.setPrefHeight(260);
-        VBox history = UiComponents.card(historyTitle, visits);
-        VBox.setVgrow(history, Priority.ALWAYS);
-
-        Label profileTitle = new Label("Profile");
-        profileTitle.getStyleClass().add("section-title");
-        Label profile = new Label("Member details will appear here after login is implemented.");
-        profile.getStyleClass().add("muted-text");
-        profile.setWrapText(true);
-        VBox profileCard = UiComponents.card(profileTitle, profile);
-
-        VBox mainColumn = new VBox(20, summary, history);
-        VBox.setVgrow(history, Priority.ALWAYS);
-        HBox body = new HBox(20, mainColumn, profileCard);
-        HBox.setHgrow(mainColumn, Priority.ALWAYS);
-        profileCard.setPrefWidth(260);
-
+    static Parent create(MemberAccountService accounts, Account session,
+            Consumer<Screen> navigate, Runnable logout) {
+        Label membership = detail("Loading Membership details…");
+        Label profile = detail("Loading profile…");
+        VBox main = new VBox(20, UiComponents.card(section("Membership"), membership),
+                UiComponents.card(section("Profile"), profile));
+        main.setMaxWidth(700);
         VBox content = new VBox(20,
-                UiComponents.header(title(screen), "Welcome to your GymFlow account", null), body);
+                UiComponents.header("Member Home", "Welcome to your GymFlow account", null), main);
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));
-        VBox.setVgrow(body, Priority.ALWAYS);
-
-        BorderPane root = new BorderPane();
-        root.setId("member-home-screen");
-        root.getStyleClass().add("dashboard-screen");
-        root.setLeft(UiComponents.sidebar("Member", NAVIGATION, navigationItem(screen), Set.copyOf(NAVIGATION),
-                item -> navigate.accept(memberScreen(item)), null, logout));
-        root.setCenter(content);
-        root.setAccessibleText("GymFlow member dashboard");
+        BorderPane root = shell(content, Screen.MEMBER_HOME, navigate, logout);
+        Thread.startVirtualThread(() -> load(accounts, session, overview -> {
+            profile.setText(profileText(overview));
+            membership.setText(currentText(overview.memberships(), accounts.today()));
+        }, message -> {
+            profile.setText(message);
+            membership.setText(message);
+        }));
         return root;
     }
 
-    private static String title(Screen screen) {
+    static Parent createPlaceholder(Screen screen, Consumer<Screen> navigate, Runnable logout) {
+        Label message = detail("This Member feature will be available in a later update.");
+        VBox content = new VBox(20, UiComponents.header(title(screen), "Your GymFlow account", null),
+                UiComponents.card(message));
+        content.getStyleClass().add("page-content");
+        content.setPadding(new Insets(36));
+        return shell(content, screen, navigate, logout);
+    }
+
+    static BorderPane shell(VBox content, Screen screen, Consumer<Screen> navigate, Runnable logout) {
+        BorderPane root = new BorderPane(content);
+        root.setId("member-" + screen.name().toLowerCase() + "-screen");
+        root.getStyleClass().add("dashboard-screen");
+        root.setLeft(UiComponents.sidebar("Member", NAVIGATION, navigationItem(screen), Set.copyOf(NAVIGATION),
+                item -> navigate.accept(memberScreen(item)), null, logout));
+        root.setAccessibleText("GymFlow member " + title(screen));
+        return root;
+    }
+
+    static void load(MemberAccountService accounts, Account session, Consumer<MemberOverview> success,
+            Consumer<String> failure) {
+        try {
+            MemberOverview overview = accounts.loadOverview(session);
+            Platform.runLater(() -> success.accept(overview));
+        } catch (RuntimeException exception) {
+            Platform.runLater(() -> failure.accept("Unable to load your account details."));
+        }
+    }
+
+    static String membershipText(Membership membership, LocalDate today) {
+        return "%s%nStart date: %s%nExpiry date: %s".formatted(
+                membership.status(today), membership.startDate(), membership.expiryDate());
+    }
+
+    private static String currentText(List<Membership> memberships, LocalDate today) {
+        return memberships.stream().filter(item -> item.status(today) == MembershipStatus.ACTIVE).findFirst()
+                .map(item -> membershipText(item, today))
+                .orElseGet(() -> memberships.stream().filter(item -> item.status(today) == MembershipStatus.UPCOMING)
+                        .findFirst().map(item -> "Upcoming Membership%nStart date: %s%nExpiry date: %s".formatted(
+                                item.startDate(), item.expiryDate()))
+                        .orElse("No current Membership is recorded."));
+    }
+
+    private static String profileText(MemberOverview overview) {
+        var member = overview.member();
+        String birthDate = member.dateOfBirth() == null ? "Not provided" : member.dateOfBirth().toString();
+        return "Name: %s%nMember number: %s%nEmail: %s%nPhone: %s%nDate of birth: %s".formatted(
+                member.fullName(), member.memberNumber(), member.email(), member.phoneNumber(), birthDate);
+    }
+
+    private static Label section(String value) {
+        Label label = new Label(value);
+        label.getStyleClass().add("section-title");
+        return label;
+    }
+
+    private static Label detail(String value) {
+        Label label = new Label(value);
+        label.getStyleClass().add("detail-text");
+        label.setWrapText(true);
+        return label;
+    }
+
+    static String title(Screen screen) {
         return switch (screen) {
         case MEMBER_HOME -> "Member Home";
         case MEMBER_MEMBERSHIP -> "My Membership";
@@ -117,13 +140,5 @@ final class MemberHomeView {
         case "Profile" -> Screen.MEMBER_PROFILE;
         default -> throw new IllegalArgumentException("Unknown Member navigation item: " + item);
         };
-    }
-
-    private static Button disabledAction(String text) {
-        Button button = new Button(text);
-        button.getStyleClass().add("primary-button");
-        button.setDisable(true);
-        button.setAccessibleText(text + ", coming in a later commit");
-        return button;
     }
 }
