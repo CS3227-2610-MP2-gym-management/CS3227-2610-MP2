@@ -7,6 +7,10 @@ setup and login, Member administration, Membership and Payment records, Expenses
 Announcements, application reset, and persistent light/dark themes. Member authentication and operational Member
 workflows are still under development; `MemberHomeView` remains a static preview.
 
+Product rules and deferred architecture questions are maintained in the
+[Agreed Project Decisions](ProjectDecisions.md). Implementations should follow that document together with the
+[User Stories](UserStories.md) and the repository-level [Architecture](../ARCHITECTURE.md) contract.
+
 The application uses JavaFX 25 for its interface, SQLite through Xerial JDBC for persistence, Gradle for builds and
 packaging, JUnit 6 for automated tests, and Checkstyle for source checks. It does not require a server or network
 connection during normal use.
