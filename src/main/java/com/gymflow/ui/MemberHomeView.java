@@ -68,7 +68,7 @@ final class MemberHomeView {
         BorderPane root = shell(content, Screen.MEMBER_HOME, navigate, logout);
         Thread.startVirtualThread(() -> load(accounts, session, overview -> {
             profile.setText(profileText(overview));
-            membership.setText(currentText(overview.memberships(), accounts.today()));
+            membership.setText(membershipSummary(overview.memberships(), accounts.today()));
         }, message -> {
             profile.setText(message);
             membership.setText(message);
@@ -140,13 +140,15 @@ final class MemberHomeView {
                 membership.status(today), membership.startDate(), membership.expiryDate());
     }
 
-    private static String currentText(List<Membership> memberships, LocalDate today) {
+    /** Summarizes the Membership period that currently grants, or will grant, access. */
+    static String membershipSummary(List<Membership> memberships, LocalDate today) {
         return memberships.stream().filter(item -> item.status(today) == MembershipStatus.ACTIVE).findFirst()
                 .map(item -> membershipText(item, today))
                 .orElseGet(() -> memberships.stream().filter(item -> item.status(today) == MembershipStatus.UPCOMING)
                         .findFirst().map(item -> "Upcoming Membership%nStart date: %s%nExpiry date: %s".formatted(
                                 item.startDate(), item.expiryDate()))
-                        .orElse("No current Membership is recorded."));
+                        .orElse("No current or upcoming Membership is recorded. "
+                                + "Visit the gym in person to purchase or renew your Membership."));
     }
 
     private static String profileText(MemberOverview overview) {

@@ -179,10 +179,12 @@ CSV exports use portable ISO dates and UTC timestamps. Open Visits leave exit an
 where to save each UTF-8 `.csv` file and safely escapes commas, quotation marks, line breaks, Unicode text, and values
 that spreadsheet applications could otherwise interpret as formulas. Canceling the save window creates no file.
 
-## Member dashboard preview
+## Member dashboard
 
-Member authentication is not implemented. `Preview Member Dashboard` opens a static preview containing placeholder
-membership, visit, and profile information. Its entry and exit buttons do not record data.
+After signing in, Members can review their profile, Membership history, and Membership status. The dashboard displays
+an active Membership when one is valid today; otherwise, it displays the next upcoming Membership and its start date.
+When there is no current or upcoming Membership, GymFlow directs the Member to visit the gym in person to purchase or
+renew. This guidance is informational only: it does not create a Membership, Payment, or online purchase request.
 
 ## Resetting GymFlow
 
