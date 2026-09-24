@@ -4,8 +4,12 @@
 
 GymFlow is a local-first Java SE 25 desktop application for a small gym. The current release provides Owner account
 setup and login, Member administration, Membership and Payment records, Expenses, Visit oversight and correction,
-Announcements, application reset, and persistent light/dark themes. Member authentication and operational Member
-workflows are still under development; `MemberHomeView` remains a static preview.
+Announcements, application reset, persistent light/dark themes, Member authentication, Membership status and renewal
+guidance, and Member check-in/check-out workflows.
+
+Product rules and deferred architecture questions are maintained in the
+[Agreed Project Decisions](ProjectDecisions.md). Implementations should follow that document together with the
+[User Stories](UserStories.md) and the repository-level [Architecture](../ARCHITECTURE.md) contract.
 
 The application uses JavaFX 25 for its interface, SQLite through Xerial JDBC for persistence, Gradle for builds and
 packaging, JUnit 6 for automated tests, and Checkstyle for source checks. It does not require a server or network
@@ -43,7 +47,7 @@ omitted because each responsibility currently has one implementation.
 | --- | --- |
 | `com.gymflow.ui` | Application startup, navigation, JavaFX screens, dialogs, formatting, and themes |
 | `com.gymflow.auth` | Password hashing, Owner setup, authentication, and reset authorization |
-| `com.gymflow.member` | Owner-side Member, Membership, Payment, and dashboard rules |
+| `com.gymflow.member` | Owner- and Member-facing account, Membership, Payment, and dashboard rules |
 | `com.gymflow.expense` | Owner-side Expense validation and queries |
 | `com.gymflow.visit` | Owner-side Visit searches, counts, history, and corrections |
 | `com.gymflow.announcement` | Announcement publication, listing, and withdrawal |
@@ -104,6 +108,13 @@ AND date <= membership.expiryDate
 Active periods for the same Member cannot overlap. Renewal creates a new Membership and Payment. Deactivation never
 disables the Member account and does not close an existing Visit. Display values such as `ACTIVE`, `UPCOMING`,
 `EXPIRED`, and `DEACTIVATED` are calculated from the flag and dates.
+
+`MemberAccountService.membershipNotice(MemberOverview)` is the single Member-facing presentation decision. It derives
+one immutable `MembershipNotice` from the Member's ordered history and injected clock: `ACTIVE` takes precedence over
+`UPCOMING`; otherwise the result is `RENEWAL_NEEDED`. `MemberHomeView` uses the latter state to display its prominent,
+accessible renewal notice above Visit controls, while `MemberMembershipView` uses the same state for its guidance.
+Neither view writes data or implements a purchase flow. The notice is derived at each screen load so Owner-recorded
+changes appear after the Member reopens a screen.
 
 ### Visits
 
@@ -229,6 +240,7 @@ Useful commands from the repository root are:
 ./gradlew run          # compile and launch on the current platform
 ./gradlew test         # run JUnit 6 tests
 ./gradlew check        # run tests and Checkstyle
+./gradlew renderedUiTest # run rendered JavaFX layout tests on a desktop display
 ./gradlew releaseJars  # build and verify all four platform JARs
 ```
 
@@ -247,9 +259,12 @@ Automated test responsibilities are grouped as follows:
 | Visits | Search, current visitors, history, ordering, correction rules, and open-Visit uniqueness |
 | Expenses and Announcements | Authorization, validation, ordering, totals, filtering, publishing, and withdrawal |
 | UI helpers | Theme behavior, resources, card components, financial input, Visit formatting, Owner route guard, CSV encoding |
+| Rendered Member UI | Real JavaFX scene/layout checks for Member-shell scrolling and long-detail text wrapping |
 | Monitoring and packaging | Sanitized rotating logs and required release-JAR contents |
 
-JavaFX layout, keyboard focus, dialogs, scrolling, theme contrast, and native launch remain manual-test concerns.
+`renderedUiTest` is intentionally separate from `check`: it creates real JavaFX windows and therefore requires a
+desktop display. It is run explicitly on a supported local desktop before handoff. Complex keyboard focus, dialogs,
+theme contrast, native launch, and interaction flows remain manual-test concerns.
 Release verification should cover first-run setup, login, each Owner page, invalid input retention, reset cancellation,
 database persistence after restart, and the matching JAR on each supported platform.
 
@@ -273,10 +288,8 @@ under `logs/<member>/` and remain marked pending until the named member reviews 
 
 ## Extension points
 
-- Implement Member authentication by routing an authenticated `MEMBER` session to Member screens while retaining the
-  centralized Owner-role guard.
-- Validate Member entry with `hasValidMembership(memberId, date)` before inserting a Visit, and require an open Visit
-  before exit.
+- Extend the Member notice only through an approved story, for example an agreed expiring-soon threshold; do not turn
+  the current informational renewal notice into an online purchase flow.
 - Read active notices through `OwnerAnnouncementService.listPublished()` for the future Member dashboard.
 - Keep new schema changes ordered, versioned, transactional, and included in centralized reset.
 - Add new persistence abstractions only when another implementation or a genuine test boundary requires them.

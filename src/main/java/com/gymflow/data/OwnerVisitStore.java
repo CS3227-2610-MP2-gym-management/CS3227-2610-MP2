@@ -19,10 +19,12 @@ public final class OwnerVisitStore {
     private static final DateTimeFormatter TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
     private final GymFlowDatabase database;
+    private final VisitHistoryStore history;
 
     /** Creates a Visit store backed by the supplied database. */
     public OwnerVisitStore(GymFlowDatabase database) {
         this.database = database;
+        history = new VisitHistoryStore(database);
     }
 
     /** Finds Visits matching a Member name or email. */
@@ -59,23 +61,7 @@ public final class OwnerVisitStore {
 
     /** Lists one Member's Visits, newest first. */
     public List<Visit> history(long memberId) {
-        String sql = """
-                SELECT * FROM visits WHERE member_account_id = ?
-                ORDER BY entered_at DESC, id DESC
-                """;
-        try (Connection connection = database.connect();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, memberId);
-            try (ResultSet results = statement.executeQuery()) {
-                List<Visit> found = new ArrayList<>();
-                while (results.next()) {
-                    found.add(readVisit(results));
-                }
-                return found;
-            }
-        } catch (SQLException exception) {
-            throw new IllegalStateException("Unable to load Member Visits", exception);
-        }
+        return history.history(memberId);
     }
 
     /** Counts Members whose Visit has no exit time. */

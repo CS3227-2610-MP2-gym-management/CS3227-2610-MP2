@@ -9,7 +9,9 @@ import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.model.Account;
 import com.gymflow.model.Role;
 import com.gymflow.member.OwnerMemberService;
+import com.gymflow.member.MemberAccountService;
 import com.gymflow.visit.OwnerVisitService;
+import com.gymflow.visit.MemberVisitService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.Node;
@@ -29,7 +31,9 @@ public final class AppView {
     private final OwnerAnnouncementService announcements;
     private final OwnerExpenseService expenses;
     private final OwnerMemberService members;
+    private final MemberAccountService memberAccounts;
     private final OwnerVisitService visits;
+    private final MemberVisitService memberVisits;
     private Account session;
     private boolean ownerExists;
     private Theme theme;
@@ -41,13 +45,16 @@ public final class AppView {
      */
     public AppView(Stage stage, AuthenticationService authentication,
             OwnerMemberService members, OwnerExpenseService expenses,
-            OwnerVisitService visits, OwnerAnnouncementService announcements, boolean ownerExists) {
+            OwnerVisitService visits, MemberVisitService memberVisits, OwnerAnnouncementService announcements,
+            MemberAccountService memberAccounts, boolean ownerExists) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
         this.announcements = Objects.requireNonNull(announcements);
         this.expenses = Objects.requireNonNull(expenses);
         this.members = Objects.requireNonNull(members);
+        this.memberAccounts = Objects.requireNonNull(memberAccounts);
         this.visits = Objects.requireNonNull(visits);
+        this.memberVisits = Objects.requireNonNull(memberVisits);
         this.ownerExists = ownerExists;
         theme = preferences.getBoolean(DARK_MODE, false) ? Theme.DARK : Theme.LIGHT;
         shell.getStyleClass().add("app-shell");
@@ -87,7 +94,18 @@ public final class AppView {
         case OWNER_ANNOUNCEMENTS -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerAnnouncementsView.create(announcements, session, this::show, this::showReset, this::logout);
-        case MEMBER_HOME -> MemberHomeView.create(() -> show(Screen.LOGIN));
+        case MEMBER_HOME -> !isMemberSession(session)
+                ? createLogin()
+                : MemberHomeView.create(memberAccounts, memberVisits, session, this::show, this::logout);
+        case MEMBER_MEMBERSHIP -> !isMemberSession(session)
+                ? createLogin()
+                : MemberMembershipView.create(memberAccounts, session, this::show, this::logout);
+        case MEMBER_VISITS -> !isMemberSession(session)
+                ? createLogin()
+                : MemberVisitsView.create(memberVisits, session, this::show, this::logout);
+        case MEMBER_WORKOUTS, MEMBER_PROFILE -> !isMemberSession(session)
+                ? createLogin()
+                : MemberHomeView.createPlaceholder(screen, this::show, this::logout);
         };
         shell.setCenter(root);
     }
@@ -96,15 +114,18 @@ public final class AppView {
         return account != null && account.role() == Role.OWNER;
     }
 
-    private Parent createLogin() {
-        return LoginView.create(authentication, !ownerExists, this::ownerAuthenticated,
-                () -> show(Screen.MEMBER_HOME));
+    static boolean isMemberSession(Account account) {
+        return account != null && account.role() == Role.MEMBER && account.active();
     }
 
-    private void ownerAuthenticated(Account owner) {
-        session = owner;
+    private Parent createLogin() {
+        return LoginView.create(authentication, !ownerExists, this::authenticated);
+    }
+
+    private void authenticated(Account account) {
+        session = account;
         ownerExists = true;
-        show(Screen.OWNER_HOME);
+        show(account.role() == Role.OWNER ? Screen.OWNER_HOME : Screen.MEMBER_HOME);
     }
 
     private void logout() {

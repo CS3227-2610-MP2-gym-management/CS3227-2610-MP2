@@ -20,32 +20,32 @@ Shared storage and service contracts may exist before the corresponding Member i
 
 | ID      | User story                                                                                                              | Status  | Notes                                                                               |
 | ------- | ----------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------- |
-| M-P0-01 | As a gym Member, I want to log in securely so that I can access my personal gym account.                                | Planned | Member accounts and credentials exist, but Member login routing is not implemented. |
-| M-P0-02 | As a gym Member, I want to view my profile and Membership details so that I can confirm that my information is correct. | Planned | Owner-visible profile records already provide the shared data.                      |
-| M-P0-03 | As a gym Member, I want to view my Membership dates and current status so that I know whether I may use the gym.        | Planned | Membership status is derived by the shared model.                                   |
-| M-P0-04 | As a gym Member, I want to record my arrival so that the beginning of my Visit is retained.                             | Planned | The shared Visit schema supports an open Visit.                                     |
-| M-P0-05 | As a gym Member, I want to record my departure so that the end of my Visit is retained.                                 | Planned | The shared Visit schema supports completing an open Visit.                          |
-| M-P0-06 | As a gym Member, I want to see whether I am checked in so that I do not submit a duplicate entry or exit.               | Planned | Current state is derived from whether an open Visit exists.                         |
-| M-P0-07 | As a gym Member, I want to view my Visit history so that I can review previous attendance.                              | Planned | Owner-visible history already provides the shared query model.                      |
-| M-P0-08 | As a potential or existing Member, I want to purchase or renew a Membership so that I can access the gym.               | Planned | Owners currently create Membership purchases and renewals.                          |
+| M-P0-01 | As a gym Member, I want to log in securely so that I can access my personal gym account.                                | Implemented | Active Member credentials authenticate through the normal login form and open Member-only routes. |
+| M-P0-02 | As a gym Member, I want to view my profile and Membership details so that I can confirm that my information is correct. | Implemented | Member-only account reads expose the authenticated profile and complete Membership history. |
+| M-P0-03 | As a gym Member, I want to view my Membership dates and current status so that I know whether I may use the gym.        | Implemented | Membership status is derived from the active flag and inclusive dates using the local clock. |
+| M-P0-04 | As a gym Member, I want to record my arrival so that the beginning of my Visit is retained.                             | Implemented | An active Member with a valid, inclusive-date Membership can open one Visit.        |
+| M-P0-05 | As a gym Member, I want to record my departure so that the end of my Visit is retained.                                 | Implemented | An active Member can close only their own open Visit, even after Membership changes. |
+| M-P0-06 | As a gym Member, I want to see whether I am checked in so that I do not submit a duplicate entry or exit.               | Implemented | Current state is derived from an open Visit; only the valid action is enabled.       |
+| M-P0-07 | As a gym Member, I want to view my Visit history so that I can review previous attendance.                              | Implemented | Owner-visible history already provides the shared query model.                      |
+| M-P0-08 | As an existing Member, I want to know when renewal is needed and where to renew so that I can restore gym access.        | Implemented | A prominent Home notice and My Membership guidance direct Members without a current or upcoming Membership to visit in person; the Owner records the Membership and Payment. |
 
 ### P1 — Should have
 
-| ID      | User story                                                                                                          | Status  |
-| ------- | ------------------------------------------------------------------------------------------------------------------- | ------- |
-| M-P1-01 | As a gym Member, I want to record a completed workout so that I can track my exercise activity.                     | Planned |
-| M-P1-02 | As a gym Member, I want to record exercises, sets, repetitions, and weight so that I can monitor training progress. | Planned |
-| M-P1-03 | As a gym Member, I want to view previous workouts so that I can compare my performance over time.                   | Planned |
-| M-P1-04 | As a gym Member, I want to record body weight so that I can monitor fitness progress.                               | Planned |
-| M-P1-05 | As a gym Member, I want to view Owner announcements so that I stay informed about gym operations.                   | Planned |
-| M-P1-06 | As a gym Member, I want to update selected profile details so that my contact information remains current.          | Planned |
-| M-P1-07 | As a gym Member, I want to change my password so that I can keep my account secure.                                 | Planned |
+| ID      | User story                                                                                                                    | Status  | Notes |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------- | ------- | ----- |
+| M-P1-01 | As a gym Member, I want to record completed workout sessions so that I can track each period of exercise activity.            | Planned | Multiple completed Workouts may be recorded on the same date; saved Workouts are complete records, not drafts, and require at least one set. |
+| M-P1-02 | As a gym Member, I want to record exercises and ordered sets using repetitions or duration and optional resistance so that I can monitor training progress. | Planned | Each set has exactly one positive measure: repetitions or duration. Resistance in kilograms is optional and cannot be negative. |
+| M-P1-03 | As a gym Member, I want to view, edit, and delete my previous workouts so that my personal exercise history remains useful and accurate. | Planned | A Member may change Workout details and sets or permanently delete a Workout and its sets, but cannot access another Member's records. |
+| M-P1-04 | As a gym Member, I want to record, edit, and delete body-mass readings so that I can monitor fitness progress.                 | Planned | Each Member may store one positive kilogram reading per calendar date; future-dated readings are not allowed. |
+| M-P1-05 | As a gym Member, I want to view Owner announcements so that I stay informed about gym operations.                             | Planned | Members see published announcements only; read/unread tracking is not required. |
+| M-P1-06 | As a gym Member, I want to update selected profile details so that my contact information remains current.                    | Planned | Self-service editing is limited to email address and phone number. |
+| M-P1-07 | As a gym Member, I want to change my password so that I can keep my account secure.                                           | Planned | The Member must provide the current password and a matching new password of 12–128 characters. |
 
 ### P2 — Could have
 
-| ID      | User story                                                                                           | Status  |
-| ------- | ---------------------------------------------------------------------------------------------------- | ------- |
-| M-P2-01 | As a gym Member, I want to view workout and body-weight trends so that I can understand my progress. | Planned |
+| ID      | User story                                                                                           | Status  | Notes |
+| ------- | ---------------------------------------------------------------------------------------------------- | ------- | ----- |
+| M-P2-01 | As a gym Member, I want to view workout and body-weight trends so that I can understand my progress. | Planned | Trends show completed-Workout frequency, per-Workout load volume, and body-mass readings. Load volume sums repetitions multiplied by resistance; timed and unweighted sets contribute zero. |
 
 ## Owner stories
 

@@ -11,8 +11,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 
+import com.gymflow.data.AccountStore;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.model.Account;
+import com.gymflow.model.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -66,6 +68,20 @@ class AuthenticationServiceTest {
         Account owner = authentication.authenticate(" OWNER@EXAMPLE.COM ", supplied).orElseThrow();
 
         assertEquals("owner@example.com", owner.email());
+        assertArrayEquals(new char[supplied.length], supplied);
+    }
+
+    @Test
+    void authenticatesActiveMemberUsingNormalizedEmail() {
+        AccountStore accounts = new AccountStore(new GymFlowDatabase(databaseFile));
+        accounts.create("member@example.com", new PasswordHasher().hash("correct password".toCharArray()),
+                Role.MEMBER);
+        char[] supplied = "correct password".toCharArray();
+
+        Account member = authentication.authenticate(" MEMBER@EXAMPLE.COM ", supplied).orElseThrow();
+
+        assertEquals(Role.MEMBER, member.role());
+        assertEquals("member@example.com", member.email());
         assertArrayEquals(new char[supplied.length], supplied);
     }
 
