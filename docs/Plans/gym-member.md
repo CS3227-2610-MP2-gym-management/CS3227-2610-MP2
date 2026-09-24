@@ -340,7 +340,8 @@ A Member can create multiple completed Workouts per day, each containing at leas
 
 ### Data model
 
-- `Workout`: ID, Member ID, performed instant, optional notes, created time, updated time.
+- `Workout`: ID, Member ID, start and end instants, optional notes, created time, updated time. The end is later than
+  the start and cannot be in the future.
 - `WorkoutSet`: ID, Workout ID, global display position, exercise name, nullable repetitions, nullable duration seconds, nullable resistance grams, created time, updated time.
 - Exactly one of repetitions or duration is present and positive.
 - Resistance is optional and non-negative.
@@ -363,7 +364,7 @@ A Member can create multiple completed Workouts per day, each containing at leas
 6. Make create and update transactional across the Workout and all sets.
 7. For update, validate first, then replace the stored set collection inside the same transaction.
 8. Create `WorkoutService` and centralize trimming, ownership, time, set-measure, and resistance validation.
-9. Inject `Clock` into the service and reject future performed times.
+9. Inject `Clock` into the service and reject invalid ranges and future Workout end times.
 10. Add `MEMBER_WORKOUTS` to `Screen` and guarded navigation.
 11. Create the Workout history view with newest-first cards.
 12. Create one reusable Workout form for both create and edit.
@@ -385,7 +386,7 @@ A Member can create multiple completed Workouts per day, each containing at leas
 - A set containing both repetitions and duration is rejected.
 - Blank exercise names and Workouts without sets are rejected.
 - Multiple Workouts may be completed on the same date.
-- A future completion timestamp is rejected.
+- A Workout with an end at or before its start, or a future end, is rejected.
 - Names and notes are normalized correctly.
 - History uses completion time and ID for deterministic ordering.
 - Every editable field can be updated atomically.

@@ -4,5 +4,6 @@ import java.time.Instant;
 import java.util.List;
 
 /** Complete replacement payload for a saved Workout. */
-public record SaveWorkoutRequest(Instant performedAt, String notes, List<WorkoutSetInput> sets) {
+public record SaveWorkoutRequest(Instant startedAt, Instant endedAt, String notes,
+        List<WorkoutSetInput> sets) {
 }

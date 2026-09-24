@@ -31,7 +31,7 @@ public final class WorkoutStore {
     /** Returns an active Member's Workouts in deterministic newest-first order. */
     public List<Workout> findByMember(long memberId) {
         String sql = "SELECT id FROM workouts WHERE member_account_id = ? "
-                + "ORDER BY performed_at DESC, id DESC";
+                + "ORDER BY ended_at DESC, id DESC";
         try (Connection connection = database.connect();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             requireActiveMember(connection, memberId);
@@ -103,8 +103,8 @@ public final class WorkoutStore {
 
     private static long insertWorkout(Connection connection, long memberId,
             SaveWorkoutRequest request, Instant now) throws SQLException {
-        String sql = "INSERT INTO workouts(member_account_id, performed_at, notes, created_at, updated_at) "
-                + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO workouts(member_account_id, started_at, ended_at, notes, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, memberId);
             bindWorkout(statement, request, now);
@@ -121,13 +121,14 @@ public final class WorkoutStore {
     private static long replaceWorkout(Connection connection, long memberId, long id,
             SaveWorkoutRequest request, Instant now) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE workouts SET performed_at = ?, notes = ?, updated_at = ? "
+                "UPDATE workouts SET started_at = ?, ended_at = ?, notes = ?, updated_at = ? "
                         + "WHERE id = ? AND member_account_id = ?")) {
-            statement.setString(1, TIMESTAMP.format(request.performedAt()));
-            statement.setString(2, request.notes());
-            statement.setString(3, TIMESTAMP.format(now));
-            statement.setLong(4, id);
-            statement.setLong(5, memberId);
+            statement.setString(1, TIMESTAMP.format(request.startedAt()));
+            statement.setString(2, TIMESTAMP.format(request.endedAt()));
+            statement.setString(3, request.notes());
+            statement.setString(4, TIMESTAMP.format(now));
+            statement.setLong(5, id);
+            statement.setLong(6, memberId);
             if (statement.executeUpdate() != 1) {
                 throw new IllegalArgumentException("Workout not found");
             }
@@ -143,10 +144,11 @@ public final class WorkoutStore {
     private static void bindWorkout(PreparedStatement statement, SaveWorkoutRequest request,
             Instant now) throws SQLException {
         String timestamp = TIMESTAMP.format(now);
-        statement.setString(2, TIMESTAMP.format(request.performedAt()));
-        statement.setString(3, request.notes());
-        statement.setString(4, timestamp);
+        statement.setString(2, TIMESTAMP.format(request.startedAt()));
+        statement.setString(3, TIMESTAMP.format(request.endedAt()));
+        statement.setString(4, request.notes());
         statement.setString(5, timestamp);
+        statement.setString(6, timestamp);
     }
 
     private static void insertSets(Connection connection, long workoutId,
@@ -191,7 +193,8 @@ public final class WorkoutStore {
                     throw new SQLException("Workout not found");
                 }
                 return new Workout(id, results.getLong("member_account_id"),
-                        Instant.parse(results.getString("performed_at")), results.getString("notes"),
+                        Instant.parse(results.getString("started_at")),
+                        Instant.parse(results.getString("ended_at")), results.getString("notes"),
                         Instant.parse(results.getString("created_at")),
                         Instant.parse(results.getString("updated_at")), loadSets(connection, id));
             }

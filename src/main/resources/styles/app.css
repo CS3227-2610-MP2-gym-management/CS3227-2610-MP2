@@ -322,6 +322,120 @@
     -fx-pref-width: 560px;
 }
 
+.workout-dialog {
+    -fx-pref-width: 860px;
+}
+
+.workout-time-fields,
+.workout-set-row {
+    -fx-alignment: center-left;
+}
+
+.workout-time-fields .combo-box {
+    -fx-pref-width: 128px;
+}
+
+.workout-field {
+    -fx-alignment: center-left;
+}
+
+.workout-field-label {
+    -fx-font-weight: bold;
+    -fx-min-width: 70px;
+}
+
+.workout-exercise {
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px;
+}
+
+.workout-exercise-name {
+    -fx-font-weight: bold;
+}
+
+.workout-exercise-name .list-cell,
+.workout-exercise-name .text-field {
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f55ba;
+}
+
+.workout-set-count {
+    -fx-text-fill: #68758b;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 8px;
+}
+
+.workout-set-header {
+    -fx-padding: 5px 8px;
+    -fx-border-color: transparent transparent #d9e0ea transparent;
+}
+
+.workout-set-header .label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #68758b;
+}
+
+.workout-set {
+    -fx-padding: 6px 8px;
+    -fx-border-color: transparent transparent #d9e0ea transparent;
+}
+
+.workout-set .text-field {
+    -fx-min-height: 34px;
+    -fx-pref-height: 34px;
+    -fx-padding: 6px 8px;
+}
+
+.workout-set:nth-child(even) {
+    -fx-background-color: rgba(40, 100, 220, 0.04);
+}
+
+.workout-set-row .text-field {
+    -fx-pref-width: 82px;
+}
+
+.workout-exercise .combo-box,
+.workout-exercise .text-field,
+.workout-exercise .button {
+    -fx-min-height: 34px;
+}
+
+.trash-button {
+    -fx-background-color: transparent;
+    -fx-padding: 6px 8px;
+    -fx-font-size: 17px;
+    -fx-text-fill: #b85b64;
+}
+
+.trash-button:hover {
+    -fx-background-color: #fff1f2;
+}
+
+.workout-actions {
+    -fx-padding: 8px 0 0 0;
+}
+
+.workout-exercise .button {
+    -fx-padding: 6px 10px;
+}
+
+.workout-measure-toggle {
+    -fx-background-color: #eef4ff;
+    -fx-border-color: #cbdaf8;
+    -fx-border-radius: 8px;
+    -fx-text-fill: #1f55ba;
+}
+
+.workout-measure-toggle:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: #2864dc;
+    -fx-border-width: 2px;
+    -fx-text-fill: #1f55ba;
+}
+
 .content-scroll,
 .content-scroll > .viewport {
     -fx-background-color: transparent;
@@ -445,7 +559,9 @@
 .dark .login-panel,
 .dark .card,
 .dark .dialog-content,
-.dark .record-card {
+.dark .record-card,
+.dark .workout-set,
+.dark .workout-exercise {
     -fx-background-color: #1f2937;
     -fx-border-color: #3b4a5f;
 }
@@ -557,9 +673,47 @@
 
 .dark .secondary-button,
 .dark .theme-toggle,
-.dark .phone-prefix {
+.dark .phone-prefix,
+.dark .workout-measure-toggle {
     -fx-background-color: #2a3749;
     -fx-border-color: #46566c;
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .workout-set-header,
+.dark .workout-set {
+    -fx-border-color: transparent transparent #3b4a5f transparent;
+}
+
+.dark .workout-set:nth-child(even) {
+    -fx-background-color: rgba(148, 163, 184, 0.08);
+}
+
+.dark .workout-set-header .label {
+    -fx-text-fill: #aebdd0;
+}
+
+.dark .trash-button {
+    -fx-text-fill: #f28b96;
+}
+
+.dark .trash-button:hover {
+    -fx-background-color: #432727;
+}
+
+.dark .workout-exercise-name .list-cell,
+.dark .workout-exercise-name .text-field {
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .workout-set-count {
+    -fx-text-fill: #aebdd0;
+}
+
+.dark .workout-measure-toggle:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: #60a5fa;
+    -fx-border-width: 2px;
     -fx-text-fill: #93c5fd;
 }
 
