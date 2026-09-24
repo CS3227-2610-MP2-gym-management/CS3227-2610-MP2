@@ -307,8 +307,10 @@ Do not begin with a table or screen and infer the domain rules afterward.
 - Authorization tests must cover both allowed and denied roles and cross-Member access.
 - Time-dependent tests should use fixed clocks/dates.
 - CSV tests must cover quoting, Unicode, newlines, and formula-injection protection.
-- JavaFX layout, focus, scrolling, dialogs, accessibility, theme contrast, and native launch require manual checks where
-  automated coverage is impractical.
+- Use the separate `renderedUiTest` task for stable JavaFX scene/layout regressions, such as scroll-container presence
+  and text wrapping. It creates desktop windows and is therefore excluded from cross-platform headless `check` runs.
+- JavaFX focus, dialogs, accessibility, theme contrast, native launch, and complex interactions still require manual
+  checks where automated coverage is impractical.
 - Run `gradlew.bat check` on Windows or `./gradlew check` elsewhere before handoff. Run the relevant release task when
   packaging, module declarations, resources, or dependencies change.
 

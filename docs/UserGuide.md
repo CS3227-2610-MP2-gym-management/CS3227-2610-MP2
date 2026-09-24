@@ -219,6 +219,12 @@ Run automated checks:
 ./gradlew clean check
 ```
 
+Run rendered Member-page layout checks on a desktop display:
+
+```shell
+./gradlew renderedUiTest
+```
+
 Build all supported release JARs:
 
 ```shell

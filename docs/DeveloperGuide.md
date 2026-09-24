@@ -240,6 +240,7 @@ Useful commands from the repository root are:
 ./gradlew run          # compile and launch on the current platform
 ./gradlew test         # run JUnit 6 tests
 ./gradlew check        # run tests and Checkstyle
+./gradlew renderedUiTest # run rendered JavaFX layout tests on a desktop display
 ./gradlew releaseJars  # build and verify all four platform JARs
 ```
 
@@ -258,9 +259,12 @@ Automated test responsibilities are grouped as follows:
 | Visits | Search, current visitors, history, ordering, correction rules, and open-Visit uniqueness |
 | Expenses and Announcements | Authorization, validation, ordering, totals, filtering, publishing, and withdrawal |
 | UI helpers | Theme behavior, resources, card components, financial input, Visit formatting, Owner route guard, CSV encoding |
+| Rendered Member UI | Real JavaFX scene/layout checks for Member-shell scrolling and long-detail text wrapping |
 | Monitoring and packaging | Sanitized rotating logs and required release-JAR contents |
 
-JavaFX layout, keyboard focus, dialogs, scrolling, theme contrast, and native launch remain manual-test concerns.
+`renderedUiTest` is intentionally separate from `check`: it creates real JavaFX windows and therefore requires a
+desktop display. It is run explicitly on a supported local desktop before handoff. Complex keyboard focus, dialogs,
+theme contrast, native launch, and interaction flows remain manual-test concerns.
 Release verification should cover first-run setup, login, each Owner page, invalid input retention, reset cancellation,
 database persistence after restart, and the matching JAR on each supported platform.
 

@@ -120,7 +120,9 @@ final class MemberHomeView {
     }
 
     static BorderPane shell(VBox content, Screen screen, Consumer<Screen> navigate, Runnable logout) {
-        BorderPane root = new BorderPane(UiComponents.scrollable(content));
+        var scroll = UiComponents.scrollable(content);
+        scroll.setId("member-" + screen.name().toLowerCase() + "-scroll");
+        BorderPane root = new BorderPane(scroll);
         root.setId("member-" + screen.name().toLowerCase() + "-screen");
         root.getStyleClass().add("dashboard-screen");
         root.setLeft(UiComponents.sidebar("Member", NAVIGATION, navigationItem(screen), Set.copyOf(NAVIGATION),
@@ -192,7 +194,7 @@ final class MemberHomeView {
         return label;
     }
 
-    private static Label detail(String value) {
+    static Label detail(String value) {
         Label label = new Label(value);
         label.getStyleClass().add("detail-text");
         UiComponents.preserveLabelHeight(label);

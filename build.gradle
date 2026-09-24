@@ -67,6 +67,28 @@ test {
     useJUnitPlatform()
 }
 
+sourceSets {
+    renderedUiTest {
+        java.srcDir "src/renderedUiTest/java"
+        resources.srcDir "src/renderedUiTest/resources"
+        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    renderedUiTestImplementation.extendsFrom testImplementation
+    renderedUiTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+tasks.register("renderedUiTest", Test) {
+    group = "verification"
+    description = "Runs rendered JavaFX UI tests on a desktop display."
+    testClassesDirs = sourceSets.renderedUiTest.output.classesDirs
+    classpath = sourceSets.renderedUiTest.runtimeClasspath
+    useJUnitPlatform()
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
     options.release = 25
