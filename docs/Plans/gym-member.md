@@ -486,6 +486,19 @@ Members see only currently published announcements, newest first, and may open e
 9. Add tests proving only published records are returned.
 10. Manually publish and withdraw an announcement as Owner and verify the Member refresh result.
 
+### Implementation notes
+
+- The Member sidebar maps `Announcements` to `MEMBER_ANNOUNCEMENTS`; the shell maps that screen back to its
+  navigation label before rendering. Both mappings are regression-tested so a missing case cannot leave the Member
+  page unchanged after a click.
+- Owner published-announcement cards include a visible `Withdraw` action. Withdrawn records stay in Owner history and
+  disappear from the Member list after refresh.
+- Announcement content opens in the same themed, scrollable JavaFX modal overlay used by other Member forms. It is
+  read-only and supports long, Unicode, and multiline text. Its bold title wraps in full; cards use a single-line,
+  ellipsized title and preserve the full title in the overlay.
+- The announcement cards are ordinary fixed-height `VBox` nodes in the Member shell's vertical scroll container, not
+  a nested `ListView`; the page therefore has no nested horizontal or vertical scrollbar.
+
 ### Tests and edge cases
 
 - Published announcements appear newest first.
@@ -495,6 +508,13 @@ Members see only currently published announcements, newest first, and may open e
 - Empty results show an accessible empty state.
 - No read/unread state is created.
 - Owner publishing and withdrawal remain unchanged.
+- Member navigation resolves `MEMBER_ANNOUNCEMENTS` to the `Announcements` sidebar item.
+- The announcement detail overlay inherits the active application theme and scrolls when content is long.
+- Cards retain a consistent height, truncate long titles, and expose no horizontal or nested vertical scrollbar.
+- Detail titles remain full, bold, and wrapped.
+- Short announcement overlays retain a white light-theme surface rather than exposing the dialog background.
+- Short announcement overlays use one consistent dark surface in dark mode, including the content, unused viewport,
+  and Close-button bar.
 
 ```mermaid
 sequenceDiagram

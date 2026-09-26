@@ -64,6 +64,10 @@ authorization for persistent write operations rather than trusting the UI alone.
 
 The shell also owns the theme control. Java `Preferences` stores the selected theme independently of gym data, and
 `UiComponents.styleDialog` applies the current theme to dialogs because each JavaFX dialog has its own scene.
+Member announcement navigation has matching label-to-screen and screen-to-label mappings; the announcement detail
+uses this themed dialog helper with a scrollable body for complete content. Announcement cards are fixed-height nodes
+inside the Member shell's vertical scroll container, avoiding nested list scrollbars; their single-line titles are
+ellipsized while the detail overlay retains the full wrapped title.
 
 ## Main components
 
@@ -268,7 +272,7 @@ Automated test responsibilities are grouped as follows:
 | Members and Memberships | Validation, atomic onboarding, search, renewal, overlap, activation, Payments, dashboard |
 | Visits | Search, current visitors, history, ordering, correction rules, and open-Visit uniqueness |
 | Expenses and Announcements | Authorization, validation, ordering, totals, filtering, publishing, and withdrawal |
-| UI helpers | Theme behavior, resources, card components, financial input, Visit formatting, Owner route guard, CSV encoding |
+| UI helpers | Theme behavior, resources, card components, financial input, Visit formatting, Owner route guard, Member announcement route mapping, CSV encoding |
 | Rendered Member UI | Real JavaFX scene/layout checks for Member-shell scrolling and long-detail text wrapping |
 | Monitoring and packaging | Sanitized rotating logs and required release-JAR contents |
 

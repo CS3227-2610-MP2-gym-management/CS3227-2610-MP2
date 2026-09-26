@@ -116,6 +116,9 @@ public final class AppView {
         case MEMBER_BODY_METRICS -> !isMemberSession(session)
                 ? createLogin()
                 : MemberBodyMetricsView.create(bodyMetrics, session, this::show, this::logout);
+        case MEMBER_ANNOUNCEMENTS -> !isMemberSession(session)
+                ? createLogin()
+                : MemberAnnouncementsView.create(announcements, this::show, this::logout);
         case MEMBER_PROFILE -> !isMemberSession(session)
                 ? createLogin() : MemberHomeView.createPlaceholder(screen, this::show, this::logout);
         };

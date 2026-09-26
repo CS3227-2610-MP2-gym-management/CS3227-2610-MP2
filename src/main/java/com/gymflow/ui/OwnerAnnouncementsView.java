@@ -71,10 +71,12 @@ final class OwnerAnnouncementsView {
         error.getStyleClass().add("dialog-error");
         UiComponents.preserveLabelHeight(error);
         UiComponents.collapseWhenEmpty(error);
-        ListView<Announcement> list = announcementList(withdrawn, announcement ->
-                showDetail(root, service, owner, announcement));
         long[] version = {0};
-        Runnable refresh = () -> {
+        Runnable[] refresh = new Runnable[1];
+        ListView<Announcement> list = announcementList(withdrawn,
+                announcement -> showDetail(root, service, owner, announcement),
+                announcement -> confirmWithdraw(root, service, owner, announcement, refresh[0]));
+        refresh[0] = () -> {
             long request = ++version[0];
             error.setText("");
             OwnerMembersView.run(null, withdrawn ? service::listWithdrawn : service::listPublished,
@@ -85,17 +87,17 @@ final class OwnerAnnouncementsView {
                     }, exception -> error.setText("Unable to access GymFlow data"));
         };
         Runnable previous = sharedRefresh[0];
-        sharedRefresh[0] = previous == null ? refresh : () -> {
+        sharedRefresh[0] = previous == null ? refresh[0] : () -> {
             previous.run();
-            refresh.run();
+            refresh[0].run();
         };
         VBox content = new VBox(12, error, list);
         VBox.setVgrow(list, Priority.ALWAYS);
         return content;
     }
 
-    private static ListView<Announcement> announcementList(boolean withdrawn,
-            Consumer<Announcement> open) {
+    private static ListView<Announcement> announcementList(boolean withdrawn, Consumer<Announcement> open,
+            Consumer<Announcement> withdraw) {
         return UiComponents.cardList(withdrawn
                 ? "No withdrawn Announcements" : "No published Announcements", item -> {
                     Label title = UiComponents.cardLabel(item.title(), "record-title");
@@ -106,6 +108,12 @@ final class OwnerAnnouncementsView {
                             : preview(item);
                     VBox card = new VBox(6, title, date,
                             UiComponents.cardLabel(detail, "record-value"));
+                    if (!withdrawn) {
+                        Button withdrawButton = new Button("Withdraw");
+                        withdrawButton.getStyleClass().add("danger-button");
+                        withdrawButton.setOnAction(event -> withdraw.accept(item));
+                        card.getChildren().add(withdrawButton);
+                    }
                     card.getStyleClass().add("record-card");
                     UiComponents.makeActionable(card, "Open announcement " + item.title(),
                             () -> open.accept(item));
