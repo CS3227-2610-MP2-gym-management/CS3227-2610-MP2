@@ -4,10 +4,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 import com.gymflow.auth.PasswordHash;
 import com.gymflow.auth.PasswordHasher;
+import com.gymflow.auth.AccountValidation;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.data.OwnerMemberStore;
 import com.gymflow.model.Member;
@@ -32,8 +32,8 @@ public final class OwnerMemberService {
         char[] password = request == null ? null : request.initialPassword();
         try {
             validate(request);
-            String email = normalizeEmail(request.email());
-            String phone = normalizePhone(request.phoneNumber());
+            String email = AccountValidation.normalizeEmail(request.email());
+            String phone = AccountValidation.normalizePhone(request.phoneNumber());
             PasswordHash hash = passwords.hash(password);
             return members.create(request, email, phone, hash, ownerAccountId);
         } finally {
@@ -45,7 +45,7 @@ public final class OwnerMemberService {
     public void resetMemberPassword(long memberAccountId, char[] newPassword,
             long ownerAccountId) {
         try {
-            validatePassword(newPassword);
+            AccountValidation.validatePassword(newPassword);
             members.updatePassword(memberAccountId, passwords.hash(newPassword), ownerAccountId);
         } finally {
             clear(newPassword);
@@ -106,9 +106,9 @@ public final class OwnerMemberService {
     /** Updates editable account and profile fields. */
     public Member updateMember(long accountId, String email, String fullName,
             String phoneNumber, LocalDate dateOfBirth) {
-        String normalizedEmail = normalizeEmail(email);
+        String normalizedEmail = AccountValidation.normalizeEmail(email);
         requireText(fullName, "Full name is required");
-        String normalizedPhone = normalizePhone(phoneNumber);
+        String normalizedPhone = AccountValidation.normalizePhone(phoneNumber);
         validateDateOfBirth(dateOfBirth);
         return members.update(accountId, normalizedEmail, fullName.trim(), normalizedPhone, dateOfBirth);
     }
@@ -117,10 +117,10 @@ public final class OwnerMemberService {
         if (request == null) {
             throw new IllegalArgumentException("Member details are required");
         }
-        normalizeEmail(request.email());
-        validatePassword(request.initialPassword());
+        AccountValidation.normalizeEmail(request.email());
+        AccountValidation.validatePassword(request.initialPassword());
         requireText(request.fullName(), "Full name is required");
-        normalizePhone(request.phoneNumber());
+        AccountValidation.normalizePhone(request.phoneNumber());
         validateDateOfBirth(request.dateOfBirth());
         if (request.membershipStart() == null || request.membershipExpiry() == null
                 || request.membershipExpiry().isBefore(request.membershipStart())) {
@@ -156,32 +156,6 @@ public final class OwnerMemberService {
         }
     }
 
-    private static void validatePassword(char[] password) {
-        int length = password == null ? 0 : password.length;
-        if (length < 12 || length > 128) {
-            throw new IllegalArgumentException("Password must be between 12 and 128 characters");
-        }
-    }
-
-    private static String normalizeEmail(String email) {
-        String normalized = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
-        int at = normalized.indexOf('@');
-        if (at <= 0 || at != normalized.lastIndexOf('@') || at == normalized.length() - 1) {
-            throw new IllegalArgumentException("Enter a valid email address");
-        }
-        return normalized;
-    }
-
-    private static String normalizePhone(String phoneNumber) {
-        String compact = phoneNumber == null ? "" : phoneNumber.replaceAll("[\\s()-]", "");
-        if (compact.startsWith("+65")) {
-            compact = compact.substring(3);
-        }
-        if (!compact.matches("[3689]\\d{7}")) {
-            throw new IllegalArgumentException("Enter a valid 8-digit Singapore phone number");
-        }
-        return "+65 %s %s".formatted(compact.substring(0, 4), compact.substring(4));
-    }
 
     private static void validateDateOfBirth(LocalDate dateOfBirth) {
         if (dateOfBirth != null && dateOfBirth.isAfter(LocalDate.now().minusYears(12))) {

@@ -65,6 +65,32 @@ public final class AccountStore {
         }
     }
 
+    /** Finds an account and its credential material by identity. */
+    public Optional<StoredAccount> findById(long accountId) {
+        return find("SELECT * FROM accounts WHERE id = ?", accountId);
+    }
+
+    /** Replaces password material for an active Member account. */
+    public void updateMemberPassword(long accountId, PasswordHash password) {
+        String sql = """
+                UPDATE accounts SET password_hash = ?, password_salt = ?, password_iterations = ?, updated_at = ?
+                WHERE id = ? AND role = 'MEMBER' AND is_active = 1
+                """;
+        try (Connection connection = database.connect();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, password.hash());
+            statement.setString(2, password.salt());
+            statement.setInt(3, password.iterations());
+            statement.setString(4, Instant.now().toString());
+            statement.setLong(5, accountId);
+            if (statement.executeUpdate() != 1) {
+                throw new IllegalArgumentException("An active Member account is required");
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to update password", exception);
+        }
+    }
+
     /** Finds the installation's Owner account. */
     public Optional<StoredAccount> findOwner() {
         try (Connection connection = database.connect();
@@ -74,6 +100,18 @@ public final class AccountStore {
             return results.next() ? Optional.of(read(results)) : Optional.empty();
         } catch (SQLException exception) {
             throw new IllegalStateException("Unable to read Owner account", exception);
+        }
+    }
+
+    private Optional<StoredAccount> find(String sql, long accountId) {
+        try (Connection connection = database.connect();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, accountId);
+            try (ResultSet results = statement.executeQuery()) {
+                return results.next() ? Optional.of(read(results)) : Optional.empty();
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to read account", exception);
         }
     }
 
