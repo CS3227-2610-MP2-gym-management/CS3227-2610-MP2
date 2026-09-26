@@ -24,7 +24,8 @@ import javafx.scene.layout.VBox;
 
 /** Member dashboard showing the authenticated Member's profile and current Membership. */
 final class MemberHomeView {
-    static final List<String> NAVIGATION = List.of("Home", "My Membership", "Gym Visits", "Workouts", "Profile");
+    static final List<String> NAVIGATION = List.of("Home", "My Membership", "Gym Visits", "Workouts",
+            "Announcements", "Profile");
 
     private MemberHomeView() {
     }
@@ -207,17 +208,19 @@ final class MemberHomeView {
         case MEMBER_MEMBERSHIP -> "My Membership";
         case MEMBER_VISITS -> "Gym Visits";
         case MEMBER_WORKOUTS -> "Workouts";
+        case MEMBER_ANNOUNCEMENTS -> "Announcements";
         case MEMBER_PROFILE -> "Profile";
         default -> throw new IllegalArgumentException("Not a Member screen: " + screen);
         };
     }
 
-    private static String navigationItem(Screen screen) {
+    static String navigationItem(Screen screen) {
         return switch (screen) {
         case MEMBER_HOME -> "Home";
         case MEMBER_MEMBERSHIP -> "My Membership";
         case MEMBER_VISITS -> "Gym Visits";
         case MEMBER_WORKOUTS -> "Workouts";
+        case MEMBER_ANNOUNCEMENTS -> "Announcements";
         case MEMBER_PROFILE -> "Profile";
         default -> throw new IllegalArgumentException("Not a Member screen: " + screen);
         };
@@ -229,6 +232,7 @@ final class MemberHomeView {
         case "My Membership" -> Screen.MEMBER_MEMBERSHIP;
         case "Gym Visits" -> Screen.MEMBER_VISITS;
         case "Workouts" -> Screen.MEMBER_WORKOUTS;
+        case "Announcements" -> Screen.MEMBER_ANNOUNCEMENTS;
         case "Profile" -> Screen.MEMBER_PROFILE;
         default -> throw new IllegalArgumentException("Unknown Member navigation item: " + item);
         };

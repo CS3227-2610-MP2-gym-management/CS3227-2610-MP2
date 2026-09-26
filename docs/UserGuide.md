@@ -150,11 +150,17 @@ Refunds are not available.
 
 The Announcements page separates notices into `Published` and `Withdrawn` tabs. Select `Publish Announcement`, enter
 a required title and content, then publish it. Validation errors remain in the dialog without clearing the entered
-text. Select a card to read the complete announcement.
+text. Select a card to read the complete announcement. Published cards also provide a `Withdraw` action.
 
 From a published announcement's detail page, select `Withdraw` and confirm to stop displaying it to Members. Withdrawn
 notices remain available to the Owner as read-only history. Announcements cannot be edited or permanently deleted;
 publish a replacement when a notice needs correction.
+
+Members open `Announcements` from the left sidebar to view currently published notices, newest first. The cards have
+a consistent size with a single-line, ellipsized title; the page uses only its normal vertical scroll. Select an
+announcement card to open its complete content in a themed, scrollable read-only overlay, where the full bold title
+wraps across lines. Short overlays keep a clean white surface in light mode. Select `Refresh` to reflect an Owner
+withdrawal; withdrawn notices are never shown to Members. In dark mode, the overlay uses one consistent dark surface.
 
 ## Reviewing Visits
 

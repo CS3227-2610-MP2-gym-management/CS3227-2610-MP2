@@ -322,6 +322,16 @@
     -fx-pref-width: 560px;
 }
 
+.announcement-dialog {
+    -fx-pref-width: 560px;
+    -fx-background-color: white;
+}
+
+.announcement-dialog .content-scroll,
+.announcement-dialog .content-scroll > .viewport {
+    -fx-background-color: white;
+}
+
 .workout-dialog {
     -fx-pref-width: 860px;
 }
@@ -721,6 +731,14 @@
 .dark.gymflow-dialog > .button-bar > .container {
     -fx-background-color: #18212f;
     -fx-border-color: #334155 transparent transparent transparent;
+}
+
+.dark.announcement-dialog,
+.dark.announcement-dialog .content-scroll,
+.dark.announcement-dialog .content-scroll > .viewport,
+.dark.announcement-dialog .dialog-content,
+.dark.announcement-dialog > .button-bar > .container {
+    -fx-background-color: #1f2937;
 }
 
 .dark .login-screen {

@@ -66,7 +66,7 @@ class OwnerAnnouncementServiceTest {
     }
 
     @Test
-    void withdrawsWithoutDeletingHistoryAndRejectsRepeatWithdrawal() {
+    void listsOnlyPublishedAnnouncementsNewestFirstAndHidesWithdrawnRecords() {
         Announcement first = announcements.publish("First", "Oldest", owner.id());
         Announcement second = announcements.publish("Second", "Newest", owner.id());
 
