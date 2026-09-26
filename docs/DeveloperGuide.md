@@ -175,16 +175,22 @@ one-to-one `MemberProfile` for Owner-facing reads.
 | `Visit` | ID, Member ID, entry, optional exit, creation time, optional latest correction metadata | At most one open Visit per Member; exit cannot precede entry; all correction fields are present together |
 | `Expense` | ID, date, amount, method, category, optional description, recording Owner, creation time | Immutable, positive SGD amount; date cannot be in the future |
 | `Announcement` | ID, title, content, publication time, creating Owner, optional withdrawal time, creation and update times | Required title and content; withdrawal preserves history instead of deleting the record |
+| `Workout` | ID, Member ID, start and end instants, optional notes, ordered sets | End is after start and not in the future; updates atomically replace all sets |
+| `WorkoutSet` | ID, Workout ID, display position, exercise name, repetitions or duration, optional resistance | Exactly one positive measure; resistance is non-negative kilograms |
+
+The Member Workout history is a local-time month calendar. It groups a Workout on the local calendar date of its end
+instant (the date selected in the form), highlights dates with one and multiple sessions differently, and sorts a
+multi-session date's selection overlay by start instant ascending before the existing edit/delete form is opened.
 
 `Role`, `PaymentMethod`, `ExpenseCategory`, and derived `MembershipStatus` are enums because each has a fixed set of
-values. Planned entities such as `MembershipPlan`, `Workout`, `WorkoutSet`, `BodyMetric`, and `AuditLog` are not part of
-the current schema and must not be treated as implemented features. The complete prioritized backlog and implementation
-status are recorded in the [User Stories](UserStories.md).
+values. Planned entities such as `MembershipPlan` and `AuditLog` are not part of the current schema and
+must not be treated as implemented features. The complete prioritized backlog and implementation status are recorded in
+the [User Stories](UserStories.md).
 
 ## Persistence and schema evolution
 
 `GymFlowDatabase` creates parent directories, opens SQLite connections with foreign keys enabled, initializes the
-schema, applies versioned migrations, and performs full reset. The current schema version is 5.
+schema, applies versioned migrations, and performs full reset. The current schema version is 7.
 
 `member_account_id` is the database foreign key corresponding to the shared model's `memberId`.
 
@@ -197,11 +203,15 @@ schema, applies versioned migrations, and performs full reset. The current schem
 | `visits` | Member attendance with at most one open Visit |
 | `expenses` | Independent immutable operating costs recorded by an Owner |
 | `announcements` | Gym-wide notices with nullable withdrawal metadata |
+| `workouts` | Member-owned completed Workout ranges with start before end |
+| `workout_sets` | Ordered sets cascaded from their parent Workout |
+| `body_metrics` | Member-owned body-mass readings, unique by measurement date |
 
 Migrations are ordered and idempotent through SQLite `PRAGMA user_version`. They preserve existing rows and update the
 version only after successful work. The Visit migration rebuilds its table transactionally when adding constraints
-that SQLite cannot apply with a simple `ALTER TABLE`. New tables automatically participate in reset because schema
-creation remains centralized.
+that SQLite cannot apply with a simple `ALTER TABLE`. The Workout migration rebuilds Workout and set tables together,
+mapping legacy completion timestamps to the end time and deriving a one-hour start. New tables automatically participate
+in reset because schema creation remains centralized.
 
 ## Key design decisions
 

@@ -14,7 +14,46 @@ import java.util.List;
 
 /** Owns the SQLite file and centralized application schema. */
 public final class GymFlowDatabase {
-    private static final int SCHEMA_VERSION = 5;
+    private static final int SCHEMA_VERSION = 8;
+    private static final String BODY_METRICS_TABLE = """
+        CREATE TABLE body_metrics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            member_account_id INTEGER NOT NULL REFERENCES member_profiles(account_id) ON DELETE CASCADE,
+            measurement_date TEXT NOT NULL,
+            weight_grams INTEGER NOT NULL CHECK (weight_grams > 0),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(member_account_id, measurement_date)
+        )
+        """;
+    private static final String WORKOUTS_TABLE = """
+        CREATE TABLE workouts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            member_account_id INTEGER NOT NULL REFERENCES member_profiles(account_id) ON DELETE CASCADE,
+            started_at TEXT NOT NULL,
+            ended_at TEXT NOT NULL,
+            notes TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            CHECK (ended_at > started_at)
+        )
+        """;
+    private static final String WORKOUT_SETS_TABLE = """
+        CREATE TABLE workout_sets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            workout_id INTEGER NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
+            position INTEGER NOT NULL CHECK (position >= 0),
+            exercise_name TEXT NOT NULL CHECK (length(trim(exercise_name)) > 0),
+            repetitions INTEGER,
+            duration_seconds INTEGER,
+            resistance_grams INTEGER CHECK (resistance_grams IS NULL OR resistance_grams >= 0),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(workout_id, position),
+            CHECK ((repetitions IS NOT NULL AND repetitions > 0 AND duration_seconds IS NULL)
+                OR (duration_seconds IS NOT NULL AND duration_seconds > 0 AND repetitions IS NULL))
+        )
+        """;
     private static final String VISITS_TABLE = """
         CREATE TABLE visits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,7 +166,10 @@ public final class GymFlowDatabase {
         )
         """,
         VISITS_TABLE,
-        VISITS_INDEX
+        VISITS_INDEX,
+        WORKOUTS_TABLE,
+        WORKOUT_SETS_TABLE,
+        BODY_METRICS_TABLE
     };
 
     private final Path file;
@@ -152,6 +194,7 @@ public final class GymFlowDatabase {
                     }
                     migrateLegacyTimestamps(connection, statement);
                     migrateVisits(connection, statement);
+                    migrateWorkouts(connection, statement);
                     statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
                     connection.commit();
                 } catch (SQLException exception) {
@@ -248,6 +291,32 @@ public final class GymFlowDatabase {
                 """);
         statement.executeUpdate("DROP TABLE visits_version_two");
         statement.executeUpdate(VISITS_INDEX);
+    }
+
+    private static void migrateWorkouts(Connection connection, Statement statement) throws SQLException {
+        statement.executeUpdate(ifMissing(WORKOUTS_TABLE));
+        statement.executeUpdate(ifMissing(WORKOUT_SETS_TABLE));
+        if (hasColumn(connection, "workouts", "performed_at")) {
+            statement.executeUpdate("ALTER TABLE workout_sets RENAME TO workout_sets_version_six");
+            statement.executeUpdate("ALTER TABLE workouts RENAME TO workouts_version_six");
+            statement.executeUpdate(WORKOUTS_TABLE);
+            statement.executeUpdate(WORKOUT_SETS_TABLE);
+            statement.executeUpdate("""
+                    INSERT INTO workouts(id, member_account_id, started_at, ended_at, notes, created_at, updated_at)
+                    SELECT id, member_account_id,
+                        strftime('%Y-%m-%dT%H:%M:%fZ', julianday(performed_at) - 1.0 / 24),
+                        performed_at, notes, created_at, updated_at
+                    FROM workouts_version_six
+                    """);
+            statement.executeUpdate("""
+                    INSERT INTO workout_sets(id, workout_id, position, exercise_name, repetitions,
+                        duration_seconds, resistance_grams, created_at, updated_at)
+                    SELECT id, workout_id, position, exercise_name, repetitions, duration_seconds,
+                        resistance_grams, created_at, updated_at FROM workout_sets_version_six
+                    """);
+            statement.executeUpdate("DROP TABLE workout_sets_version_six");
+            statement.executeUpdate("DROP TABLE workouts_version_six");
+        }
     }
 
     private static boolean hasColumn(Connection connection, String table,

@@ -35,7 +35,7 @@ class GymFlowDatabaseTest {
             assertNotNull(text(statement, "SELECT created_at FROM memberships WHERE id = 1"));
             assertNotNull(text(statement, "SELECT updated_at FROM memberships WHERE id = 1"));
             assertNotNull(text(statement, "SELECT created_at FROM payments WHERE id = 1"));
-            assertEquals(5, value(statement, "PRAGMA user_version"));
+            assertEquals(8, value(statement, "PRAGMA user_version"));
             assertEquals(1, value(statement,
                     "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'visits'"));
             assertEquals(1, value(statement,
@@ -114,7 +114,7 @@ class GymFlowDatabaseTest {
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM visits"));
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM expenses"));
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM announcements"));
-            assertEquals(5, value(statement, "PRAGMA user_version"));
+            assertEquals(8, value(statement, "PRAGMA user_version"));
         }
     }
 
@@ -128,11 +128,34 @@ class GymFlowDatabaseTest {
         database.initialize();
 
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
-            assertEquals(5, value(statement, "PRAGMA user_version"));
+            assertEquals(8, value(statement, "PRAGMA user_version"));
             assertEquals(1, value(statement, "SELECT COUNT(*) FROM visits"));
             assertEquals(null, text(statement, "SELECT corrected_at FROM visits WHERE id = 1"));
             assertEquals(null, text(statement, "SELECT corrected_by_account_id FROM visits WHERE id = 1"));
             assertEquals(null, text(statement, "SELECT correction_reason FROM visits WHERE id = 1"));
+        }
+    }
+
+    @Test
+    void migratesVersionSixWorkoutsToStartAndEndTimes() throws Exception {
+        Path file = directory.resolve("version-six.db");
+        createVersionSixWorkoutDatabase(file);
+        GymFlowDatabase database = new GymFlowDatabase(file);
+        database.initialize();
+        database.initialize();
+
+        try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
+            assertEquals(8, value(statement, "PRAGMA user_version"));
+            assertEquals("2026-09-15T09:00:00.000Z",
+                    text(statement, "SELECT started_at FROM workouts WHERE id = 1"));
+            assertEquals("2026-09-15T10:00:00.000Z",
+                    text(statement, "SELECT ended_at FROM workouts WHERE id = 1"));
+            assertEquals(1, value(statement, "SELECT COUNT(*) FROM workout_sets WHERE workout_id = 1"));
+            assertThrows(SQLException.class, () -> statement.executeUpdate("""
+                    INSERT INTO workouts(member_account_id, started_at, ended_at, notes, created_at, updated_at)
+                    VALUES (1, '2026-09-15T10:00:00.000Z', '2026-09-15T10:00:00.000Z', NULL,
+                        '2026-09-15T10:00:00.000Z', '2026-09-15T10:00:00.000Z')
+                    """));
         }
     }
 
@@ -214,6 +237,39 @@ class GymFlowDatabaseTest {
                     + "(1, 1, '2026-09-15T01:00:00.000Z', '2026-09-15T02:00:00.000Z', "
                     + "'2026-09-15T01:00:00.000Z')");
             statement.execute("PRAGMA user_version = 2");
+        }
+    }
+
+    private static void createVersionSixWorkoutDatabase(Path file) throws Exception {
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file);
+                Statement statement = connection.createStatement()) {
+            statement.executeUpdate("""
+                    CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT, password_hash TEXT,
+                        password_salt TEXT, password_iterations INTEGER, role TEXT, is_active INTEGER,
+                        created_at TEXT, updated_at TEXT)
+                    """);
+            statement.executeUpdate("""
+                    CREATE TABLE member_profiles (account_id INTEGER PRIMARY KEY, member_number TEXT,
+                        full_name TEXT, phone_number TEXT, date_of_birth TEXT)
+                    """);
+            statement.executeUpdate("""
+                    CREATE TABLE workouts (id INTEGER PRIMARY KEY, member_account_id INTEGER, performed_at TEXT,
+                        notes TEXT, created_at TEXT, updated_at TEXT)
+                    """);
+            statement.executeUpdate("""
+                    CREATE TABLE workout_sets (id INTEGER PRIMARY KEY, workout_id INTEGER, position INTEGER,
+                        exercise_name TEXT, repetitions INTEGER, duration_seconds INTEGER,
+                        resistance_grams INTEGER, created_at TEXT, updated_at TEXT)
+                    """);
+            statement.executeUpdate("INSERT INTO accounts VALUES (1, 'member@example.com', 'hash', 'salt', 1, "
+                    + "'MEMBER', 1, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')");
+            statement.executeUpdate("INSERT INTO member_profiles VALUES "
+                    + "(1, 'M000001', 'Member', '+65 8123 4567', NULL)");
+            statement.executeUpdate("INSERT INTO workouts VALUES (1, 1, '2026-09-15T10:00:00.000Z', NULL, "
+                    + "'2026-09-15T10:00:00.000Z', '2026-09-15T10:00:00.000Z')");
+            statement.executeUpdate("INSERT INTO workout_sets VALUES (1, 1, 0, 'Squat', 8, NULL, 60000, "
+                    + "'2026-09-15T10:00:00.000Z', '2026-09-15T10:00:00.000Z')");
+            statement.execute("PRAGMA user_version = 6");
         }
     }
 

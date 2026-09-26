@@ -30,8 +30,8 @@ JavaFX views
 ```
 
 The current product includes Member authentication, Member profile and Membership screens, Membership renewal
-guidance, and Member check-in/check-out. Self-registration and approval, Membership plans, workouts, body-weight
-tracking, trends, broader statistics, and an administrative audit history remain backlog work.
+guidance, Member check-in/check-out, and Member Workout recording. Self-registration and approval, Membership plans,
+body-weight tracking, trends, broader statistics, and an administrative audit history remain backlog work.
 
 Cloud architecture is KIV. A future shared deployment will be online-only and must support concurrent clients, but no
 server framework, protocol, cloud database, or synchronization mechanism has been selected. Keep business rules out
@@ -219,7 +219,8 @@ Visit rules:
 
 These P1 entities are planned:
 
-- `Workout` belongs to a Member and records when a session occurred plus optional notes.
+- `Workout` belongs to a Member and records a start instant, end instant, and optional notes. The end must be later than
+  the start and cannot be in the future.
 - `WorkoutSet` belongs to a Workout and records exercise name, ordered set number, non-negative repetitions, and
   non-negative weight.
 - `BodyMetric` records a positive body weight for a Member on a date.

@@ -322,6 +322,205 @@
     -fx-pref-width: 560px;
 }
 
+.workout-dialog {
+    -fx-pref-width: 860px;
+}
+
+.workout-session-dialog {
+    -fx-pref-width: 560px;
+}
+
+.workout-calendar {
+    -fx-padding: 4px;
+}
+
+.workout-calendar-month {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-min-width: 180px;
+    -fx-alignment: center;
+    -fx-text-fill: #000000;
+}
+
+.workout-calendar-navigation {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f55ba;
+}
+
+.workout-calendar-navigation:hover {
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #2864dc;
+}
+
+.workout-calendar-legend {
+    -fx-padding: 5px 10px;
+    -fx-background-radius: 12px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.workout-calendar-legend-single {
+    -fx-background-color: #dcecff;
+    -fx-text-fill: #17489f;
+}
+
+.workout-calendar-legend-multiple {
+    -fx-background-color: #d9f5e6;
+    -fx-text-fill: #17633c;
+}
+
+.workout-calendar-grid {
+    -fx-padding: 8px;
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 10px;
+}
+
+.workout-calendar-weekday {
+    -fx-min-width: 74px;
+    -fx-alignment: center;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #68758b;
+}
+
+.workout-calendar-date {
+    -fx-min-width: 74px;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #d9e0ea;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-text-fill: #25344b;
+}
+
+.workout-calendar-date:hover {
+    -fx-border-color: #2864dc;
+}
+
+.workout-calendar-single {
+    -fx-background-color: #dcecff;
+    -fx-border-color: #75a5f5;
+    -fx-text-fill: #17489f;
+    -fx-font-weight: bold;
+}
+
+.workout-calendar-multiple {
+    -fx-background-color: #d9f5e6;
+    -fx-border-color: #51a878;
+    -fx-text-fill: #17633c;
+    -fx-font-weight: bold;
+}
+
+.workout-time-fields,
+.workout-set-row {
+    -fx-alignment: center-left;
+}
+
+.workout-time-fields .combo-box {
+    -fx-pref-width: 128px;
+}
+
+.workout-field {
+    -fx-alignment: center-left;
+}
+
+.workout-field-label {
+    -fx-font-weight: bold;
+    -fx-min-width: 70px;
+}
+
+.workout-exercise {
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px;
+}
+
+.workout-exercise-name {
+    -fx-font-weight: bold;
+}
+
+.workout-exercise-name .list-cell,
+.workout-exercise-name .text-field {
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f55ba;
+}
+
+.workout-set-count {
+    -fx-text-fill: #68758b;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 8px;
+}
+
+.workout-set-header {
+    -fx-padding: 5px 8px;
+    -fx-border-color: transparent transparent #d9e0ea transparent;
+}
+
+.workout-set-header .label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #68758b;
+}
+
+.workout-set {
+    -fx-padding: 6px 8px;
+    -fx-border-color: transparent transparent #d9e0ea transparent;
+}
+
+.workout-set .text-field {
+    -fx-min-height: 34px;
+    -fx-pref-height: 34px;
+    -fx-padding: 6px 8px;
+}
+
+.workout-set:nth-child(even) {
+    -fx-background-color: rgba(40, 100, 220, 0.04);
+}
+
+.workout-set-row .text-field {
+    -fx-pref-width: 82px;
+}
+
+.workout-exercise .combo-box,
+.workout-exercise .text-field,
+.workout-exercise .button {
+    -fx-min-height: 34px;
+}
+
+.trash-button {
+    -fx-background-color: transparent;
+    -fx-padding: 6px 8px;
+    -fx-font-size: 17px;
+    -fx-text-fill: #b85b64;
+}
+
+.trash-button:hover {
+    -fx-background-color: #fff1f2;
+}
+
+.workout-actions {
+    -fx-padding: 8px 0 0 0;
+}
+
+.workout-exercise .button {
+    -fx-padding: 6px 10px;
+}
+
+.workout-measure-toggle {
+    -fx-background-color: #eef4ff;
+    -fx-border-color: #cbdaf8;
+    -fx-border-radius: 8px;
+    -fx-text-fill: #1f55ba;
+}
+
+.workout-measure-toggle:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: #2864dc;
+    -fx-border-width: 2px;
+    -fx-text-fill: #1f55ba;
+}
+
 .content-scroll,
 .content-scroll > .viewport {
     -fx-background-color: transparent;
@@ -395,6 +594,92 @@
     -fx-text-fill: #39465a;
 }
 
+.body-mass-editor {
+    -fx-background-color: linear-gradient(to right, #f4f9ff, #ffffff 68%);
+    -fx-border-color: #d6e6fb;
+    -fx-padding: 22px 24px;
+}
+
+.body-mass-eyebrow {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f55ba;
+    -fx-letter-spacing: 1px;
+}
+
+.body-mass-latest {
+    -fx-font-family: "Arial";
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #172033;
+}
+
+.body-mass-change {
+    -fx-font-weight: bold;
+    -fx-text-fill: #0787f5;
+}
+
+.body-mass-change-date {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #1f55ba;
+    -fx-padding: 8px 4px;
+}
+
+.body-mass-chart {
+    -fx-background-color: transparent;
+    -fx-padding: 8px 0 0 0;
+}
+
+.body-mass-chart .chart-plot-background {
+    -fx-background-color: #fbfdff;
+}
+
+.body-mass-chart .chart-series-line {
+    -fx-stroke: #0787f5;
+    -fx-stroke-width: 2px;
+}
+
+.body-mass-chart .chart-line-symbol {
+    -fx-background-color: #0787f5, white;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 6px;
+    -fx-padding: 5px;
+}
+
+.body-mass-period {
+    -fx-background-color: transparent;
+    -fx-text-fill: #68758b;
+    -fx-border-color: #d9e0ea;
+    -fx-border-radius: 16px;
+    -fx-padding: 6px 12px;
+}
+
+.body-mass-period:hover,
+.body-mass-period:focused {
+    -fx-background-color: #0787f5;
+    -fx-border-color: #0787f5;
+    -fx-text-fill: white;
+}
+
+.body-mass-history .card-list {
+    -fx-pref-height: 310px;
+}
+
+.body-mass-history .list-cell {
+    -fx-border-color: transparent transparent #edf0f5 transparent;
+    -fx-padding: 0;
+}
+
+.body-mass-history-row {
+    -fx-padding: 15px 2px;
+}
+
+.body-mass-history-row .record-value {
+    -fx-alignment: center-right;
+    -fx-font-weight: bold;
+}
+
 .empty-state {
     -fx-alignment: center;
     -fx-padding: 36px;
@@ -445,7 +730,9 @@
 .dark .login-panel,
 .dark .card,
 .dark .dialog-content,
-.dark .record-card {
+.dark .record-card,
+.dark .workout-set,
+.dark .workout-exercise {
     -fx-background-color: #1f2937;
     -fx-border-color: #3b4a5f;
 }
@@ -475,6 +762,61 @@
 
 .dark .record-meta {
     -fx-text-fill: #aebdd0;
+}
+
+.dark .body-mass-editor {
+    -fx-background-color: linear-gradient(to right, #1d2e43, #1f2937 68%);
+    -fx-border-color: #3b4a5f;
+}
+
+.dark .body-mass-eyebrow {
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .body-mass-latest {
+    -fx-text-fill: #f8fafc;
+}
+
+.dark .body-mass-change,
+.dark .body-mass-change-date {
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .body-mass-chart .chart-plot-background {
+    -fx-background-color: #18212f;
+}
+
+.dark .body-mass-chart .axis,
+.dark .body-mass-chart .axis-label,
+.dark .body-mass-chart .axis-tick-mark,
+.dark .body-mass-chart .axis-minor-tick-mark {
+    -fx-tick-label-fill: #aebdd0;
+    -fx-stroke: #607089;
+}
+
+.dark .body-mass-chart .chart-series-line {
+    -fx-stroke: #60a5fa;
+}
+
+.dark .body-mass-chart .chart-line-symbol {
+    -fx-background-color: #60a5fa, #18212f;
+}
+
+.dark .body-mass-period {
+    -fx-background-color: transparent;
+    -fx-border-color: #3b4a5f;
+    -fx-text-fill: #aebdd0;
+}
+
+.dark .body-mass-period:hover,
+.dark .body-mass-period:focused {
+    -fx-background-color: #0787f5;
+    -fx-border-color: #0787f5;
+    -fx-text-fill: white;
+}
+
+.dark .body-mass-history .list-cell {
+    -fx-border-color: transparent transparent #334155 transparent;
 }
 
 .dark .record-card-actionable:hover,
@@ -557,9 +899,90 @@
 
 .dark .secondary-button,
 .dark .theme-toggle,
-.dark .phone-prefix {
+.dark .phone-prefix,
+.dark .workout-measure-toggle {
     -fx-background-color: #2a3749;
     -fx-border-color: #46566c;
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .workout-set-header,
+.dark .workout-set {
+    -fx-border-color: transparent transparent #3b4a5f transparent;
+}
+
+.dark .workout-set:nth-child(even) {
+    -fx-background-color: rgba(148, 163, 184, 0.08);
+}
+
+.dark .workout-calendar-grid {
+    -fx-background-color: #1f2937;
+}
+
+.dark .workout-calendar-month {
+    -fx-text-fill: #ffffff;
+}
+
+.dark .workout-calendar-navigation {
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .workout-calendar-navigation:hover {
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #3b82f6;
+}
+
+.dark .workout-calendar-legend-single {
+    -fx-background-color: #1f4d88;
+    -fx-text-fill: #dbeafe;
+}
+
+.dark .workout-calendar-legend-multiple {
+    -fx-background-color: #1f6244;
+    -fx-text-fill: #dcfce7;
+}
+
+.dark .workout-calendar-date {
+    -fx-background-color: #273548;
+    -fx-border-color: #45566d;
+    -fx-text-fill: #e5edf8;
+}
+
+.dark .workout-calendar-single {
+    -fx-background-color: #1f4d88;
+    -fx-border-color: #75a5f5;
+}
+
+.dark .workout-calendar-multiple {
+    -fx-background-color: #1f6244;
+    -fx-border-color: #6dcc95;
+}
+
+.dark .workout-set-header .label {
+    -fx-text-fill: #aebdd0;
+}
+
+.dark .trash-button {
+    -fx-text-fill: #f28b96;
+}
+
+.dark .trash-button:hover {
+    -fx-background-color: #432727;
+}
+
+.dark .workout-exercise-name .list-cell,
+.dark .workout-exercise-name .text-field {
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .workout-set-count {
+    -fx-text-fill: #aebdd0;
+}
+
+.dark .workout-measure-toggle:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: #60a5fa;
+    -fx-border-width: 2px;
     -fx-text-fill: #93c5fd;
 }
 
