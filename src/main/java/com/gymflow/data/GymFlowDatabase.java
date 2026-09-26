@@ -14,7 +14,18 @@ import java.util.List;
 
 /** Owns the SQLite file and centralized application schema. */
 public final class GymFlowDatabase {
-    private static final int SCHEMA_VERSION = 7;
+    private static final int SCHEMA_VERSION = 8;
+    private static final String BODY_METRICS_TABLE = """
+        CREATE TABLE body_metrics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            member_account_id INTEGER NOT NULL REFERENCES member_profiles(account_id) ON DELETE CASCADE,
+            measurement_date TEXT NOT NULL,
+            weight_grams INTEGER NOT NULL CHECK (weight_grams > 0),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(member_account_id, measurement_date)
+        )
+        """;
     private static final String WORKOUTS_TABLE = """
         CREATE TABLE workouts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -157,7 +168,8 @@ public final class GymFlowDatabase {
         VISITS_TABLE,
         VISITS_INDEX,
         WORKOUTS_TABLE,
-        WORKOUT_SETS_TABLE
+        WORKOUT_SETS_TABLE,
+        BODY_METRICS_TABLE
     };
 
     private final Path file;

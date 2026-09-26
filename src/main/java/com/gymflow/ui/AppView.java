@@ -10,6 +10,7 @@ import com.gymflow.model.Account;
 import com.gymflow.model.Role;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.member.MemberAccountService;
+import com.gymflow.metric.BodyMetricService;
 import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.visit.MemberVisitService;
 import com.gymflow.workout.WorkoutService;
@@ -36,6 +37,7 @@ public final class AppView {
     private final OwnerVisitService visits;
     private final MemberVisitService memberVisits;
     private final WorkoutService workouts;
+    private final BodyMetricService bodyMetrics;
     private Account session;
     private boolean ownerExists;
     private Theme theme;
@@ -48,7 +50,7 @@ public final class AppView {
     public AppView(Stage stage, AuthenticationService authentication,
             OwnerMemberService members, OwnerExpenseService expenses,
             OwnerVisitService visits, MemberVisitService memberVisits, 
-            WorkoutService workouts, OwnerAnnouncementService announcements,
+            WorkoutService workouts, BodyMetricService bodyMetrics, OwnerAnnouncementService announcements,
             MemberAccountService memberAccounts, boolean ownerExists) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
@@ -59,6 +61,7 @@ public final class AppView {
         this.visits = Objects.requireNonNull(visits);
         this.memberVisits = Objects.requireNonNull(memberVisits);
         this.workouts = Objects.requireNonNull(workouts);
+        this.bodyMetrics = Objects.requireNonNull(bodyMetrics);
         this.ownerExists = ownerExists;
         theme = preferences.getBoolean(DARK_MODE, false) ? Theme.DARK : Theme.LIGHT;
         shell.getStyleClass().add("app-shell");
@@ -110,6 +113,9 @@ public final class AppView {
         case MEMBER_WORKOUTS -> !isMemberSession(session)
                 ? createLogin()
                 : MemberWorkoutsView.create(workouts, session, this::show, this::logout);
+        case MEMBER_BODY_METRICS -> !isMemberSession(session)
+                ? createLogin()
+                : MemberBodyMetricsView.create(bodyMetrics, session, this::show, this::logout);
         case MEMBER_PROFILE -> !isMemberSession(session)
                 ? createLogin() : MemberHomeView.createPlaceholder(screen, this::show, this::logout);
         };

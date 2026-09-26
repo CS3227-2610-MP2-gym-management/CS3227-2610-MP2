@@ -594,6 +594,92 @@
     -fx-text-fill: #39465a;
 }
 
+.body-mass-editor {
+    -fx-background-color: linear-gradient(to right, #f4f9ff, #ffffff 68%);
+    -fx-border-color: #d6e6fb;
+    -fx-padding: 22px 24px;
+}
+
+.body-mass-eyebrow {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f55ba;
+    -fx-letter-spacing: 1px;
+}
+
+.body-mass-latest {
+    -fx-font-family: "Arial";
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #172033;
+}
+
+.body-mass-change {
+    -fx-font-weight: bold;
+    -fx-text-fill: #0787f5;
+}
+
+.body-mass-change-date {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #1f55ba;
+    -fx-padding: 8px 4px;
+}
+
+.body-mass-chart {
+    -fx-background-color: transparent;
+    -fx-padding: 8px 0 0 0;
+}
+
+.body-mass-chart .chart-plot-background {
+    -fx-background-color: #fbfdff;
+}
+
+.body-mass-chart .chart-series-line {
+    -fx-stroke: #0787f5;
+    -fx-stroke-width: 2px;
+}
+
+.body-mass-chart .chart-line-symbol {
+    -fx-background-color: #0787f5, white;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 6px;
+    -fx-padding: 5px;
+}
+
+.body-mass-period {
+    -fx-background-color: transparent;
+    -fx-text-fill: #68758b;
+    -fx-border-color: #d9e0ea;
+    -fx-border-radius: 16px;
+    -fx-padding: 6px 12px;
+}
+
+.body-mass-period:hover,
+.body-mass-period:focused {
+    -fx-background-color: #0787f5;
+    -fx-border-color: #0787f5;
+    -fx-text-fill: white;
+}
+
+.body-mass-history .card-list {
+    -fx-pref-height: 310px;
+}
+
+.body-mass-history .list-cell {
+    -fx-border-color: transparent transparent #edf0f5 transparent;
+    -fx-padding: 0;
+}
+
+.body-mass-history-row {
+    -fx-padding: 15px 2px;
+}
+
+.body-mass-history-row .record-value {
+    -fx-alignment: center-right;
+    -fx-font-weight: bold;
+}
+
 .empty-state {
     -fx-alignment: center;
     -fx-padding: 36px;
@@ -676,6 +762,61 @@
 
 .dark .record-meta {
     -fx-text-fill: #aebdd0;
+}
+
+.dark .body-mass-editor {
+    -fx-background-color: linear-gradient(to right, #1d2e43, #1f2937 68%);
+    -fx-border-color: #3b4a5f;
+}
+
+.dark .body-mass-eyebrow {
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .body-mass-latest {
+    -fx-text-fill: #f8fafc;
+}
+
+.dark .body-mass-change,
+.dark .body-mass-change-date {
+    -fx-text-fill: #93c5fd;
+}
+
+.dark .body-mass-chart .chart-plot-background {
+    -fx-background-color: #18212f;
+}
+
+.dark .body-mass-chart .axis,
+.dark .body-mass-chart .axis-label,
+.dark .body-mass-chart .axis-tick-mark,
+.dark .body-mass-chart .axis-minor-tick-mark {
+    -fx-tick-label-fill: #aebdd0;
+    -fx-stroke: #607089;
+}
+
+.dark .body-mass-chart .chart-series-line {
+    -fx-stroke: #60a5fa;
+}
+
+.dark .body-mass-chart .chart-line-symbol {
+    -fx-background-color: #60a5fa, #18212f;
+}
+
+.dark .body-mass-period {
+    -fx-background-color: transparent;
+    -fx-border-color: #3b4a5f;
+    -fx-text-fill: #aebdd0;
+}
+
+.dark .body-mass-period:hover,
+.dark .body-mass-period:focused {
+    -fx-background-color: #0787f5;
+    -fx-border-color: #0787f5;
+    -fx-text-fill: white;
+}
+
+.dark .body-mass-history .list-cell {
+    -fx-border-color: transparent transparent #334155 transparent;
 }
 
 .dark .record-card-actionable:hover,

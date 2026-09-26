@@ -63,12 +63,16 @@ final class MemberWorkoutsView {
         Button add = new Button("Record Workout");
         add.getStyleClass().add("primary-button");
         add.setOnAction(event -> form(add, service, session, null, calendar::load));
+        Button bodyMass = new Button("Body mass");
+        bodyMass.getStyleClass().add("secondary-button");
+        bodyMass.setOnAction(event -> navigate.accept(Screen.MEMBER_BODY_METRICS));
         javafx.scene.layout.Region summarySpacer = new javafx.scene.layout.Region();
         HBox.setHgrow(summarySpacer, Priority.ALWAYS);
         HBox summary = new HBox(12, status, summarySpacer, WorkoutCalendar.legend());
         summary.setAlignment(Pos.CENTER_LEFT);
+        HBox actions = new HBox(8, add, bodyMass);
         VBox content = new VBox(20,
-                UiComponents.header("Workouts", "Select a highlighted date to view its sessions", add),
+                UiComponents.header("Workouts", "Select a highlighted date to view its sessions", actions),
                 UiComponents.card(summary, calendar.view()));
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));

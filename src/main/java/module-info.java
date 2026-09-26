@@ -14,6 +14,7 @@ module com.gymflow {
     exports com.gymflow.data;
     exports com.gymflow.expense;
     exports com.gymflow.member;
+    exports com.gymflow.metric;
     exports com.gymflow.model;
     exports com.gymflow.ui to javafx.graphics;
     exports com.gymflow.visit;

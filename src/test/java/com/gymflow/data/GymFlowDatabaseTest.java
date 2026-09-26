@@ -35,7 +35,7 @@ class GymFlowDatabaseTest {
             assertNotNull(text(statement, "SELECT created_at FROM memberships WHERE id = 1"));
             assertNotNull(text(statement, "SELECT updated_at FROM memberships WHERE id = 1"));
             assertNotNull(text(statement, "SELECT created_at FROM payments WHERE id = 1"));
-            assertEquals(7, value(statement, "PRAGMA user_version"));
+            assertEquals(8, value(statement, "PRAGMA user_version"));
             assertEquals(1, value(statement,
                     "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'visits'"));
             assertEquals(1, value(statement,
@@ -114,7 +114,7 @@ class GymFlowDatabaseTest {
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM visits"));
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM expenses"));
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM announcements"));
-            assertEquals(7, value(statement, "PRAGMA user_version"));
+            assertEquals(8, value(statement, "PRAGMA user_version"));
         }
     }
 
@@ -128,7 +128,7 @@ class GymFlowDatabaseTest {
         database.initialize();
 
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
-            assertEquals(7, value(statement, "PRAGMA user_version"));
+            assertEquals(8, value(statement, "PRAGMA user_version"));
             assertEquals(1, value(statement, "SELECT COUNT(*) FROM visits"));
             assertEquals(null, text(statement, "SELECT corrected_at FROM visits WHERE id = 1"));
             assertEquals(null, text(statement, "SELECT corrected_by_account_id FROM visits WHERE id = 1"));
@@ -145,7 +145,7 @@ class GymFlowDatabaseTest {
         database.initialize();
 
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
-            assertEquals(7, value(statement, "PRAGMA user_version"));
+            assertEquals(8, value(statement, "PRAGMA user_version"));
             assertEquals("2026-09-15T09:00:00.000Z",
                     text(statement, "SELECT started_at FROM workouts WHERE id = 1"));
             assertEquals("2026-09-15T10:00:00.000Z",

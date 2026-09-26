@@ -183,7 +183,7 @@ instant (the date selected in the form), highlights dates with one and multiple 
 multi-session date's selection overlay by start instant ascending before the existing edit/delete form is opened.
 
 `Role`, `PaymentMethod`, `ExpenseCategory`, and derived `MembershipStatus` are enums because each has a fixed set of
-values. Planned entities such as `MembershipPlan`, `BodyMetric`, and `AuditLog` are not part of the current schema and
+values. Planned entities such as `MembershipPlan` and `AuditLog` are not part of the current schema and
 must not be treated as implemented features. The complete prioritized backlog and implementation status are recorded in
 the [User Stories](UserStories.md).
 
@@ -205,6 +205,7 @@ schema, applies versioned migrations, and performs full reset. The current schem
 | `announcements` | Gym-wide notices with nullable withdrawal metadata |
 | `workouts` | Member-owned completed Workout ranges with start before end |
 | `workout_sets` | Ordered sets cascaded from their parent Workout |
+| `body_metrics` | Member-owned body-mass readings, unique by measurement date |
 
 Migrations are ordered and idempotent through SQLite `PRAGMA user_version`. They preserve existing rows and update the
 version only after successful work. The Visit migration rebuilds its table transactionally when adding constraints

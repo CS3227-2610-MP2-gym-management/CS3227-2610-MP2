@@ -8,6 +8,7 @@ import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.member.MemberAccountService;
+import com.gymflow.metric.BodyMetricService;
 import com.gymflow.monitoring.AppMonitoring;
 import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.visit.MemberVisitService;
@@ -28,6 +29,7 @@ public final class GymFlowApp extends Application {
     private OwnerVisitService visits;
     private MemberVisitService memberVisits;
     private WorkoutService workouts;
+    private BodyMetricService bodyMetrics;
 
     /** Initializes local storage before the JavaFX application thread starts. */
     @Override
@@ -42,6 +44,7 @@ public final class GymFlowApp extends Application {
         visits = new OwnerVisitService(database);
         memberVisits = new MemberVisitService(database);
         workouts = new WorkoutService(database);
+        bodyMetrics = new BodyMetricService(database);
         ownerExists = authentication.hasOwner();
     }
 
@@ -56,7 +59,7 @@ public final class GymFlowApp extends Application {
         stage.setMinWidth(MINIMUM_WIDTH);
         stage.setMinHeight(MINIMUM_HEIGHT);
 
-        new AppView(stage, authentication, members, expenses, visits, memberVisits, workouts,
+        new AppView(stage, authentication, members, expenses, visits, memberVisits, workouts, bodyMetrics,
                 announcements, memberAccounts, ownerExists);
         stage.show();
     }
