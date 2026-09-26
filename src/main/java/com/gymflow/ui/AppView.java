@@ -120,7 +120,7 @@ public final class AppView {
                 ? createLogin()
                 : MemberAnnouncementsView.create(announcements, this::show, this::logout);
         case MEMBER_PROFILE -> !isMemberSession(session)
-                ? createLogin() : MemberHomeView.createPlaceholder(screen, this::show, this::logout);
+                ? createLogin() : MemberProfileView.create(memberAccounts, session, this::show, this::logout);
         };
         shell.setCenter(root);
     }

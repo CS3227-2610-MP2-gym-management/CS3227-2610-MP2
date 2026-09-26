@@ -71,6 +71,47 @@ public final class MemberAccountStore {
         }
     }
 
+    /** Updates only the supplied active Member's email and phone number. */
+    public Member updateContact(long accountId, String email, String phoneNumber) {
+        try (Connection connection = database.connect()) {
+            connection.setAutoCommit(false);
+            try {
+                Instant updatedAt = Instant.now();
+                try (PreparedStatement account = connection.prepareStatement("""
+                        UPDATE accounts SET email = ?, updated_at = ?
+                        WHERE id = ? AND role = 'MEMBER' AND is_active = 1
+                        """)) {
+                    account.setString(1, email);
+                    account.setString(2, updatedAt.toString());
+                    account.setLong(3, accountId);
+                    if (account.executeUpdate() != 1) {
+                        throw new IllegalArgumentException("An active Member account is required");
+                    }
+                } catch (SQLException exception) {
+                    if (exception.getMessage().contains("UNIQUE")) {
+                        throw new IllegalArgumentException("A Member with that email already exists", exception);
+                    }
+                    throw exception;
+                }
+                try (PreparedStatement profile = connection.prepareStatement(
+                        "UPDATE member_profiles SET phone_number = ? WHERE account_id = ?")) {
+                    profile.setString(1, phoneNumber);
+                    profile.setLong(2, accountId);
+                    if (profile.executeUpdate() != 1) {
+                        throw new IllegalArgumentException("An active Member account is required");
+                    }
+                }
+                connection.commit();
+                return profile(accountId);
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to update Member contact details", exception);
+        }
+    }
+
     private static LocalDate date(ResultSet results, String column) throws SQLException {
         String value = results.getString(column);
         return value == null ? null : LocalDate.parse(value);

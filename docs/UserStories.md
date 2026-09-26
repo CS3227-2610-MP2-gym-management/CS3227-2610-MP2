@@ -38,8 +38,8 @@ Shared storage and service contracts may exist before the corresponding Member i
 | M-P1-03 | As a gym Member, I want to view, edit, and delete my previous workouts so that my personal exercise history remains useful and accurate. | Implemented | Workouts appear in a color-coded calendar. Selecting a one-session date opens it for editing or deletion; a multi-session date first shows its sessions from earliest to latest. A Member cannot access another Member's records. |
 | M-P1-04 | As a gym Member, I want to record, edit, and delete body-mass readings so that I can monitor fitness progress.                 | Implemented | Each Member may store one positive kilogram reading per calendar date; future-dated readings are not allowed. |
 | M-P1-05 | As a gym Member, I want to view Owner announcements so that I stay informed about gym operations.                             | Planned | Members see published announcements only; read/unread tracking is not required. |
-| M-P1-06 | As a gym Member, I want to update selected profile details so that my contact information remains current.                    | Planned | Self-service editing is limited to email address and phone number. |
-| M-P1-07 | As a gym Member, I want to change my password so that I can keep my account secure.                                           | Planned | The Member must provide the current password and a matching new password of 12–128 characters. |
+| M-P1-06 | As a gym Member, I want to update selected profile details so that my contact information remains current.                    | Implemented | Self-service editing is limited to email address and phone number. |
+| M-P1-07 | As a gym Member, I want to change my password so that I can keep my account secure.                                           | Implemented | The Member must provide the current password and a matching new password of 12–128 characters. |
 
 ### P2 — Could have
 

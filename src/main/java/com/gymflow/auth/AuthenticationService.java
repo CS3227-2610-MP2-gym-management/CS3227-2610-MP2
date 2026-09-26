@@ -1,7 +1,6 @@
 package com.gymflow.auth;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Optional;
 
 import com.gymflow.data.AccountStore;
@@ -12,8 +11,6 @@ import com.gymflow.model.Role;
 
 /** Handles account setup and credential verification. */
 public final class AuthenticationService {
-    private static final int MINIMUM_PASSWORD_LENGTH = 12;
-    private static final int MAXIMUM_PASSWORD_LENGTH = 128;
     private final AccountStore accounts;
     private final PasswordHasher passwords;
     private final GymFlowDatabase database;
@@ -33,8 +30,8 @@ public final class AuthenticationService {
     /** Creates the installation's only Owner account. */
     public Account createOwner(String email, char[] password) {
         try {
-            String normalizedEmail = validateEmail(email);
-            validatePassword(password);
+            String normalizedEmail = AccountValidation.normalizeEmail(email);
+            AccountValidation.validatePassword(password);
             if (hasOwner()) {
                 throw new IllegalArgumentException("Owner account already exists");
             }
@@ -77,22 +74,6 @@ public final class AuthenticationService {
             database.reset();
         } finally {
             clear(currentPassword);
-        }
-    }
-
-    private static String validateEmail(String email) {
-        String normalized = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
-        int at = normalized.indexOf('@');
-        if (at <= 0 || at != normalized.lastIndexOf('@') || at == normalized.length() - 1) {
-            throw new IllegalArgumentException("Enter a valid email address");
-        }
-        return normalized;
-    }
-
-    private static void validatePassword(char[] password) {
-        int length = password == null ? 0 : password.length;
-        if (length < MINIMUM_PASSWORD_LENGTH || length > MAXIMUM_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException("Password must be between 12 and 128 characters");
         }
     }
 

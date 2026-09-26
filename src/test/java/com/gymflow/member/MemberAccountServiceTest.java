@@ -1,7 +1,10 @@
 package com.gymflow.member;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -60,6 +63,58 @@ class MemberAccountServiceTest {
                 service.membershipNotice(service.loadOverview(charlieActor)).state());
         assertThrows(IllegalArgumentException.class, () -> service.loadOverview(owner));
         assertEquals(bob.accountId(), ownerMembers.searchMembers("bob").getFirst().accountId());
+    }
+
+    @Test
+    void updatesOnlyAnActorsContactDetailsAndReplacesTheirVerifiedPassword() {
+        GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
+        database.initialize();
+        AuthenticationService authentication = new AuthenticationService(database);
+        Account owner = authentication.createOwner("owner@example.com", "owner password".toCharArray());
+        OwnerMemberService ownerMembers = new OwnerMemberService(database);
+        Member alice = ownerMembers.createMember(request("alice@example.com", LocalDate.of(2026, 9, 1)), owner.id());
+        Member bob = ownerMembers.createMember(request("bob@example.com", LocalDate.of(2026, 9, 1)), owner.id());
+        Account actor = authentication.authenticate("alice@example.com", "member password".toCharArray()).orElseThrow();
+        MemberAccountService service = new MemberAccountService(database);
+
+        Member updated = service.updateContact(actor, "  ALICE.NEW@EXAMPLE.COM ", "+65 8123-4567");
+        assertEquals("alice.new@example.com", updated.email());
+        assertEquals("+65 8123 4567", updated.phoneNumber());
+        assertEquals(alice.memberNumber(), updated.memberNumber());
+        assertEquals(alice.fullName(), updated.fullName());
+        assertEquals(alice.dateOfBirth(), updated.dateOfBirth());
+        assertEquals(bob, service.loadOverview(authentication.authenticate("bob@example.com",
+                "member password".toCharArray()).orElseThrow()).member());
+
+        char[] current = "member password".toCharArray();
+        char[] replacement = "a secure replacement password".toCharArray();
+        service.changePassword(actor, current, replacement);
+        assertArrayEquals(new char[current.length], current);
+        assertArrayEquals(new char[replacement.length], replacement);
+        assertFalse(authentication.authenticate("alice.new@example.com", "member password".toCharArray()).isPresent());
+        assertTrue(authentication.authenticate("alice.new@example.com", "a secure replacement password".toCharArray())
+                .isPresent());
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updateContact(actor, "bob@example.com", "81234567"));
+    }
+
+    @Test
+    void rejectsWrongCurrentPasswordWithoutChangingCredentials() {
+        GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
+        database.initialize();
+        AuthenticationService authentication = new AuthenticationService(database);
+        Account owner = authentication.createOwner("owner@example.com", "owner password".toCharArray());
+        OwnerMemberService ownerMembers = new OwnerMemberService(database);
+        ownerMembers.createMember(request("alice@example.com", LocalDate.of(2026, 9, 1)), owner.id());
+        Account actor = authentication.authenticate("alice@example.com", "member password".toCharArray()).orElseThrow();
+        MemberAccountService service = new MemberAccountService(database);
+        char[] current = "wrong password".toCharArray();
+        char[] replacement = "a secure replacement password".toCharArray();
+
+        assertThrows(IllegalArgumentException.class, () -> service.changePassword(actor, current, replacement));
+        assertArrayEquals(new char[current.length], current);
+        assertArrayEquals(new char[replacement.length], replacement);
+        assertTrue(authentication.authenticate("alice@example.com", "member password".toCharArray()).isPresent());
     }
 
     private static CreateMemberRequest request(String email, LocalDate start) {
