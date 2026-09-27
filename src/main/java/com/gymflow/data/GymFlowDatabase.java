@@ -62,7 +62,8 @@ public final class GymFlowDatabase {
             updated_at TEXT NOT NULL,
             UNIQUE(workout_id, position),
             CHECK ((repetitions IS NOT NULL AND repetitions > 0 AND duration_seconds IS NULL)
-                OR (duration_seconds IS NOT NULL AND duration_seconds > 0 AND repetitions IS NULL))
+                OR (duration_seconds IS NOT NULL AND duration_seconds > 0 AND repetitions IS NULL)
+                OR (repetitions IS NULL AND duration_seconds IS NULL))
         )
         """;
     private static final String[] SCHEMA = {
@@ -166,6 +167,7 @@ public final class GymFlowDatabase {
                         statement.executeUpdate(ifMissing(sql));
                     }
                     migrateLegacyTimestamps(connection, statement);
+                    migrateWorkoutSetDrafts(connection, statement);
                     statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
                     connection.commit();
                 } catch (SQLException exception) {
@@ -247,6 +249,19 @@ public final class GymFlowDatabase {
             statement.executeUpdate("ALTER TABLE payments ADD COLUMN created_at TEXT NOT NULL DEFAULT ''");
             statement.executeUpdate("UPDATE payments SET created_at = '" + migratedAt + "'");
         }
+    }
+
+    private static void migrateWorkoutSetDrafts(Connection connection, Statement statement) throws SQLException {
+        try (var results = statement.executeQuery(
+                "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'workout_sets'")) {
+            if (!results.next() || results.getString(1).contains("repetitions IS NULL AND duration_seconds IS NULL")) {
+                return;
+            }
+        }
+        statement.executeUpdate("ALTER TABLE workout_sets RENAME TO workout_sets_legacy");
+        statement.executeUpdate(WORKOUT_SETS_TABLE);
+        statement.executeUpdate("INSERT INTO workout_sets SELECT * FROM workout_sets_legacy");
+        statement.executeUpdate("DROP TABLE workout_sets_legacy");
     }
 
     private static boolean hasColumn(Connection connection, String table,

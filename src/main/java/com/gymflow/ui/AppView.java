@@ -103,7 +103,7 @@ public final class AppView {
                 : OwnerAnnouncementsView.create(announcements, session, this::show, this::showReset, this::logout);
         case MEMBER_HOME -> !isMemberSession(session)
                 ? createLogin()
-                : MemberHomeView.create(memberAccounts, memberVisits, session, this::show, this::logout);
+                : MemberHomeView.create(memberAccounts, memberVisits, workouts, session, this::show, this::logout);
         case MEMBER_MEMBERSHIP -> !isMemberSession(session)
                 ? createLogin()
                 : MemberMembershipView.create(memberAccounts, session, this::show, this::logout);

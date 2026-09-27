@@ -58,6 +58,45 @@ public final class WorkoutStore {
         return save(memberId, id, request, now);
     }
 
+    /** Replaces an open Workout draft and closes it in one transaction. */
+    public Workout checkOut(long memberId, long id, SaveWorkoutRequest request, Instant now) {
+        try (Connection connection = database.connect()) {
+            connection.setAutoCommit(false);
+            try {
+                requireActiveMember(connection, memberId);
+                Workout open = find(connection, id);
+                if (open.memberAccountId() != memberId || open.endedAt() != null) {
+                    throw new IllegalArgumentException("You are not currently checked in");
+                }
+                if (now.isBefore(open.startedAt().plusSeconds(60))) {
+                    throw new IllegalArgumentException(
+                            "Wait at least one minute after check-in before checking out");
+                }
+                replaceWorkout(connection, memberId, id, request, now);
+                insertSets(connection, id, request.sets(), now);
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE workouts SET ended_at = ?, updated_at = ? "
+                                + "WHERE id = ? AND member_account_id = ? AND ended_at IS NULL")) {
+                    statement.setString(1, TIMESTAMP.format(now));
+                    statement.setString(2, TIMESTAMP.format(now));
+                    statement.setLong(3, id);
+                    statement.setLong(4, memberId);
+                    if (statement.executeUpdate() != 1) {
+                        throw new IllegalArgumentException("You are not currently checked in");
+                    }
+                }
+                Workout closed = find(connection, id);
+                connection.commit();
+                return closed;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to check out", exception);
+        }
+    }
+
     /** Permanently deletes a Member-owned Workout and its cascaded sets. */
     public void delete(long memberId, long id) {
         String sql = "DELETE FROM workouts WHERE id = ? AND member_account_id = ?";

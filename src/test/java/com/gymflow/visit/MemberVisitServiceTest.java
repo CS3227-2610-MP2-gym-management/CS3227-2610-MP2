@@ -62,8 +62,8 @@ class MemberVisitServiceTest {
         assertThrows(IllegalArgumentException.class, () -> visits.checkOut(alice));
         MemberVisitService laterVisits = new MemberVisitService(
                 new GymFlowDatabase(directory.resolve("gymflow.db")),
-                Clock.fixed(NOW.plusSeconds(1), ZoneOffset.UTC));
-        assertTrue(laterVisits.checkOut(alice).exitedAt().equals(NOW.plusSeconds(1)));
+                Clock.fixed(NOW.plusSeconds(60), ZoneOffset.UTC));
+        assertTrue(laterVisits.checkOut(alice).exitedAt().equals(NOW.plusSeconds(60)));
         assertFalse(laterVisits.currentState(alice).checkedIn());
         assertThrows(IllegalArgumentException.class, () -> laterVisits.checkOut(alice));
     }

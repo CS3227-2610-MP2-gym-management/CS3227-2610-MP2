@@ -78,8 +78,9 @@ public final class MemberVisitStore {
                 if (open == null) {
                     throw new IllegalArgumentException("You are not currently checked in");
                 }
-                if (!open.enteredAt().isBefore(now)) {
-                    throw new IllegalArgumentException("Exit time must be after entry time");
+                if (now.isBefore(open.enteredAt().plusSeconds(60))) {
+                    throw new IllegalArgumentException(
+                            "Wait at least one minute after check-in before checking out");
                 }
                 try (PreparedStatement statement = connection.prepareStatement(
                 "UPDATE workouts SET ended_at = ?, updated_at = ? WHERE id = ? AND ended_at IS NULL")) {

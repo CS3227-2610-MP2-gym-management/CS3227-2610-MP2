@@ -46,6 +46,13 @@ public final class WorkoutService {
         return store.update(actor.id(), id, validate(request), clock.instant());
     }
 
+    /** Atomically saves an open Workout draft and records its check-out time. */
+    public Workout checkOut(Account actor, long id, SaveWorkoutRequest request) {
+        requireMember(actor);
+        SaveWorkoutRequest validated = validate(request);
+        return store.checkOut(actor.id(), id, validated, clock.instant());
+    }
+
     /** Deletes a saved Workout and its sets. */
     public void delete(Account actor, long id) {
         requireMember(actor);
@@ -75,7 +82,7 @@ public final class WorkoutService {
         }
         boolean repetitions = set.repetitions() != null && set.repetitions() > 0;
         boolean duration = set.durationSeconds() != null && set.durationSeconds() > 0;
-        if (repetitions == duration) {
+        if (repetitions && duration) {
             throw new IllegalArgumentException("Provide exactly one positive measure");
         }
         if ((set.repetitions() != null && !repetitions)
