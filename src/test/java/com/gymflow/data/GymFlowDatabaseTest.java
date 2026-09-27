@@ -30,7 +30,8 @@ class GymFlowDatabaseTest {
             assertEquals(1, value(statement,
                     "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'workouts'"));
             assertEquals(1, value(statement,
-                    "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'index' AND name = 'one_open_workout_per_member'"));
+                    "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'index' "
+                            + "AND name = 'one_open_workout_per_member'"));
         }
     }
 

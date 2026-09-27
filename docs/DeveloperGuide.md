@@ -110,7 +110,7 @@ AND date <= membership.expiryDate
 ```
 
 Active periods for the same Member cannot overlap. Renewal creates a new Membership and Payment. Deactivation never
-disables the Member account and does not close an existing Visit. Display values such as `ACTIVE`, `UPCOMING`,
+disables the Member account and does not close an existing Workout. Display values such as `ACTIVE`, `UPCOMING`,
 `EXPIRED`, and `DEACTIVATED` are calculated from the flag and dates.
 
 `MemberAccountService.membershipNotice(MemberOverview)` is the single Member-facing presentation decision. It derives
@@ -122,17 +122,16 @@ changes appear after the Member reopens a screen.
 
 ### Visits
 
-A Visit stores an entry time and an optional exit time. A partial unique SQLite index prevents more than one open
-Visit per Member, while a table constraint prevents an exit from preceding entry. A null exit derives the currently
-checked-in state; no separate Visit status is stored.
+A Workout is the sole persisted gym session and stores a start time and optional end time. A partial unique SQLite index prevents more than one open
+Workout per Member, while a table constraint prevents an exit from preceding entry. A null exit derives the currently
+checked-in state; no separate Workout status is stored.
 
-Visit timestamps are stored as UTC ISO-8601 instants and displayed in the computer's local time zone. Owners can
+Workout timestamps are stored as UTC ISO-8601 instants and displayed in the computer's local time zone. Owners can
 correct entry and exit times with a required reason. GymFlow stores the latest correction time, Owner, and reason,
-rather than maintaining a separate audit-history subsystem. Reopening a Visit is rejected when that Member already
+rather than maintaining a separate audit-history subsystem. Reopening a Workout is rejected when that Member already
 has another open Visit.
 
-`OwnerMemberService.hasValidMembership(memberId, date)` is the shared eligibility contract for the future Member
-entry workflow. Owner correction intentionally does not revalidate historical Membership eligibility.
+Member check-in validates active account and current Membership in the unified Workout transaction. Owner correction intentionally does not revalidate historical Membership eligibility.
 
 ### Finances and dashboard
 
@@ -176,15 +175,14 @@ one-to-one `MemberProfile` for Owner-facing reads.
 | `Member` / `MemberProfile` | Account ID, unique Member number, full name, phone number, optional date of birth | Exists only for a Member account; Singapore phone and minimum-age validation apply |
 | `Membership` | ID, Member ID, start date, expiry date, active flag, creation and update times | Expiry cannot precede start; active periods cannot overlap; status is derived |
 | `MemberPayment` | ID, Membership ID, amount, method, paid time, optional reference, recording Owner, creation time | Exactly one immutable Payment per Membership; positive SGD amount with at most two decimals |
-| `Visit` | ID, Member ID, entry, optional exit, creation time, optional latest correction metadata | At most one open Visit per Member; exit cannot precede entry; all correction fields are present together |
 | `Expense` | ID, date, amount, method, category, optional description, recording Owner, creation time | Immutable, positive SGD amount; date cannot be in the future |
 | `Announcement` | ID, title, content, publication time, creating Owner, optional withdrawal time, creation and update times | Required title and content; withdrawal preserves history instead of deleting the record |
-| `Workout` | ID, Member ID, start and end instants, optional notes, ordered sets | End is after start and not in the future; updates atomically replace all sets |
+| `Workout` | ID, Member ID, start and optional end instants, notes, ordered sets, correction metadata | At most one open Workout per Member; completed end is after start; updates atomically replace all sets |
 | `WorkoutSet` | ID, Workout ID, display position, exercise name, repetitions or duration, optional resistance | Exactly one positive measure; resistance is non-negative kilograms |
 
-The Member Workout history is a local-time month calendar. It groups a Workout on the local calendar date of its end
+The Owner `Visits` screen and Member Workout history read the same Workout rows. The Member Workout history is a local-time month calendar. It groups a Workout on the local calendar date of its end
 instant (the date selected in the form), highlights dates with one and multiple sessions differently, and sorts a
-multi-session date's selection overlay by start instant ascending before the existing edit/delete form is opened.
+multi-session date's selection overlay by start instant ascending before the existing edit form is opened.
 
 `Role`, `PaymentMethod`, `ExpenseCategory`, and derived `MembershipStatus` are enums because each has a fixed set of
 values. Planned entities such as `MembershipPlan` and `AuditLog` are not part of the current schema and

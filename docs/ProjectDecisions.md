@@ -62,7 +62,7 @@ AND membership.startDate <= today
 AND today <= membership.expiryDate
 ```
 
-The Member must also have no existing open Visit before checking in.
+The Member must also have no existing open Workout before checking in.
 
 ### Member registration and first activation
 
@@ -110,7 +110,7 @@ supplement it with an explicit account status such as `PENDING`, `ACTIVE`, and `
   must not change an earlier purchase.
 - Active Membership periods for the same Member must not overlap.
 - Deactivating a Membership prevents it from granting future entry but preserves its historical record.
-- Deactivating a Membership while a Member is already inside does not manufacture an exit time or close the Visit.
+- Deactivating a Membership while a Member is already inside does not manufacture an end time or close the Workout.
 
 ### Payments
 
@@ -133,10 +133,10 @@ If any of these are required, they should be modelled explicitly instead of edit
 **Status: Agreed**
 
 - Check-in requires an active account and a currently valid Membership.
-- A Member may have at most one open Visit.
-- Check-out requires an existing open Visit.
-- Membership expiry or deactivation does not prevent a Member with an open Visit from checking out.
-- An exit time cannot precede its entry time.
+- A Member may have at most one open Workout.
+- Check-out requires an existing open Workout.
+- Membership expiry or deactivation does not prevent a Member with an open Workout from checking out.
+- A Workout end time must be strictly after its start time. Members can edit notes and exercises, including an empty list, but cannot change session times or delete the Workout. Owner `Visits` reads and corrects the same record.
 
 ## Existing technical decisions
 
@@ -148,11 +148,11 @@ If any of these are required, they should be modelled explicitly instead of edit
 - Passwords are salted and hashed; plaintext passwords are not stored.
 - Monetary amounts use integer SGD cents.
 - Event timestamps use UTC `Instant` values; Membership periods use `LocalDate` values.
-- Membership and Visit display statuses are derived rather than stored redundantly.
+- Membership and Workout display statuses are derived rather than stored redundantly.
 - Multi-record writes use transactions, and important integrity rules are also enforced by database constraints.
 - Schema changes are versioned migrations.
 - Announcements are withdrawn rather than deleted.
-- Visit records retain the latest correction metadata. A complete administrative audit history is planned but not yet
+- Workout records retain the latest correction metadata. A complete administrative audit history is planned but not yet
   implemented.
 
 ## Open decisions

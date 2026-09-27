@@ -187,12 +187,12 @@ that spreadsheet applications could otherwise interpret as formulas. Canceling t
 
 ## Member dashboard
 
-After signing in, Members can review their profile, Membership history, Membership status, and current Visit state.
+After signing in, Members can review their profile, Membership history, Membership status, and current Workout state.
 The dashboard displays an active Membership when one is valid today; otherwise, it displays the next upcoming
 Membership and its start date.
 
 When there is no current or upcoming Membership, a prominent amber `Membership renewal needed` notice appears at the
-top of Member Home, before the Gym Visit controls. It explains that gym check-in is unavailable and directs the Member
+top of Member Home, before the check-in controls. It explains that gym check-in is unavailable and directs the Member
 to visit the gym in person to purchase or renew. The same guidance appears on `My Membership`; historical expired and
 deactivated periods remain visible there. This guidance is informational only: it does not create a Membership,
 Payment, or online purchase request.
@@ -204,7 +204,7 @@ exercises and sets beneath the current Workout status; navigating to another Mem
 Check out confirms and atomically saves the displayed draft before recording the exact end time. Check-out requires at
 least one full minute after check-in. Empty Workouts and exercises with missing set measures may be saved and completed.
 
-Open `Workouts` in the Member sidebar to review completed sessions. The current open Workout is not shown there. The
+Open `Workouts` in the Member sidebar to review completed sessions. Empty Workouts show `No exercises recorded`. The current open Workout is not shown there. The
 month calendar uses blue for a date with one Workout and green for a date with multiple Workouts. Use the month arrows
 to review other months.
 
