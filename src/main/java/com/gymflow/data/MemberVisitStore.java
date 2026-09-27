@@ -8,7 +8,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 import com.gymflow.model.MemberVisitState;
 import com.gymflow.model.Visit;
@@ -18,17 +17,10 @@ public final class MemberVisitStore {
     private static final DateTimeFormatter TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
     private final GymFlowDatabase database;
-    private final VisitHistoryStore history;
 
     /** Creates a Member Visit store backed by the supplied database. */
     public MemberVisitStore(GymFlowDatabase database) {
         this.database = database;
-        history = new VisitHistoryStore(database);
-    }
-
-    /** Lists this Member's Visits in newest-first order. */
-    public List<Visit> history(long memberId) {
-        return history.history(memberId);
     }
 
     /** Returns the current state derived from the Member's open Visit. */
@@ -78,13 +70,15 @@ public final class MemberVisitStore {
                 if (open == null) {
                     throw new IllegalArgumentException("You are not currently checked in");
                 }
-                if (now.isBefore(open.enteredAt())) {
-                    throw new IllegalArgumentException("Exit time cannot precede entry time");
+                if (now.isBefore(open.enteredAt().plusSeconds(60))) {
+                    throw new IllegalArgumentException(
+                            "Wait at least one minute after check-in before checking out");
                 }
                 try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE visits SET exited_at = ? WHERE id = ? AND exited_at IS NULL")) {
+                "UPDATE workouts SET ended_at = ?, updated_at = ? WHERE id = ? AND ended_at IS NULL")) {
                     statement.setString(1, TIMESTAMP.format(now));
-                    statement.setLong(2, open.id());
+                    statement.setString(2, TIMESTAMP.format(now));
+                    statement.setLong(3, open.id());
                     if (statement.executeUpdate() != 1) {
                         throw new IllegalArgumentException("You are not currently checked in");
                     }
@@ -129,11 +123,13 @@ public final class MemberVisitStore {
     private static Visit insertOpenVisit(Connection connection, long memberId, Instant now) throws SQLException {
         String timestamp = TIMESTAMP.format(now);
         try (PreparedStatement statement = connection.prepareStatement("""
-                INSERT INTO visits(member_account_id, entered_at, created_at) VALUES (?, ?, ?)
+                INSERT INTO workouts(member_account_id, started_at, created_at, updated_at)
+                VALUES (?, ?, ?, ?)
                 """, java.sql.Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, memberId);
             statement.setString(2, timestamp);
             statement.setString(3, timestamp);
+            statement.setString(4, timestamp);
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (!keys.next()) {
@@ -146,7 +142,7 @@ public final class MemberVisitStore {
 
     private static Visit findOpenVisit(Connection connection, long memberId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM visits WHERE member_account_id = ? AND exited_at IS NULL")) {
+                "SELECT * FROM workouts WHERE member_account_id = ? AND ended_at IS NULL")) {
             statement.setLong(1, memberId);
             try (ResultSet results = statement.executeQuery()) {
                 return results.next() ? readVisit(results) : null;
@@ -155,7 +151,7 @@ public final class MemberVisitStore {
     }
 
     private static Visit findById(Connection connection, long id) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM visits WHERE id = ?")) {
+        try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM workouts WHERE id = ?")) {
             statement.setLong(1, id);
             try (ResultSet results = statement.executeQuery()) {
                 if (!results.next()) {
@@ -167,12 +163,12 @@ public final class MemberVisitStore {
     }
 
     private static Visit readVisit(ResultSet results) throws SQLException {
-        String exitedAt = results.getString("exited_at");
+        String exitedAt = results.getString("ended_at");
         String correctedAt = results.getString("corrected_at");
         long correctedBy = results.getLong("corrected_by_account_id");
         Long correctedById = results.wasNull() ? null : correctedBy;
         return new Visit(results.getLong("id"), results.getLong("member_account_id"),
-                Instant.parse(results.getString("entered_at")), exitedAt == null ? null : Instant.parse(exitedAt),
+                Instant.parse(results.getString("started_at")), exitedAt == null ? null : Instant.parse(exitedAt),
                 Instant.parse(results.getString("created_at")),
                 correctedAt == null ? null : Instant.parse(correctedAt), correctedById,
                 results.getString("correction_reason"));

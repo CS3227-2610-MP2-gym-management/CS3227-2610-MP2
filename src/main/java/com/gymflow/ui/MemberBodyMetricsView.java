@@ -254,7 +254,9 @@ final class MemberBodyMetricsView {
     }
 
     private static void error(RuntimeException exception) {
-        new Alert(Alert.AlertType.ERROR, exception.getMessage()).showAndWait();
+        Alert dialog = new Alert(Alert.AlertType.ERROR, exception.getMessage());
+        UiComponents.iconDialog(dialog);
+        dialog.showAndWait();
     }
 
     private static final class ChartPanel extends VBox {

@@ -14,7 +14,7 @@ import java.util.List;
 
 /** Owns the SQLite file and centralized application schema. */
 public final class GymFlowDatabase {
-    private static final int SCHEMA_VERSION = 8;
+    private static final int SCHEMA_VERSION = 9;
     private static final String BODY_METRICS_TABLE = """
         CREATE TABLE body_metrics (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,12 +31,23 @@ public final class GymFlowDatabase {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             member_account_id INTEGER NOT NULL REFERENCES member_profiles(account_id) ON DELETE CASCADE,
             started_at TEXT NOT NULL,
-            ended_at TEXT NOT NULL,
+            ended_at TEXT,
             notes TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            CHECK (ended_at > started_at)
+            corrected_at TEXT,
+            corrected_by_account_id INTEGER REFERENCES accounts(id),
+            correction_reason TEXT,
+            CHECK (ended_at IS NULL OR ended_at > started_at),
+            CHECK ((corrected_at IS NULL AND corrected_by_account_id IS NULL
+                    AND correction_reason IS NULL)
+                OR (corrected_at IS NOT NULL AND corrected_by_account_id IS NOT NULL
+                    AND length(trim(correction_reason)) > 0))
         )
+        """;
+    private static final String WORKOUTS_OPEN_INDEX = """
+        CREATE UNIQUE INDEX one_open_workout_per_member
+        ON workouts(member_account_id) WHERE ended_at IS NULL
         """;
     private static final String WORKOUT_SETS_TABLE = """
         CREATE TABLE workout_sets (
@@ -51,45 +62,9 @@ public final class GymFlowDatabase {
             updated_at TEXT NOT NULL,
             UNIQUE(workout_id, position),
             CHECK ((repetitions IS NOT NULL AND repetitions > 0 AND duration_seconds IS NULL)
-                OR (duration_seconds IS NOT NULL AND duration_seconds > 0 AND repetitions IS NULL))
+                OR (duration_seconds IS NOT NULL AND duration_seconds > 0 AND repetitions IS NULL)
+                OR (repetitions IS NULL AND duration_seconds IS NULL))
         )
-        """;
-    private static final String VISITS_TABLE = """
-        CREATE TABLE visits (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            member_account_id INTEGER NOT NULL REFERENCES member_profiles(account_id) ON DELETE CASCADE,
-            entered_at TEXT NOT NULL,
-            exited_at TEXT,
-            created_at TEXT NOT NULL,
-            corrected_at TEXT,
-            corrected_by_account_id INTEGER REFERENCES accounts(id),
-            correction_reason TEXT,
-            CHECK (length(entered_at) = 24
-                AND entered_at GLOB '????-??-??T??:??:??.???Z'
-                AND unixepoch(entered_at, 'subsec') IS NOT NULL),
-            CHECK (length(created_at) = 24
-                AND created_at GLOB '????-??-??T??:??:??.???Z'
-                AND unixepoch(created_at, 'subsec') IS NOT NULL),
-            CHECK (exited_at IS NULL OR (
-                length(exited_at) = 24
-                AND exited_at GLOB '????-??-??T??:??:??.???Z'
-                AND unixepoch(exited_at, 'subsec') IS NOT NULL
-                AND exited_at >= entered_at
-            )),
-            CHECK (corrected_at IS NULL OR (
-                length(corrected_at) = 24
-                AND corrected_at GLOB '????-??-??T??:??:??.???Z'
-                AND unixepoch(corrected_at, 'subsec') IS NOT NULL
-            )),
-            CHECK ((corrected_at IS NULL AND corrected_by_account_id IS NULL
-                    AND correction_reason IS NULL)
-                OR (corrected_at IS NOT NULL AND corrected_by_account_id IS NOT NULL
-                    AND length(trim(correction_reason)) > 0))
-        )
-        """;
-    private static final String VISITS_INDEX = """
-        CREATE UNIQUE INDEX one_open_visit_per_member
-        ON visits(member_account_id) WHERE exited_at IS NULL
         """;
     private static final String[] SCHEMA = {
         """
@@ -165,9 +140,8 @@ public final class GymFlowDatabase {
             CHECK (withdrawn_at IS NULL OR withdrawn_at >= published_at)
         )
         """,
-        VISITS_TABLE,
-        VISITS_INDEX,
         WORKOUTS_TABLE,
+        WORKOUTS_OPEN_INDEX,
         WORKOUT_SETS_TABLE,
         BODY_METRICS_TABLE
     };
@@ -193,8 +167,7 @@ public final class GymFlowDatabase {
                         statement.executeUpdate(ifMissing(sql));
                     }
                     migrateLegacyTimestamps(connection, statement);
-                    migrateVisits(connection, statement);
-                    migrateWorkouts(connection, statement);
+                    migrateWorkoutSetDrafts(connection, statement);
                     statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
                     connection.commit();
                 } catch (SQLException exception) {
@@ -278,45 +251,17 @@ public final class GymFlowDatabase {
         }
     }
 
-    private static void migrateVisits(Connection connection, Statement statement) throws SQLException {
-        if (hasColumn(connection, "visits", "corrected_at")) {
-            return;
+    private static void migrateWorkoutSetDrafts(Connection connection, Statement statement) throws SQLException {
+        try (var results = statement.executeQuery(
+                "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'workout_sets'")) {
+            if (!results.next() || results.getString(1).contains("repetitions IS NULL AND duration_seconds IS NULL")) {
+                return;
+            }
         }
-        statement.executeUpdate("DROP INDEX IF EXISTS one_open_visit_per_member");
-        statement.executeUpdate("ALTER TABLE visits RENAME TO visits_version_two");
-        statement.executeUpdate(VISITS_TABLE);
-        statement.executeUpdate("""
-                INSERT INTO visits(id, member_account_id, entered_at, exited_at, created_at)
-                SELECT id, member_account_id, entered_at, exited_at, created_at FROM visits_version_two
-                """);
-        statement.executeUpdate("DROP TABLE visits_version_two");
-        statement.executeUpdate(VISITS_INDEX);
-    }
-
-    private static void migrateWorkouts(Connection connection, Statement statement) throws SQLException {
-        statement.executeUpdate(ifMissing(WORKOUTS_TABLE));
-        statement.executeUpdate(ifMissing(WORKOUT_SETS_TABLE));
-        if (hasColumn(connection, "workouts", "performed_at")) {
-            statement.executeUpdate("ALTER TABLE workout_sets RENAME TO workout_sets_version_six");
-            statement.executeUpdate("ALTER TABLE workouts RENAME TO workouts_version_six");
-            statement.executeUpdate(WORKOUTS_TABLE);
-            statement.executeUpdate(WORKOUT_SETS_TABLE);
-            statement.executeUpdate("""
-                    INSERT INTO workouts(id, member_account_id, started_at, ended_at, notes, created_at, updated_at)
-                    SELECT id, member_account_id,
-                        strftime('%Y-%m-%dT%H:%M:%fZ', julianday(performed_at) - 1.0 / 24),
-                        performed_at, notes, created_at, updated_at
-                    FROM workouts_version_six
-                    """);
-            statement.executeUpdate("""
-                    INSERT INTO workout_sets(id, workout_id, position, exercise_name, repetitions,
-                        duration_seconds, resistance_grams, created_at, updated_at)
-                    SELECT id, workout_id, position, exercise_name, repetitions, duration_seconds,
-                        resistance_grams, created_at, updated_at FROM workout_sets_version_six
-                    """);
-            statement.executeUpdate("DROP TABLE workout_sets_version_six");
-            statement.executeUpdate("DROP TABLE workouts_version_six");
-        }
+        statement.executeUpdate("ALTER TABLE workout_sets RENAME TO workout_sets_legacy");
+        statement.executeUpdate(WORKOUT_SETS_TABLE);
+        statement.executeUpdate("INSERT INTO workout_sets SELECT * FROM workout_sets_legacy");
+        statement.executeUpdate("DROP TABLE workout_sets_legacy");
     }
 
     private static boolean hasColumn(Connection connection, String table,
@@ -331,4 +276,5 @@ public final class GymFlowDatabase {
             return false;
         }
     }
+
 }

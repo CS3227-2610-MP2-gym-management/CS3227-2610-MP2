@@ -67,6 +67,31 @@ class WorkoutServiceTest {
                 () -> workouts.create(member, request("2026-09-15T09:00:00Z", "2026-09-15T10:15:00Z")));
     }
 
+    @Test
+    void persistsAnEmptyOpenWorkoutAcrossServiceRestart() {
+        Workout open = workouts.create(member, new SaveWorkoutRequest(NOW, null, "", List.of()));
+
+        GymFlowDatabase restartedDatabase = new GymFlowDatabase(directory.resolve("gymflow.db"));
+        restartedDatabase.initialize();
+        Workout reloaded = new WorkoutService(restartedDatabase, Clock.fixed(NOW, ZoneOffset.UTC))
+                .history(member).getFirst();
+
+        assertEquals(open.id(), reloaded.id());
+        assertEquals(null, reloaded.endedAt());
+        assertEquals(List.of(), reloaded.sets());
+    }
+
+    @Test
+    void keepsSessionTimesImmutableWhenReplacingExercises() {
+        Workout saved = workouts.create(member, request("2026-09-15T08:00:00Z", "2026-09-15T09:00:00Z"));
+
+        Workout updated = workouts.update(member, saved.id(),
+                request("2026-09-15T07:00:00Z", "2026-09-15T09:30:00Z"));
+
+        assertEquals(saved.startedAt(), updated.startedAt());
+        assertEquals(saved.endedAt(), updated.endedAt());
+    }
+
     private static SaveWorkoutRequest request(String startedAt, String endedAt) {
         return new SaveWorkoutRequest(Instant.parse(startedAt), Instant.parse(endedAt), null,
                 List.of(new WorkoutSetInput("Squat", 8, null, new BigDecimal("60"))));

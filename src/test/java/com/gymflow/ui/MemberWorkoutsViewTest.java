@@ -38,6 +38,18 @@ class MemberWorkoutsViewTest {
         assertEquals(List.of(overnight), grouped.get(date));
     }
 
+    @Test
+    void groupsOpenWorkoutByStartDateAlongsideCompletedHistory() {
+        LocalDate date = LocalDate.of(2026, 9, 24);
+        Workout open = new Workout(2, 1, instant(date, 8, 0), null,
+                null, Instant.EPOCH, Instant.EPOCH, List.of());
+        Workout completed = workout(1, date, 6, 0);
+
+        Map<LocalDate, List<Workout>> grouped = MemberWorkoutsView.workoutsByDate(List.of(open, completed));
+
+        assertEquals(List.of(completed, open), grouped.get(date));
+    }
+
     private static Workout workout(long id, LocalDate date, int hour, int minute) {
         Instant time = instant(date, hour, minute);
         return new Workout(id, 1, time, time.plusSeconds(3_600), null, Instant.EPOCH, Instant.EPOCH, List.of());

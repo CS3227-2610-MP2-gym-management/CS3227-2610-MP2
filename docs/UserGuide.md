@@ -187,26 +187,31 @@ that spreadsheet applications could otherwise interpret as formulas. Canceling t
 
 ## Member dashboard
 
-After signing in, Members can review their profile, Membership history, Membership status, and current Visit state.
+After signing in, Members can review their profile, Membership history, Membership status, and current Workout state.
 The dashboard displays an active Membership when one is valid today; otherwise, it displays the next upcoming
 Membership and its start date.
 
 When there is no current or upcoming Membership, a prominent amber `Membership renewal needed` notice appears at the
-top of Member Home, before the Gym Visit controls. It explains that gym check-in is unavailable and directs the Member
+top of Member Home, before the check-in controls. It explains that gym check-in is unavailable and directs the Member
 to visit the gym in person to purchase or renew. The same guidance appears on `My Membership`; historical expired and
 deactivated periods remain visible there. This guidance is informational only: it does not create a Membership,
 Payment, or online purchase request.
 
 ## Managing Workouts
 
-Open `Workouts` in the Member sidebar to record a completed session or review earlier sessions. The month calendar
-uses blue for a date with one Workout and green for a date with multiple Workouts. Use the month arrows to review
-other months.
+Check in from `Home` to start a Workout. Confirming check-in records its exact start time. While checked in, add
+exercises and sets beneath the current Workout status; navigating to another Member tab saves that draft automatically.
+Check out confirms and atomically saves the displayed draft before recording the exact end time. Check-out requires at
+least one full minute after check-in. Empty Workouts and exercises with missing set measures may be saved and completed.
 
-Select a blue date to open that Workout's existing edit form, where its details and sets may be changed or the Workout
-may be deleted. Select a green date to open an overlay listing that date's sessions from earliest start time to latest;
-select a session in the overlay to edit or delete it. Dates with no recorded Workout are not actionable. An overnight
-Workout remains on the selected end date.
+Open `Workouts` in the Member sidebar to review completed sessions. Empty Workouts show `No exercises recorded`. The current open Workout is not shown there. The
+month calendar uses blue for a date with one Workout and green for a date with multiple Workouts. Use the month arrows
+to review other months.
+
+Select a blue date to open that Workout's existing edit form. Members can update notes, exercises, and sets, but the
+recorded date and times are displayed read-only and Workouts cannot be deleted. Select a green date to open an overlay
+listing that date's sessions from earliest start time to latest. Dates with no recorded Workout are not actionable. An
+overnight Workout remains on the selected end date.
 
 ## Tracking Body Mass
 

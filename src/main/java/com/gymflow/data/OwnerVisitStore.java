@@ -32,13 +32,13 @@ public final class OwnerVisitStore {
         String pattern = "%" + escape(query.toLowerCase(Locale.ROOT)) + "%";
         String sql = """
                 SELECT v.*, p.member_number, p.full_name, a.email
-                FROM visits v
+                FROM workouts v
                 JOIN member_profiles p ON p.account_id = v.member_account_id
                 JOIN accounts a ON a.id = p.account_id
                 WHERE (lower(p.full_name) LIKE ? ESCAPE '\\'
                     OR lower(a.email) LIKE ? ESCAPE '\\')
-                  AND (? = 0 OR v.exited_at IS NULL)
-                ORDER BY v.entered_at DESC, v.id DESC
+                  AND (? = 0 OR v.ended_at IS NULL)
+                ORDER BY v.started_at DESC, v.id DESC
                 """;
         try (Connection connection = database.connect();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -68,7 +68,7 @@ public final class OwnerVisitStore {
     public long countCurrentlyVisiting() {
         try (Connection connection = database.connect();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT COUNT(*) FROM visits WHERE exited_at IS NULL");
+                        "SELECT COUNT(*) FROM workouts WHERE ended_at IS NULL");
                 ResultSet results = statement.executeQuery()) {
             return results.getLong(1);
         } catch (SQLException exception) {
@@ -90,7 +90,7 @@ public final class OwnerVisitStore {
                 }
                 Instant correctedAt = Instant.now();
                 try (PreparedStatement statement = connection.prepareStatement("""
-                        UPDATE visits SET entered_at = ?, exited_at = ?, corrected_at = ?,
+                        UPDATE workouts SET started_at = ?, ended_at = ?, corrected_at = ?,
                             corrected_by_account_id = ?, correction_reason = ? WHERE id = ?
                         """)) {
                     statement.setString(1, TIMESTAMP.format(enteredAt));
@@ -133,7 +133,7 @@ public final class OwnerVisitStore {
 
     private static Visit find(Connection connection, long visitId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM visits WHERE id = ?")) {
+                "SELECT * FROM workouts WHERE id = ?")) {
             statement.setLong(1, visitId);
             try (ResultSet results = statement.executeQuery()) {
                 if (!results.next()) {
@@ -145,12 +145,12 @@ public final class OwnerVisitStore {
     }
 
     private static Visit readVisit(ResultSet results) throws SQLException {
-        String exitedAt = results.getString("exited_at");
+        String exitedAt = results.getString("ended_at");
         String correctedAt = results.getString("corrected_at");
         long correctedBy = results.getLong("corrected_by_account_id");
         Long correctedByUserId = results.wasNull() ? null : correctedBy;
         return new Visit(results.getLong("id"), results.getLong("member_account_id"),
-                Instant.parse(results.getString("entered_at")),
+                Instant.parse(results.getString("started_at")),
                 exitedAt == null ? null : Instant.parse(exitedAt),
                 Instant.parse(results.getString("created_at")),
                 correctedAt == null ? null : Instant.parse(correctedAt),

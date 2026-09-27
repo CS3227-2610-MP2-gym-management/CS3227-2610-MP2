@@ -14,6 +14,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -24,8 +25,9 @@ final class LoginView {
 
     static Parent create(AuthenticationService authentication, boolean setupMode,
             Consumer<Account> authenticated) {
-        Label mark = new Label("GF");
-        mark.getStyleClass().add("brand-mark");
+        ImageView mark = new ImageView(AppIcon.IMAGE);
+        mark.setFitWidth(42);
+        mark.setFitHeight(42);
         Label brand = new Label("GYMFLOW");
         brand.getStyleClass().add("login-brand");
         HBox identity = new HBox(12, mark, brand);

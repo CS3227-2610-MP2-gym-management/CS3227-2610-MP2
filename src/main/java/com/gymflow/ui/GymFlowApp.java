@@ -56,6 +56,7 @@ public final class GymFlowApp extends Application {
     @Override
     public void start(Stage stage) {
         stage.setTitle("GymFlow");
+        AppIcon.applyTo(stage);
         stage.setMinWidth(MINIMUM_WIDTH);
         stage.setMinHeight(MINIMUM_HEIGHT);
 

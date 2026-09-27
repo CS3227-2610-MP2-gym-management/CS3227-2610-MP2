@@ -22,8 +22,8 @@ public final class VisitHistoryStore {
     /** Lists one Member's Visits in deterministic newest-first order. */
     public List<Visit> history(long memberId) {
         String sql = """
-                SELECT * FROM visits WHERE member_account_id = ?
-                ORDER BY entered_at DESC, id DESC
+                SELECT * FROM workouts WHERE member_account_id = ?
+                ORDER BY ended_at IS NULL DESC, ended_at DESC, id DESC
                 """;
         try (Connection connection = database.connect();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -41,12 +41,12 @@ public final class VisitHistoryStore {
     }
 
     private static Visit readVisit(ResultSet results) throws SQLException {
-        String exitedAt = results.getString("exited_at");
+        String exitedAt = results.getString("ended_at");
         String correctedAt = results.getString("corrected_at");
         long correctedBy = results.getLong("corrected_by_account_id");
         Long correctedByUserId = results.wasNull() ? null : correctedBy;
         return new Visit(results.getLong("id"), results.getLong("member_account_id"),
-                Instant.parse(results.getString("entered_at")),
+                Instant.parse(results.getString("started_at")),
                 exitedAt == null ? null : Instant.parse(exitedAt),
                 Instant.parse(results.getString("created_at")),
                 correctedAt == null ? null : Instant.parse(correctedAt),

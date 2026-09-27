@@ -31,7 +31,7 @@ public final class WorkoutStore {
     /** Returns an active Member's Workouts in deterministic newest-first order. */
     public List<Workout> findByMember(long memberId) {
         String sql = "SELECT id FROM workouts WHERE member_account_id = ? "
-                + "ORDER BY ended_at DESC, id DESC";
+                + "ORDER BY ended_at IS NULL DESC, ended_at DESC, id DESC";
         try (Connection connection = database.connect();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             requireActiveMember(connection, memberId);
@@ -56,6 +56,45 @@ public final class WorkoutStore {
     /** Replaces a Member-owned Workout and its complete set collection. */
     public Workout update(long memberId, long id, SaveWorkoutRequest request, Instant now) {
         return save(memberId, id, request, now);
+    }
+
+    /** Replaces an open Workout draft and closes it in one transaction. */
+    public Workout checkOut(long memberId, long id, SaveWorkoutRequest request, Instant now) {
+        try (Connection connection = database.connect()) {
+            connection.setAutoCommit(false);
+            try {
+                requireActiveMember(connection, memberId);
+                Workout open = find(connection, id);
+                if (open.memberAccountId() != memberId || open.endedAt() != null) {
+                    throw new IllegalArgumentException("You are not currently checked in");
+                }
+                if (now.isBefore(open.startedAt().plusSeconds(60))) {
+                    throw new IllegalArgumentException(
+                            "Wait at least one minute after check-in before checking out");
+                }
+                replaceWorkout(connection, memberId, id, request, now);
+                insertSets(connection, id, request.sets(), now);
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE workouts SET ended_at = ?, updated_at = ? "
+                                + "WHERE id = ? AND member_account_id = ? AND ended_at IS NULL")) {
+                    statement.setString(1, TIMESTAMP.format(now));
+                    statement.setString(2, TIMESTAMP.format(now));
+                    statement.setLong(3, id);
+                    statement.setLong(4, memberId);
+                    if (statement.executeUpdate() != 1) {
+                        throw new IllegalArgumentException("You are not currently checked in");
+                    }
+                }
+                Workout closed = find(connection, id);
+                connection.commit();
+                return closed;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to check out", exception);
+        }
     }
 
     /** Permanently deletes a Member-owned Workout and its cascaded sets. */
@@ -121,14 +160,12 @@ public final class WorkoutStore {
     private static long replaceWorkout(Connection connection, long memberId, long id,
             SaveWorkoutRequest request, Instant now) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE workouts SET started_at = ?, ended_at = ?, notes = ?, updated_at = ? "
+                "UPDATE workouts SET notes = ?, updated_at = ? "
                         + "WHERE id = ? AND member_account_id = ?")) {
-            statement.setString(1, TIMESTAMP.format(request.startedAt()));
-            statement.setString(2, TIMESTAMP.format(request.endedAt()));
-            statement.setString(3, request.notes());
-            statement.setString(4, TIMESTAMP.format(now));
-            statement.setLong(5, id);
-            statement.setLong(6, memberId);
+            statement.setString(1, request.notes());
+            statement.setString(2, TIMESTAMP.format(now));
+            statement.setLong(3, id);
+            statement.setLong(4, memberId);
             if (statement.executeUpdate() != 1) {
                 throw new IllegalArgumentException("Workout not found");
             }
@@ -145,7 +182,7 @@ public final class WorkoutStore {
             Instant now) throws SQLException {
         String timestamp = TIMESTAMP.format(now);
         statement.setString(2, TIMESTAMP.format(request.startedAt()));
-        statement.setString(3, TIMESTAMP.format(request.endedAt()));
+        nullableTimestamp(statement, 3, request.endedAt());
         statement.setString(4, request.notes());
         statement.setString(5, timestamp);
         statement.setString(6, timestamp);
@@ -194,9 +231,12 @@ public final class WorkoutStore {
                 }
                 return new Workout(id, results.getLong("member_account_id"),
                         Instant.parse(results.getString("started_at")),
-                        Instant.parse(results.getString("ended_at")), results.getString("notes"),
+                        nullableInstant(results, "ended_at"), results.getString("notes"),
                         Instant.parse(results.getString("created_at")),
-                        Instant.parse(results.getString("updated_at")), loadSets(connection, id));
+                        Instant.parse(results.getString("updated_at")), loadSets(connection, id),
+                        nullableInstant(results, "corrected_at"),
+                        nullableLong(results, "corrected_by_account_id"),
+                        results.getString("correction_reason"));
             }
         }
     }
@@ -225,6 +265,25 @@ public final class WorkoutStore {
 
     private static Integer nullableInteger(ResultSet results, String column) throws SQLException {
         int value = results.getInt(column);
+        return results.wasNull() ? null : value;
+    }
+
+    private static void nullableTimestamp(PreparedStatement statement, int index, Instant value)
+            throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.VARCHAR);
+        } else {
+            statement.setString(index, TIMESTAMP.format(value));
+        }
+    }
+
+    private static Instant nullableInstant(ResultSet results, String column) throws SQLException {
+        String value = results.getString(column);
+        return value == null ? null : Instant.parse(value);
+    }
+
+    private static Long nullableLong(ResultSet results, String column) throws SQLException {
+        long value = results.getLong(column);
         return results.wasNull() ? null : value;
     }
 

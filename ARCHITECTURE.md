@@ -30,7 +30,7 @@ JavaFX views
 ```
 
 The current product includes Member authentication, Member profile and Membership screens, Membership renewal
-guidance, Member check-in/check-out, and Member Workout recording. Self-registration and approval, Membership plans,
+guidance, and unified Member Workouts created by check-in and completed by check-out. Self-registration and approval, Membership plans,
 body-weight tracking, trends, broader statistics, and an administrative audit history remain backlog work.
 
 Cloud architecture is KIV. A future shared deployment will be online-only and must support concurrent clients, but no
@@ -105,7 +105,7 @@ connection enables foreign keys. New tables and indexes must be created centrall
 by tests, and included in reset behaviour.
 
 SQL constraints are required for invariants vulnerable to races or programming errors, including uniqueness,
-foreign keys, positive amounts, valid date ordering, and one open Visit per Member. Service validation is still
+foreign keys, positive amounts, valid date ordering, and one open Workout per Member. Service validation is still
 required to provide useful errors.
 
 ### Model layer
@@ -179,7 +179,7 @@ The notice is a read model calculated from the Member's loaded history and injec
 Member Home and My Membership must consume this shared result rather than duplicating the decision. A renewal notice is
 informational only and must not create a Membership, Payment, request, or online-payment capability.
 
-### Gym-entry eligibility and Visit
+### Gym-entry eligibility and Workout
 
 One shared service operation must decide entry eligibility. A Member may check in only when:
 
@@ -188,18 +188,18 @@ account is active
 AND an active Membership exists
 AND membership.startDate <= gymToday
 AND gymToday <= membership.expiryDate
-AND no open Visit exists for the Member
+AND no open Workout exists for the Member
 ```
 
-Visit rules:
+Workout rules:
 
-- A Visit has a required entry `Instant` and optional exit `Instant`.
-- A null exit means the Visit is open; do not store a separate check-in status.
-- A Member may have at most one open Visit.
-- Check-out requires an open Visit and remains allowed after Membership expiry or deactivation.
-- Exit cannot precede entry.
+- A Workout has a required start `Instant` and optional end `Instant`.
+- A null end means the Workout is open; do not store a separate check-in status.
+- A Member may have at most one open Workout.
+- Check-out requires an open Workout and remains allowed after Membership expiry or deactivation.
+- End must be strictly after start.
 - Owner correction requires a reason and records the latest correction time and Owner.
-- Deactivating access never invents an exit or closes an existing Visit.
+- Deactivating access never invents an exit or closes an existing Workout.
 
 ### Expense
 
@@ -217,10 +217,9 @@ Visit rules:
 
 ### Workout, WorkoutSet, and BodyMetric
 
-These P1 entities are planned:
+The current unified session and body metric entities are:
 
-- `Workout` belongs to a Member and records a start instant, end instant, and optional notes. The end must be later than
-  the start and cannot be in the future.
+- `Workout` belongs to a Member and records a start instant, optional end instant, notes, and zero or more ordered sets. A completed end must be later than the start.
 - `WorkoutSet` belongs to a Workout and records exercise name, ordered set number, non-negative repetitions, and
   non-negative weight.
 - `BodyMetric` records a positive body weight for a Member on a date.
@@ -333,7 +332,7 @@ them. Online-only means failure is surfaced clearly; it does not imply offline w
 
 - SQL or store construction in JavaFX views.
 - Business rules implemented only by disabling a button.
-- Persisted fields for values that can be reliably derived, such as Membership status or Visit open/closed status.
+- Persisted fields for values that can be reliably derived, such as Membership status or Workout open/closed status.
 - Floating-point types for money.
 - Plaintext passwords, password logging, or secrets in general models.
 - Editing old Membership or Payment records to represent a new purchase.
@@ -350,10 +349,10 @@ them. Online-only means failure is surfaced clearly; it does not imply offline w
 | Owner authentication | Implemented | Preserve one-Owner rule |
 | Member accounts/profiles | Owner creation/editing and Member login/profile views implemented | Add agreed self-registration/approval |
 | Memberships/Payments | Explicit periods and amounts implemented | Add MembershipPlan and purchase snapshots |
-| Member attendance | Owner oversight and Member check-in/check-out/state implemented | Add Member history screen |
+| Member attendance | Owner oversight and Member check-in/check-out/state implemented | Preserve unified Workout history |
 | Announcements | Owner management and published query implemented | Display published notices to Members |
 | Expenses/finances | Owner creation, filtering, and totals implemented | Extend only through approved stories |
-| Workouts/body weight | Not implemented | Add focused models, services, stores, views, and derived trends |
+| Workouts/body weight | Workouts and body mass recording implemented | Add derived trends |
 | Statistics | Current counts and financial totals implemented | Add attendance and peak-use projections |
 | Audit history | Not implemented | Add only after audit scope and retention are agreed |
 | Shared cloud deployment | KIV | Preserve boundaries; do not choose infrastructure yet |

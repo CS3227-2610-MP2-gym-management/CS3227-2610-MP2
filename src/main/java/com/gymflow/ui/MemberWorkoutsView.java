@@ -55,6 +55,48 @@ final class MemberWorkoutsView {
     private MemberWorkoutsView() {
     }
 
+    /** Creates the reusable Member exercise and notes editor for a Workout draft. */
+    static WorkoutDraftEditor draftEditor(Workout workout) {
+        TextArea notes = new TextArea(workout == null || workout.notes() == null ? "" : workout.notes());
+        notes.setPromptText("Optional notes");
+        notes.setAccessibleText("Workout notes");
+        VBox groups = new VBox(12);
+        if (workout != null && !workout.sets().isEmpty()) {
+            groupedSets(workout.sets()).forEach((exercise, sets) ->
+                    groups.getChildren().add(exerciseGroup(groups, exercise, sets)));
+        }
+        Button addExercise = new Button("Add exercise");
+        addExercise.getStyleClass().add("secondary-button");
+        addExercise.setAccessibleText("Add exercise");
+        addExercise.setOnAction(event -> groups.getChildren().add(exerciseGroup(groups, null, List.of())));
+        Label heading = new Label("Exercises and sets");
+        heading.getStyleClass().add("section-title");
+        VBox view = new VBox(12, heading, groups, addExercise, new Label("Notes"), notes);
+        return new WorkoutDraftEditor(view, notes, groups);
+    }
+
+    /** Builds a timestamp-preserving save request from a reusable draft editor. */
+    static SaveWorkoutRequest draftRequest(Workout workout, WorkoutDraftEditor editor) {
+        List<WorkoutSetInput> sets = sets(editor.exerciseGroups());
+        return new SaveWorkoutRequest(workout.startedAt(), workout.endedAt(), editor.notes().getText(), sets);
+    }
+
+    /** Returns whether a named exercise has a set row without a measure. */
+    static boolean hasIncompleteSets(WorkoutDraftEditor editor) {
+        for (Node group : editor.exerciseGroups().getChildren()) {
+            ExerciseFields exerciseFields = (ExerciseFields) group.getUserData();
+            if (!exerciseFields.exercise().getEditor().getText().trim().isEmpty()) {
+                for (Node row : exerciseFields.rows().getChildren()) {
+                    SetFields fields = (SetFields) row.getUserData();
+                    if (fields.amount().getText().trim().isEmpty()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     static Parent create(WorkoutService service, Account session, Consumer<Screen> navigate,
             Runnable logout) {
         Label status = new Label("Loading Workouts…");
@@ -81,11 +123,14 @@ final class MemberWorkoutsView {
     }
 
     private static VBox card(Workout workout) {
-        String range = DATE_TIME.format(local(workout.startedAt())) + " – "
-                + DATE_TIME.format(local(workout.endedAt()));
-        String details = workout.sets().stream().map(WorkoutSet::exerciseName).distinct()
-                .collect(Collectors.joining(" · "));
-        if (workout.notes() != null) {
+        String range = workout.endedAt() == null
+                ? "In progress since " + DATE_TIME.format(local(workout.startedAt()))
+                : DATE_TIME.format(local(workout.startedAt())) + " – "
+                        + DATE_TIME.format(local(workout.endedAt()));
+        String details = workout.sets().isEmpty() ? "No exercises recorded"
+                : workout.sets().stream().map(WorkoutSet::exerciseName).distinct()
+                        .collect(Collectors.joining(" · "));
+        if (workout.notes() != null && !workout.notes().isBlank()) {
             details += " — " + workout.notes();
         }
         VBox card = new VBox(6, UiComponents.cardLabel(range, "record-title"),
@@ -97,7 +142,7 @@ final class MemberWorkoutsView {
     static Map<LocalDate, List<Workout>> workoutsByDate(List<Workout> workouts) {
         Map<LocalDate, List<Workout>> byDate = new TreeMap<>();
         for (Workout workout : workouts) {
-            LocalDate date = local(workout.endedAt()).toLocalDate();
+            LocalDate date = local(workout.endedAt() == null ? workout.startedAt() : workout.endedAt()).toLocalDate();
             byDate.computeIfAbsent(date, ignored -> new ArrayList<>()).add(workout);
         }
         byDate.values().forEach(day -> day.sort(Comparator.comparing(Workout::startedAt)));
@@ -250,28 +295,23 @@ final class MemberWorkoutsView {
         Node standardCancel = dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
         standardCancel.setManaged(false);
         standardCancel.setVisible(false);
-        LocalDateTime end = existing == null ? roundedNow() : local(existing.endedAt());
+        LocalDateTime end = existing == null ? roundedNow()
+                : local(existing.endedAt() == null ? existing.startedAt() : existing.endedAt());
         LocalDateTime start = existing == null ? end.minusHours(1) : local(existing.startedAt());
         DatePicker date = new DatePicker(end.toLocalDate());
         UiComponents.calendarOnly(date);
         ComboBox<LocalTime> startTime = timePicker(start.toLocalTime(), "Workout start time");
         ComboBox<LocalTime> endTime = timePicker(end.toLocalTime(), "Workout end time");
+        if (existing != null) {
+            date.setDisable(true);
+            startTime.setDisable(true);
+            endTime.setDisable(true);
+        }
         Label overnight = new Label("An earlier end time means the workout ends the following day.");
         overnight.getStyleClass().add("muted-text");
-        TextArea notes = new TextArea(existing == null || existing.notes() == null ? "" : existing.notes());
-        notes.setPromptText("Optional notes");
-        VBox exerciseGroups = new VBox(12);
-        List<WorkoutSet> savedSets = existing == null ? List.of() : existing.sets();
-        if (savedSets.isEmpty()) {
-            exerciseGroups.getChildren().add(exerciseGroup(exerciseGroups, null, List.of()));
-        } else {
-            groupedSets(savedSets).forEach((exercise, sets) ->
-                    exerciseGroups.getChildren().add(exerciseGroup(exerciseGroups, exercise, sets)));
-        }
-        Button addExercise = new Button("Add exercise");
-        addExercise.getStyleClass().add("secondary-button");
-        addExercise.setOnAction(event -> exerciseGroups.getChildren().add(
-                exerciseGroup(exerciseGroups, null, List.of())));
+        WorkoutDraftEditor editor = draftEditor(existing);
+        TextArea notes = editor.notes();
+        VBox exerciseGroups = editor.exerciseGroups();
         Label status = UiComponents.statusLabel();
         Button save = new Button("Save Workout");
         save.getStyleClass().add("primary-button");
@@ -285,11 +325,8 @@ final class MemberWorkoutsView {
         if (existing != null) {
             actions.getChildren().add(0, delete);
         }
-        Label exercisesLabel = new Label("Exercises and sets");
-        exercisesLabel.getStyleClass().add("section-title");
         VBox body = new VBox(12, labeledField("Date", date), labeledField("Time",
-                timeFields(startTime, endTime)), overnight, exercisesLabel, exerciseGroups,
-                addExercise, new Label("Notes"), notes, status, actions);
+                timeFields(startTime, endTime)), overnight, editor.view(), status, actions);
         body.getStyleClass().add("dialog-content");
         body.setSpacing(16);
         dialog.getDialogPane().setContent(body);
@@ -324,7 +361,10 @@ final class MemberWorkoutsView {
         for (int minutes = 0; minutes < 24 * 60; minutes += 15) {
             picker.getItems().add(LocalTime.of(minutes / 60, minutes % 60));
         }
-        picker.setValue(roundDown(selected));
+        if (!picker.getItems().contains(selected)) {
+            picker.getItems().add(selected);
+        }
+        picker.setValue(selected);
         picker.setAccessibleText(accessibleText + ", 15 minute intervals");
         picker.setConverter(new javafx.util.StringConverter<>() {
             @Override
@@ -366,16 +406,20 @@ final class MemberWorkoutsView {
         addSet.getStyleClass().add("secondary-button");
         Label count = new Label();
         count.getStyleClass().add("workout-set-count");
+        count.setMinWidth(64);
+        count.setPrefWidth(64);
         updateSetCount(count, rows);
         rows.getChildren().addListener((javafx.collections.ListChangeListener<Node>) change ->
                 updateSetCount(count, rows));
         addSet.setOnAction(event -> rows.getChildren().add(setRow(rows, previous(rows))));
         Button removeExercise = trashButton("Remove exercise");
-        HBox heading = new HBox(8, exercise, count, removeExercise);
+        javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox heading = new HBox(8, exercise, count, spacer, removeExercise, addSet);
         heading.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(exercise, Priority.ALWAYS);
-        exercise.setMaxWidth(Double.MAX_VALUE);
-        VBox group = new VBox(6, heading, setHeader(), rows, addSet);
+        exercise.setPrefWidth(420);
+        exercise.setMaxWidth(420);
+        VBox group = new VBox(6, heading, setHeader(), rows);
         group.getStyleClass().add("workout-exercise");
         removeExercise.setOnAction(event -> {
             groups.getChildren().remove(group);
@@ -425,8 +469,9 @@ final class MemberWorkoutsView {
 
     private static Node setRow(VBox rows, WorkoutSet set) {
         return setRow(rows, set == null ? new SetValues(true, "", "") : new SetValues(
-                set.durationSeconds() == null, String.valueOf(set.durationSeconds() == null
-                        ? set.repetitions() : set.durationSeconds()), set.resistanceKilograms() == null ? ""
+                set.durationSeconds() == null, set.repetitions() == null && set.durationSeconds() == null ? ""
+                        : String.valueOf(set.durationSeconds() == null ? set.repetitions()
+                                : set.durationSeconds()), set.resistanceKilograms() == null ? ""
                                 : set.resistanceKilograms().stripTrailingZeros().toPlainString()));
     }
 
@@ -481,7 +526,9 @@ final class MemberWorkoutsView {
             Account session, Workout existing, DatePicker date, ComboBox<LocalTime> start,
             ComboBox<LocalTime> end, TextArea notes, VBox exerciseGroups, Runnable refresh) {
         try {
-            SaveWorkoutRequest request = request(date, start, end, notes, exerciseGroups);
+            SaveWorkoutRequest request = existing == null ? request(date, start, end, notes, exerciseGroups)
+                    : new SaveWorkoutRequest(existing.startedAt(), existing.endedAt(), notes.getText(),
+                            sets(exerciseGroups));
             if (existing == null) {
                 service.create(session, request);
             } else {
@@ -503,20 +550,29 @@ final class MemberWorkoutsView {
         LocalDate startDate = start.getValue().isAfter(end.getValue()) ? endDate.minusDays(1) : endDate;
         Instant startedAt = LocalDateTime.of(startDate, start.getValue()).atZone(ZoneId.systemDefault()).toInstant();
         Instant endedAt = LocalDateTime.of(endDate, end.getValue()).atZone(ZoneId.systemDefault()).toInstant();
+        List<WorkoutSetInput> sets = sets(exerciseGroups);
+        return new SaveWorkoutRequest(startedAt, endedAt, notes.getText(), sets);
+    }
+
+    private static List<WorkoutSetInput> sets(VBox exerciseGroups) {
         List<WorkoutSetInput> sets = new ArrayList<>();
         for (Node group : exerciseGroups.getChildren()) {
             ExerciseFields exerciseFields = (ExerciseFields) group.getUserData();
-            String exercise = exerciseFields.exercise().getEditor().getText();
+            String exercise = exerciseFields.exercise().getEditor().getText().trim();
+            if (exercise.isEmpty()) {
+                continue;
+            }
             for (Node row : exerciseFields.rows().getChildren()) {
                 SetFields fields = (SetFields) row.getUserData();
-                Integer amount = integer(fields.amount().getText());
+                Integer amount = fields.amount().getText().trim().isEmpty() ? null
+                        : integer(fields.amount().getText());
                 BigDecimal resistance = decimal(fields.resistance().getText());
                 boolean repetitions = fields.measure().getSelectedToggle() == fields.reps();
                 sets.add(new WorkoutSetInput(exercise, repetitions ? amount : null,
                         repetitions ? null : amount, resistance));
             }
         }
-        return new SaveWorkoutRequest(startedAt, endedAt, notes.getText(), sets);
+        return sets;
     }
 
     private static Integer integer(String text) {
@@ -540,10 +596,6 @@ final class MemberWorkoutsView {
         return now.minusMinutes(now.getMinute() % 15);
     }
 
-    private static LocalTime roundDown(LocalTime value) {
-        return value.minusMinutes(value.getMinute() % 15).withSecond(0).withNano(0);
-    }
-
     private static LocalDateTime local(Instant instant) {
         return instant.atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
@@ -565,6 +617,9 @@ final class MemberWorkoutsView {
     }
 
     private record ExerciseFields(ComboBox<String> exercise, VBox rows) {
+    }
+
+    record WorkoutDraftEditor(VBox view, TextArea notes, VBox exerciseGroups) {
     }
 
     private record SetValues(boolean repetitions, String amount, String resistance) {
