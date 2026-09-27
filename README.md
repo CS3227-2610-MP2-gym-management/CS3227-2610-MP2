@@ -28,8 +28,9 @@ Every installation opens on the same sign-in screen. Owners and Members use cred
 gym. GymFlow loads the authenticated account's role and opens the corresponding dashboard. Use `Return to Login` in
 the sidebar to end the current session.
 
-Authentication is provided by Supabase Auth. During the staged cloud migration, feature records continue to use
-`data/gymflow.db` until their stores are replaced by the shared PostgreSQL API.
+Authentication and shared feature data are provided by Supabase Auth, PostgreSQL, the Data API, and protected Edge
+Functions. SQLite remains only for legacy-data migration and isolated regression tests; the running application does
+not read or write `data/gymflow.db`.
 
 Basic diagnostic monitoring writes rotating files under `data/logs/gymflow-0.log` through
 `data/logs/gymflow-2.log`. These
@@ -49,7 +50,8 @@ installation must not erase or desynchronize shared gym data.
 ./gradlew run
 ```
 
-On Windows, start Docker Desktop, run `npm install` and `npm run supabase:start`, then use `gradlew.bat run`.
+On Windows, start Docker Desktop, run `npm install` and `npm run supabase:start`, then keep
+`npm run supabase:functions` running in a second terminal while using `gradlew.bat run`.
 
 ## Test
 

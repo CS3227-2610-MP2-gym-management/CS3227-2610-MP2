@@ -7,7 +7,7 @@ import com.gymflow.auth.SupabaseAuthenticationService;
 import com.gymflow.announcement.OwnerAnnouncementService;
 import com.gymflow.config.RuntimeEnvironment;
 import com.gymflow.config.SupabaseConfiguration;
-import com.gymflow.data.GymFlowDatabase;
+import com.gymflow.data.SupabaseDataClient;
 import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.member.MemberAccountService;
@@ -37,19 +37,20 @@ public final class GymFlowApp extends Application {
     /** Initializes local storage before the JavaFX application thread starts. */
     @Override
     public void init() {
-        GymFlowDatabase database = new GymFlowDatabase(Path.of("data", "gymflow.db"));
-        database.initialize();
         SupabaseConfiguration configuration = SupabaseConfiguration.load();
-        authentication = new SupabaseAuthenticationService(configuration);
+        SupabaseAuthenticationService supabaseAuthentication =
+                new SupabaseAuthenticationService(configuration);
+        authentication = supabaseAuthentication;
+        SupabaseDataClient data = new SupabaseDataClient(configuration, supabaseAuthentication);
         localEnvironment = configuration.environment() == RuntimeEnvironment.LOCAL;
-        announcements = new OwnerAnnouncementService(database);
-        expenses = new OwnerExpenseService(database);
-        members = new OwnerMemberService(database);
-        memberAccounts = new MemberAccountService(database);
-        visits = new OwnerVisitService(database);
-        memberVisits = new MemberVisitService(database);
-        workouts = new WorkoutService(database);
-        bodyMetrics = new BodyMetricService(database);
+        announcements = new OwnerAnnouncementService(data);
+        expenses = new OwnerExpenseService(data);
+        members = new OwnerMemberService(data);
+        memberAccounts = new MemberAccountService(data, supabaseAuthentication);
+        visits = new OwnerVisitService(data);
+        memberVisits = new MemberVisitService(data);
+        workouts = new WorkoutService(data);
+        bodyMetrics = new BodyMetricService(data);
     }
 
     /**

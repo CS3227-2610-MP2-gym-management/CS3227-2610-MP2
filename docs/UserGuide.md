@@ -233,6 +233,7 @@ Run the application:
 ```shell
 npm install
 npm run supabase:start
+npm run supabase:functions
 ./gradlew run
 ```
 

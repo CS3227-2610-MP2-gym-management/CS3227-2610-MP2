@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.data.WorkoutStore;
+import com.gymflow.data.SupabaseDataClient;
+import com.gymflow.data.SupabaseWorkoutStore;
 import com.gymflow.model.Account;
 import com.gymflow.model.Role;
 import com.gymflow.model.SaveWorkoutRequest;
@@ -15,6 +17,7 @@ import com.gymflow.model.WorkoutSetInput;
 /** Validates and authorizes Member Workout commands. */
 public final class WorkoutService {
     private final WorkoutStore store;
+    private final SupabaseWorkoutStore cloudStore;
     private final Clock clock;
 
     /** Creates a service using the system clock. */
@@ -25,38 +28,58 @@ public final class WorkoutService {
     /** Creates a service using the supplied clock. */
     public WorkoutService(GymFlowDatabase database, Clock clock) {
         store = new WorkoutStore(Objects.requireNonNull(database));
+        cloudStore = null;
         this.clock = Objects.requireNonNull(clock);
+    }
+
+    /** Creates a Supabase-backed service using the system clock. */
+    public WorkoutService(SupabaseDataClient client) {
+        store = null;
+        cloudStore = new SupabaseWorkoutStore(Objects.requireNonNull(client));
+        clock = Clock.systemDefaultZone();
     }
 
     /** Lists the Member's Workouts. */
     public List<Workout> history(Account actor) {
         requireMember(actor);
-        return store.findByMember(actor.id());
+        return cloudStore == null ? store.findByMember(actor.id()) : cloudStore.findByMember(actor.id());
     }
 
     /** Saves a new completed Workout. */
     public Workout create(Account actor, SaveWorkoutRequest request) {
         requireMember(actor);
-        return store.create(actor.id(), validate(request), clock.instant());
+        SaveWorkoutRequest validated = validate(request);
+        return cloudStore == null
+                ? store.create(actor.id(), validated, clock.instant())
+                : cloudStore.create(actor.id(), validated, clock.instant());
     }
 
     /** Replaces a saved Workout and all of its sets. */
     public Workout update(Account actor, long id, SaveWorkoutRequest request) {
         requireMember(actor);
-        return store.update(actor.id(), id, validate(request), clock.instant());
+        SaveWorkoutRequest validated = validate(request);
+        return cloudStore == null
+                ? store.update(actor.id(), id, validated, clock.instant())
+                : cloudStore.update(actor.id(), id, validated, clock.instant());
     }
 
     /** Atomically saves an open Workout draft and records its check-out time. */
     public Workout checkOut(Account actor, long id, SaveWorkoutRequest request) {
         requireMember(actor);
         SaveWorkoutRequest validated = validate(request);
-        return store.checkOut(actor.id(), id, validated, clock.instant());
+        return cloudStore == null
+                ? store.checkOut(actor.id(), id, validated, clock.instant())
+                : cloudStore.checkOut(actor.id(), id, validated, clock.instant());
     }
 
     /** Deletes a saved Workout and its sets. */
     public void delete(Account actor, long id) {
         requireMember(actor);
-        store.delete(actor.id(), id);
+        if (cloudStore == null) {
+            store.delete(actor.id(), id);
+        } else {
+            cloudStore.delete(actor.id(), id);
+        }
     }
 
     private SaveWorkoutRequest validate(SaveWorkoutRequest request) {

@@ -13,6 +13,7 @@ Use the following commands from the repository root:
 
 ```text
 npm run supabase:start
+npm run supabase:functions
 npm run supabase:status
 npm run supabase:reset
 npm run supabase:test
@@ -29,6 +30,10 @@ The local services use these default addresses:
 | Studio | `http://127.0.0.1:54323` |
 | Mailpit | `http://127.0.0.1:54324` |
 
+Keep `npm run supabase:functions` running in a second terminal while exercising Owner Member creation, password
+reset, or profile/email updates. The function runtime uses local service credentials injected by the Supabase CLI;
+those credentials are never placed in application configuration.
+
 `npm run supabase:reset` is a local destructive operation. Never add `--linked` to the routine development workflow.
 The committed seed contains only fake `.test` users:
 
@@ -43,8 +48,8 @@ local Auth service rejects public signup, matching the intended production accou
 
 ## Product and technology
 
-GymFlow is an online-first Java SE 25 desktop application for a small gym. The cloud migration currently provides
-shared Owner and Member authentication while feature stores are being moved incrementally from SQLite to PostgreSQL.
+GymFlow is an online-first Java SE 25 desktop application for a small gym. The application uses shared Owner and
+Member authentication and shared feature records in PostgreSQL.
 The product includes Member administration, Membership and Payment records, Expenses, Visit oversight and correction,
 Announcements, persistent light/dark themes, Membership guidance, and Member check-in/check-out workflows.
 
@@ -52,8 +57,9 @@ Product rules and deferred architecture questions are maintained in the
 [Agreed Project Decisions](ProjectDecisions.md). Implementations should follow that document together with the
 [User Stories](UserStories.md) and the repository-level [Architecture](../ARCHITECTURE.md) contract.
 
-The application uses JavaFX 25, Supabase Auth, PostgreSQL, the Supabase Data API, SQLite through Xerial JDBC for
-features not yet migrated, Gradle, JUnit 6, and Checkstyle. Sign-in requires the configured backend.
+The application uses JavaFX 25, Supabase Auth, PostgreSQL, the Supabase Data API, protected Edge Functions, Gradle,
+JUnit 6, and Checkstyle. SQLite through Xerial JDBC remains available only to legacy regression tests and migration
+work. Sign-in and feature access require the configured backend.
 
 ## Architecture
 
@@ -70,7 +76,7 @@ Supabase Auth and Account API         shared identity, role, active status, sess
     |
     +-> PostgreSQL migrations         shared schema, constraints, RLS, server functions
     |
-    +-> transitional SQLite stores    feature data awaiting phased migration
+    +-> Edge Functions                privileged Auth account administration
 
 Shared model records and enums are used across the service, persistence, and UI layers.
 ```
@@ -90,13 +96,13 @@ omitted because each responsibility currently has one implementation.
 | `com.gymflow.expense` | Owner-side Expense validation and queries |
 | `com.gymflow.visit` | Owner-side Visit searches, counts, history, and corrections |
 | `com.gymflow.announcement` | Announcement publication, listing, and withdrawal |
-| `com.gymflow.data` | SQLite schema management, stores, transactions, and row mapping |
+| `com.gymflow.data` | Authenticated Data API clients, Supabase row mapping, and legacy SQLite stores |
 | `com.gymflow.model` | Shared immutable records and fixed-value enums |
 | `com.gymflow.monitoring` | Local startup and sanitized unexpected-error diagnostics |
 
 ### Application shell and navigation
 
-`GymFlowApp` initializes the database and services before constructing `AppView`. `AppView` owns one JavaFX `Scene`
+`GymFlowApp` initializes the Supabase session/data clients and services before constructing `AppView`. `AppView` owns one JavaFX `Scene`
 and replaces the centre of a persistent shell when navigating, so screen changes do not create extra windows. Every
 Owner route checks that the in-memory session exists and has the `OWNER` role. Store-level active-Owner checks repeat
 authorization for persistent write operations rather than trusting the UI alone.
@@ -121,8 +127,8 @@ Local development defaults to the loopback Supabase endpoint and displays a `LOC
 requires explicit HTTPS URL and publishable-key environment variables and refuses loopback endpoints. The client
 never accepts a database password or secret/service-role key.
 
-The legacy SQLite password implementation remains only for unmigrated service tests and legacy-data work. It is not
-used by the application Login screen. The former local full reset is hidden during the cloud migration because it
+The legacy SQLite password implementation remains only for regression tests and legacy-data work. It is not used by
+the running application. The former local full reset is hidden during the cloud migration because it
 cannot safely reset shared data.
 
 ### Members, Memberships, and Payments
@@ -163,7 +169,7 @@ changes appear after the Member reopens a screen.
 
 ### Visits
 
-A Workout is the sole persisted gym session and stores a start time and optional end time. A partial unique SQLite index prevents more than one open
+A Workout stores a start time and optional end time. A partial unique PostgreSQL index prevents more than one open
 Workout per Member, while a table constraint prevents an exit from preceding entry. A null exit derives the currently
 checked-in state; no separate Workout status is stored.
 
@@ -230,10 +236,10 @@ values. Planned entities such as `MembershipPlan` and `AuditLog` are not part of
 must not be treated as implemented features. The complete prioritized backlog and implementation status are recorded in
 the [User Stories](UserStories.md).
 
-## Persistence and schema evolution
+## Legacy SQLite persistence and cloud schema evolution
 
-`GymFlowDatabase` creates parent directories, opens SQLite connections with foreign keys enabled, initializes the
-schema, applies supported schema changes, and performs full reset. The current schema version is 9.
+`GymFlowDatabase` creates temporary SQLite databases for the regression suite and remains the source reader for the
+future legacy-data import. It is not used by `GymFlowApp`. The current legacy schema version is 9.
 
 `member_account_id` is the database foreign key corresponding to the shared model's `memberId`.
 
@@ -249,16 +255,16 @@ schema, applies supported schema changes, and performs full reset. The current s
 | `workout_sets` | Ordered sets cascaded from their parent Workout |
 | `body_metrics` | Member-owned body-mass readings, unique by measurement date |
 
-The clean unified schema is versioned through SQLite `PRAGMA user_version`. Pre-unification Visit and Workout rows are
-not imported because their correspondence cannot be established safely; use the verified database reset workflow before
-adopting version 9. New tables automatically participate in reset because schema creation remains centralized.
+The shared PostgreSQL schema is authoritative and versioned through ordered files in `supabase/migrations`. Local
+rebuilds apply those files and `supabase/seed.sql` from scratch. SQLite `PRAGMA user_version` now describes only the
+legacy test/import format.
 
 ## Key design decisions
 
 | Decision | Reason and accepted trade-off |
 | --- | --- |
-| One local Owner per installation | Fits one gym and makes first-run setup simple; multi-Owner administration is unsupported |
-| Local SQLite database | Keeps the desktop app self-contained; installations do not share records automatically |
+| One shared Owner account | Fits one gym; the Owner can sign in from any configured installation |
+| Supabase/PostgreSQL backend | Lets installations share records while RLS protects Owner and Member boundaries |
 | Concrete services and stores | Avoids speculative interfaces; add an abstraction only when a second implementation exists |
 | Immutable purchase records | Membership and Payment history remains explainable; corrections require deactivation and replacement |
 | Derived statuses and totals | Prevents stored values drifting from dates and source records; values are recomputed on read |

@@ -29,9 +29,9 @@ JavaFX views
         -> PostgreSQL with grants, Row Level Security, and constraints
 ```
 
-During the staged migration, authentication and application account identity use the local Supabase development
-stack while feature stores still use SQLite. This transitional boundary is removed feature-by-feature; a hosted
-project is not provisioned until the local schema, authentication, and authorization tests pass.
+Authentication, account identity, and feature stores use the local Supabase development stack. SQLite remains only
+for regression tests and the later legacy-data import. A hosted project is not provisioned until the local schema,
+authentication, feature, and authorization tests pass.
 
 The current product includes Member authentication, Member profile and Membership screens, Membership renewal
 guidance, and unified Member Workouts created by check-in and completed by check-out. Self-registration and approval, Membership plans,
@@ -100,12 +100,13 @@ Place a planned feature in a focused package when implemented, such as workouts 
 
 Package: `com.gymflow.data`
 
-Stores own SQL, transactions, row mapping, and persistence-level authorization checks. They return model records or
-purpose-built read projections, not JDBC objects. Connections, statements, and results must use try-with-resources.
+Supabase stores own authenticated Data API requests and row mapping. PostgreSQL migrations own schema, transactions,
+constraints, grants, and Row Level Security. Protected PostgreSQL functions handle atomic record groups; Edge
+Functions hold service-role access for Auth administration. Stores return model records or purpose-built read
+projections, not transport objects.
 
-`GymFlowDatabase` owns connection creation, schema initialization, ordered migrations, and local reset. Every SQLite
-connection enables foreign keys. New tables and indexes must be created centrally, migrated transactionally, covered
-by tests, and included in reset behaviour.
+`GymFlowDatabase` and the SQLite stores remain only for isolated regression tests and read-only legacy migration.
+They are not constructed by `GymFlowApp`.
 
 SQL constraints are required for invariants vulnerable to races or programming errors, including uniqueness,
 foreign keys, positive amounts, valid date ordering, and one open Workout per Member. Service validation is still
@@ -326,7 +327,7 @@ Do not begin with a table or screen and infer the domain rules afterward.
 - Do not assume writes cannot race; retain database constraints even if the local UI makes a race unlikely.
 - Do not ship database or server secrets in a desktop JAR.
 
-Preserve service use-case semantics while replacing SQLite stores with the authenticated remote boundary.
+Preserve service use-case semantics at the authenticated remote boundary and in the legacy regression suite.
 Online-only means failure is surfaced clearly; it does not imply offline write queues or later synchronization.
 
 ## Prohibited shortcuts

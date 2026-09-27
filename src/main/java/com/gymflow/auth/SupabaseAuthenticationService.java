@@ -21,7 +21,7 @@ import com.gymflow.model.Account;
 import com.gymflow.model.Role;
 
 /** Authenticates desktop users through Supabase Auth and loads their application Account. */
-public final class SupabaseAuthenticationService implements Authenticator {
+public final class SupabaseAuthenticationService implements Authenticator, AccessTokenProvider {
     private static final String ACCOUNT_FIELDS = "id,email,role,is_active,created_at,updated_at";
 
     private final HttpClient client;
@@ -91,6 +91,34 @@ public final class SupabaseAuthenticationService implements Authenticator {
             refreshSession();
         }
         return Optional.of(session.accessToken());
+    }
+
+    @Override
+    public synchronized String requireAccessToken() {
+        return accessToken().orElseThrow(() ->
+                new IllegalStateException("Sign in before accessing GymFlow data"));
+    }
+
+    /** Verifies the current password and replaces it for the signed-in user. */
+    public synchronized void changePassword(String email, char[] currentPassword, char[] newPassword) {
+        try {
+            if (authenticate(email, currentPassword).isEmpty()) {
+                throw new IllegalArgumentException("Current password is incorrect");
+            }
+            String body = json.writeValueAsString(new PasswordUpdate(new String(newPassword)));
+            HttpResponse<String> response = send(HttpRequest.newBuilder(endpoint("/auth/v1/user"))
+                    .header("apikey", publishableKey)
+                    .header("Authorization", "Bearer " + requireAccessToken())
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(body))
+                    .build());
+            requireSuccess(response, "Unable to update the GymFlow password");
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Unable to prepare the password update", exception);
+        } finally {
+            clear(currentPassword);
+            clear(newPassword);
+        }
     }
 
     @Override
@@ -219,6 +247,9 @@ public final class SupabaseAuthenticationService implements Authenticator {
     }
 
     private record RefreshToken(@JsonProperty("refresh_token") String refreshToken) {
+    }
+
+    private record PasswordUpdate(String password) {
     }
 
     private record Session(String accessToken, String refreshToken,

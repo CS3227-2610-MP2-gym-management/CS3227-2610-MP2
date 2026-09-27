@@ -4,6 +4,7 @@
   "scripts": {
     "supabase:init": "supabase init",
     "supabase:start": "supabase start",
+    "supabase:functions": "supabase functions serve manage-member",
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset",
     "supabase:stop": "supabase stop",

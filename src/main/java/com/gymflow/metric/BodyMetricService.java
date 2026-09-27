@@ -9,6 +9,8 @@ import java.util.Objects;
 
 import com.gymflow.data.BodyMetricStore;
 import com.gymflow.data.GymFlowDatabase;
+import com.gymflow.data.SupabaseBodyMetricStore;
+import com.gymflow.data.SupabaseDataClient;
 import com.gymflow.model.Account;
 import com.gymflow.model.BodyMetric;
 import com.gymflow.model.Role;
@@ -16,6 +18,7 @@ import com.gymflow.model.Role;
 /** Validates and authorizes Member body-mass commands. */
 public final class BodyMetricService {
     private final BodyMetricStore store;
+    private final SupabaseBodyMetricStore cloudStore;
     private final Clock clock;
 
     /** Creates a service using the system clock. */
@@ -26,31 +29,49 @@ public final class BodyMetricService {
     /** Creates a service using the supplied clock. */
     public BodyMetricService(GymFlowDatabase database, Clock clock) {
         store = new BodyMetricStore(Objects.requireNonNull(database));
+        cloudStore = null;
         this.clock = Objects.requireNonNull(clock);
+    }
+
+    /** Creates a Supabase-backed service using the system clock. */
+    public BodyMetricService(SupabaseDataClient client) {
+        store = null;
+        cloudStore = new SupabaseBodyMetricStore(Objects.requireNonNull(client));
+        clock = Clock.systemDefaultZone();
     }
 
     /** Lists the authenticated Member's readings. */
     public List<BodyMetric> history(Account actor) {
         requireMember(actor);
-        return store.findByMember(actor.id());
+        return cloudStore == null ? store.findByMember(actor.id()) : cloudStore.findByMember(actor.id());
     }
 
     /** Records a new body-mass reading. */
     public BodyMetric create(Account actor, LocalDate date, BigDecimal kilograms) {
         requireMember(actor);
-        return store.create(actor.id(), validateDate(date), grams(kilograms), clock.instant());
+        LocalDate validated = validateDate(date);
+        return cloudStore == null
+                ? store.create(actor.id(), validated, grams(kilograms), clock.instant())
+                : cloudStore.create(actor.id(), validated, grams(kilograms), clock.instant());
     }
 
     /** Updates a body-mass reading. */
     public BodyMetric update(Account actor, long id, LocalDate date, BigDecimal kilograms) {
         requireMember(actor);
-        return store.update(actor.id(), id, validateDate(date), grams(kilograms), clock.instant());
+        LocalDate validated = validateDate(date);
+        return cloudStore == null
+                ? store.update(actor.id(), id, validated, grams(kilograms), clock.instant())
+                : cloudStore.update(actor.id(), id, validated, grams(kilograms), clock.instant());
     }
 
     /** Deletes a body-mass reading. */
     public void delete(Account actor, long id) {
         requireMember(actor);
-        store.delete(actor.id(), id);
+        if (cloudStore == null) {
+            store.delete(actor.id(), id);
+        } else {
+            cloudStore.delete(actor.id(), id);
+        }
     }
 
     private LocalDate validateDate(LocalDate date) {
