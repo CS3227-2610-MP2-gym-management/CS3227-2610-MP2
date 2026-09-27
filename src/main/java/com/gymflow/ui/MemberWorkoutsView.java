@@ -123,11 +123,14 @@ final class MemberWorkoutsView {
     }
 
     private static VBox card(Workout workout) {
-        String range = DATE_TIME.format(local(workout.startedAt())) + " – "
-                + DATE_TIME.format(local(workout.endedAt()));
-        String details = workout.sets().stream().map(WorkoutSet::exerciseName).distinct()
-                .collect(Collectors.joining(" · "));
-        if (workout.notes() != null) {
+        String range = workout.endedAt() == null
+                ? "In progress since " + DATE_TIME.format(local(workout.startedAt()))
+                : DATE_TIME.format(local(workout.startedAt())) + " – "
+                        + DATE_TIME.format(local(workout.endedAt()));
+        String details = workout.sets().isEmpty() ? "No exercises recorded"
+                : workout.sets().stream().map(WorkoutSet::exerciseName).distinct()
+                        .collect(Collectors.joining(" · "));
+        if (workout.notes() != null && !workout.notes().isBlank()) {
             details += " — " + workout.notes();
         }
         VBox card = new VBox(6, UiComponents.cardLabel(range, "record-title"),
@@ -198,8 +201,7 @@ final class MemberWorkoutsView {
             status.setText("Loading Workouts…");
             Thread.startVirtualThread(() -> {
                 try {
-                    Map<LocalDate, List<Workout>> loaded = workoutsByDate(service.history(session).stream()
-                            .filter(workout -> workout.endedAt() != null).toList());
+                    Map<LocalDate, List<Workout>> loaded = workoutsByDate(service.history(session));
                     Platform.runLater(() -> {
                         workouts = loaded;
                         status.setText(loaded.isEmpty() ? "No Workouts are recorded."
@@ -293,7 +295,8 @@ final class MemberWorkoutsView {
         Node standardCancel = dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
         standardCancel.setManaged(false);
         standardCancel.setVisible(false);
-        LocalDateTime end = existing == null ? roundedNow() : local(existing.endedAt());
+        LocalDateTime end = existing == null ? roundedNow()
+                : local(existing.endedAt() == null ? existing.startedAt() : existing.endedAt());
         LocalDateTime start = existing == null ? end.minusHours(1) : local(existing.startedAt());
         DatePicker date = new DatePicker(end.toLocalDate());
         UiComponents.calendarOnly(date);

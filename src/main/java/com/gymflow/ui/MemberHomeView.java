@@ -28,7 +28,7 @@ import javafx.scene.layout.VBox;
 /** Member dashboard with an active Workout workspace. */
 final class MemberHomeView {
     private static final DateTimeFormatter CLOCK_TIME = DateTimeFormatter.ofPattern("h:mm a");
-    static final List<String> NAVIGATION = List.of("Home", "My Membership", "Gym Visits", "Workouts",
+    static final List<String> NAVIGATION = List.of("Home", "My Membership", "Workouts",
             "Announcements", "Profile");
 
     private MemberHomeView() {
@@ -150,6 +150,7 @@ final class MemberHomeView {
 
     static BorderPane shell(VBox content, Screen screen, Consumer<Screen> navigate, Runnable logout) {
         var scroll = UiComponents.scrollable(content);
+        scroll.setId("member-" + screen.name().toLowerCase() + "-scroll");
         BorderPane root = new BorderPane(scroll);
         root.setId("member-" + screen.name().toLowerCase() + "-screen");
         root.getStyleClass().add("dashboard-screen");
@@ -203,7 +204,6 @@ final class MemberHomeView {
         return switch (screen) {
         case MEMBER_HOME -> "Member Home";
         case MEMBER_MEMBERSHIP -> "My Membership";
-        case MEMBER_VISITS -> "Gym Visits";
         case MEMBER_WORKOUTS -> "Workouts";
         case MEMBER_ANNOUNCEMENTS -> "Announcements";
         case MEMBER_PROFILE -> "Profile";
@@ -219,7 +219,6 @@ final class MemberHomeView {
         return switch (item) {
         case "Home" -> Screen.MEMBER_HOME;
         case "My Membership" -> Screen.MEMBER_MEMBERSHIP;
-        case "Gym Visits" -> Screen.MEMBER_VISITS;
         case "Workouts" -> Screen.MEMBER_WORKOUTS;
         case "Announcements" -> Screen.MEMBER_ANNOUNCEMENTS;
         case "Profile" -> Screen.MEMBER_PROFILE;

@@ -107,9 +107,6 @@ public final class AppView {
         case MEMBER_MEMBERSHIP -> !isMemberSession(session)
                 ? createLogin()
                 : MemberMembershipView.create(memberAccounts, session, this::show, this::logout);
-        case MEMBER_VISITS -> !isMemberSession(session)
-                ? createLogin()
-                : MemberVisitsView.create(memberVisits, session, this::show, this::logout);
         case MEMBER_WORKOUTS -> !isMemberSession(session)
                 ? createLogin()
                 : MemberWorkoutsView.create(workouts, session, this::show, this::logout);

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collections;
 
 import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipNotice;
@@ -13,6 +14,13 @@ import org.junit.jupiter.api.Test;
 
 class MemberHomeViewTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 9, 24);
+
+    @Test
+    void exposesOnlyOneMemberWorkoutHistoryRoute() {
+        assertEquals(1, Collections.frequency(MemberHomeView.NAVIGATION, "Workouts"));
+        assertFalse(MemberHomeView.NAVIGATION.contains("Gym Visits"));
+        assertEquals("Workouts", MemberHomeView.navigationItem(Screen.MEMBER_WORKOUTS));
+    }
 
     @Test
     void showsActiveMembershipInsteadOfRenewalGuidance() {
