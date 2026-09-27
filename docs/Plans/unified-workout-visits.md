@@ -186,22 +186,28 @@ Let a Member safely start/finish a Workout and manage its exercise draft from Ho
 
 Member Home is fully usable for the active Workout without opening another screen, and no manual time input is exposed.
 
-## Phase 4 - Collapse navigation and reshape Workout history
+## Phase 4 - Remove duplicate Member Visit navigation
 
 ### Goal
 
-Expose one Member `Workouts` tab containing the unified session history and remove the obsolete manual-recording and Gym Visits interfaces.
+Expose one Member `Workouts` tab as the sole Member history route. A Workout is the gym visit record, including
+an empty Workout. This phase removes only the duplicate `Gym Visits` tab and its Member-only code path; it does
+not remove or redesign existing `Workouts` UI, actions, editing, calendar/card presentation, or body-mass routing.
 
 ### Steps
 
 1. Remove `Gym Visits` from `MemberHomeView.NAVIGATION`, screen-title mappings, route mappings, and authorization tests.
 2. Remove `MEMBER_VISITS` from `Screen` and `AppView` after all direct links/callers are gone.
-3. Make `MemberWorkoutsView` display completed and, if useful for navigation consistency, the current open Workout from the unified history.
+3. Retain `MemberWorkoutsView` and all of its existing capabilities unchanged; it already remains the authoritative
+   Member history for both empty and exercise-filled Workouts.
 4. Preserve the current calendar/card style and deterministic ordering, but handle zero exercises with a clear “No exercises recorded” summary.
-5. Remove the “record Workout” button and all Member date/start/end fields.
-6. Retain editing of notes/exercises only. Remove Member deletion and all Member start/end editing controls and service entry points.
-7. Keep body-mass navigation reachable from `Workouts` if that remains the intended information architecture.
-8. Delete `MemberVisitsView` and its focused tests once unified history has equivalent coverage.
+5. Do not remove the existing “record Workout” button, Member date/start/end fields, deletion action, or
+   notes/exercise editing controls in this phase; they are existing Workout capabilities, not Gym Visits code.
+6. Do not remove Workout service entry points as part of this navigation cleanup. A later, separately scoped
+   domain/API change may revise those capabilities with dedicated migration and regression coverage.
+7. Keep body-mass navigation reachable from `Workouts` without changing its existing route or controls.
+8. Delete `MemberVisitsView` and its focused tests once unified history coverage is confirmed. Do not remove or
+   alter Owner `Visits` functionality or shared code still needed by check-in/check-out.
 
 ### Tests
 
@@ -211,13 +217,14 @@ Expose one Member `Workouts` tab containing the unified session history and remo
 - Empty Workouts render without exceptions or misleading exercise text.
 - Open and completed states have distinct, accessible labels.
 - Calendar grouping and cross-midnight behavior use the agreed session date (retain current end-date grouping for completed sessions unless requirements change).
-- No create/manual-time controls remain in Workout history.
-- Allowed notes/exercise edits persist without changing session timestamps.
+- Existing Workout-history controls and behaviours remain unchanged, including its current actions, time controls,
+  notes/exercise editing, and empty/open/completed Workout presentation.
 - Body-mass routing and existing Member/Owner authorization continue to work.
 
 ### Phase gate
 
-There is no Member-visible duplicate history or second route, and source search finds no stale `MEMBER_VISITS` or manual-recording UI references.
+There is no Member-visible duplicate history or second route, and source search finds no stale `MEMBER_VISITS`,
+`MemberVisitsView`, or Member `Gym Visits` navigation references. Existing Workout functionality is unchanged.
 
 ## Phase 5 - Remove stale code and update the product contract
 
@@ -227,8 +234,10 @@ Finish the refactor without dead abstractions, misleading documentation, or test
 
 ### Steps
 
-1. Remove obsolete `Visit` model/store/service code only after Owner functionality has moved; keep a formatting helper only if it is still genuinely shared and rename it appropriately.
-2. Delete stale tests asserting that Workouts require a set, Members manually choose times, Visits have a separate Member history, or Members navigate to `Gym Visits`.
+1. Remove only Member Visit-only code after confirming it has no check-in, check-out, or Owner callers. Do not
+   remove shared Visit model/store/service code merely because the Member tab is gone.
+2. Delete stale tests asserting that Members navigate to `Gym Visits` or have a separate Member Visit history;
+   preserve tests for the current Workout UI and all its existing actions.
 3. Replace those tests with unified behavior tests; do not delete useful ownership, rollback, correction, date-boundary, or formatting coverage.
 4. Update `README.md`, `docs/UserGuide.md`, `docs/DeveloperGuide.md`, `docs/Architecture.md`/`ARCHITECTURE.md`, `docs/UserStories.md`, and project decisions as applicable.
 5. Search resources, rendered tests, screenshots/text assertions, and CSS for obsolete labels and unused selectors.
@@ -261,7 +270,8 @@ At the first post-reset test session, guide the user through setup in this order
    - unified Workout history;
    - Owner search/correction of the same session;
    - light/dark themes, keyboard navigation, and accessible labels.
-4. Run `rg` for `MEMBER_VISITS`, `MemberVisitsView`, `Record workout`, separate Member Visit history, and the one-set-minimum wording. Every remaining match must be intentional.
+4. Run `rg` for `MEMBER_VISITS`, `MemberVisitsView`, and Member `Gym Visits` navigation labels. Every remaining
+   match must be intentional; existing Workout controls are not stale solely for this cleanup.
 5. Confirm no project-local Gradle cache or other generated artifact is staged.
 
 ## Completion criteria
@@ -273,7 +283,8 @@ At the first post-reset test session, guide the user through setup in this order
 - Member navigation and history contain only `Workouts`, not `Gym Visits`.
 - Owner oversight remains functional against the same authoritative data.
 - The old development database is backed up and deliberately reset; no ambiguous legacy rows are silently imported.
-- Stale production code, tests, documentation, routes, and labels are removed.
+- The duplicate Member Visit route, its Member-only code, tests, documentation, and labels are removed without
+  removing existing Workout capabilities.
 - Unit, integration, migration, rendered-UI, authorization, Checkstyle, and full Gradle checks pass.
 
 ## Risks and mitigations
