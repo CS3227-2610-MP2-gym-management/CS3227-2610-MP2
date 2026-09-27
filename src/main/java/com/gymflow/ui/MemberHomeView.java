@@ -145,6 +145,7 @@ final class MemberHomeView {
         dialog.setTitle(title);
         dialog.setHeaderText(title);
         dialog.initOwner(owner.getScene().getWindow());
+        UiComponents.iconDialog(dialog);
         return dialog.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.YES;
     }
 

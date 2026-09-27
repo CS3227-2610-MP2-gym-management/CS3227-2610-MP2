@@ -23,17 +23,6 @@
     -fx-padding: 32px;
 }
 
-.brand-mark {
-    -fx-alignment: center;
-    -fx-background-color: #2864dc;
-    -fx-background-radius: 10px;
-    -fx-text-fill: white;
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-min-width: 42px;
-    -fx-min-height: 42px;
-}
-
 .login-brand,
 .sidebar-brand {
     -fx-font-size: 22px;
@@ -122,16 +111,17 @@
 }
 
 .sidebar {
-    -fx-background-color: #142033;
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent #e4e9f1 transparent transparent;
     -fx-padding: 30px 20px 24px;
 }
 
 .sidebar-brand {
-    -fx-text-fill: white;
+    -fx-text-fill: #172033;
 }
 
 .role-label {
-    -fx-text-fill: #8da0bd;
+    -fx-text-fill: #68758b;
     -fx-padding: 0 0 18px 0;
 }
 
@@ -144,7 +134,7 @@
 .logout-button {
     -fx-alignment: center-left;
     -fx-background-color: transparent;
-    -fx-text-fill: #c5cfde;
+    -fx-text-fill: #39465a;
     -fx-padding: 12px 14px;
 }
 
@@ -159,7 +149,7 @@
 
 .logout-button {
     -fx-alignment: center;
-    -fx-border-color: #40506a;
+    -fx-border-color: #cbd5e1;
     -fx-border-radius: 8px;
 }
 
@@ -726,6 +716,28 @@
 .dark .theme-bar {
     -fx-background-color: #18212f;
     -fx-border-color: transparent transparent #334155 transparent;
+}
+
+.dark .sidebar {
+    -fx-background-color: #142033;
+    -fx-border-color: transparent;
+}
+
+.dark .sidebar-brand {
+    -fx-text-fill: white;
+}
+
+.dark .sidebar .role-label {
+    -fx-text-fill: #8da0bd;
+}
+
+.dark .nav-button,
+.dark .logout-button {
+    -fx-text-fill: #c5cfde;
+}
+
+.dark .logout-button {
+    -fx-border-color: #40506a;
 }
 
 .dark.gymflow-dialog > .button-bar > .container {

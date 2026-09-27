@@ -232,6 +232,7 @@ final class UiComponents {
         }
         dialog.setOnShown(event -> {
             Stage window = (Stage) dialog.getDialogPane().getScene().getWindow();
+            AppIcon.applyTo(window);
             double maximumHeight = ownerWindow.getHeight();
             window.setMaxHeight(maximumHeight);
             if (tallScrollable) {
@@ -240,6 +241,11 @@ final class UiComponents {
                 window.setHeight(Math.min(maximumHeight, Math.max(window.getHeight(), minimumHeight)));
             }
         });
+    }
+
+    static void iconDialog(Dialog<?> dialog) {
+        dialog.setOnShown(event -> AppIcon.applyTo(
+                (Stage) dialog.getDialogPane().getScene().getWindow()));
     }
 
     static ScrollPane scrollable(Node content) {
