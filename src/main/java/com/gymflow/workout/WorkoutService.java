@@ -53,15 +53,15 @@ public final class WorkoutService {
     }
 
     private SaveWorkoutRequest validate(SaveWorkoutRequest request) {
-        if (request == null || request.startedAt() == null || request.endedAt() == null
-                || !request.startedAt().isBefore(request.endedAt())) {
+        if (request == null || request.startedAt() == null
+                || (request.endedAt() != null && !request.startedAt().isBefore(request.endedAt()))) {
             throw new IllegalArgumentException("Workout start time must be before its end time");
         }
-        if (request.endedAt().isAfter(clock.instant())) {
+        if (request.endedAt() != null && request.endedAt().isAfter(clock.instant())) {
             throw new IllegalArgumentException("Workout end time cannot be in the future");
         }
-        if (request.sets() == null || request.sets().isEmpty()) {
-            throw new IllegalArgumentException("A Workout needs at least one set");
+        if (request.sets() == null) {
+            throw new IllegalArgumentException("Workout sets are required");
         }
         List<WorkoutSetInput> sets = request.sets().stream().map(this::validateSet).toList();
         String notes = request.notes() == null ? "" : request.notes().trim();

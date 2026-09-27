@@ -1,7 +1,6 @@
 package com.gymflow.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
@@ -20,79 +19,71 @@ class GymFlowDatabaseTest {
     Path directory;
 
     @Test
-    void migratesLegacyTimestampsWithoutLosingDataAndIsIdempotent() throws Exception {
-        Path file = directory.resolve("gymflow.db");
-        createLegacyDatabase(file);
-        GymFlowDatabase database = new GymFlowDatabase(file);
-
-        database.initialize();
+    void cleanInitializationCreatesOnlyUnifiedWorkoutSchema() throws Exception {
+        GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
         database.initialize();
 
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
-            assertEquals(1, value(statement, "SELECT COUNT(*) FROM accounts"));
-            assertEquals("2026-01-01T00:00:00Z",
-                    text(statement, "SELECT updated_at FROM accounts WHERE id = 1"));
-            assertNotNull(text(statement, "SELECT created_at FROM memberships WHERE id = 1"));
-            assertNotNull(text(statement, "SELECT updated_at FROM memberships WHERE id = 1"));
-            assertNotNull(text(statement, "SELECT created_at FROM payments WHERE id = 1"));
-            assertEquals(8, value(statement, "PRAGMA user_version"));
-            assertEquals(1, value(statement,
+            assertEquals(9, value(statement, "PRAGMA user_version"));
+            assertEquals(0, value(statement,
                     "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'visits'"));
             assertEquals(1, value(statement,
-                    "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'expenses'"));
+                    "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'workouts'"));
             assertEquals(1, value(statement,
-                    "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'announcements'"));
+                    "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'index' AND name = 'one_open_workout_per_member'"));
         }
     }
 
     @Test
-    void visitSchemaRejectsMultipleOpenVisitsAndInvalidExitOrder() throws Exception {
+    void workoutSchemaRejectsMultipleOpenWorkoutsAndInvalidCompletionOrder() throws Exception {
         GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
         database.initialize();
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
             insertMember(statement);
             statement.executeUpdate("""
-                    INSERT INTO visits(member_account_id, entered_at, exited_at, created_at)
-                    VALUES (1, '2026-09-15T01:00:00.000Z', NULL, '2026-09-15T01:00:00.000Z')
-                    """);
-
-            assertThrows(SQLException.class, () -> statement.executeUpdate("""
-                    INSERT INTO visits(member_account_id, entered_at, exited_at, created_at)
-                    VALUES (1, '2026-09-15T02:00:00.000Z', NULL, '2026-09-15T02:00:00.000Z')
-                    """));
-            assertThrows(SQLException.class, () -> statement.executeUpdate("""
-                    INSERT INTO visits(member_account_id, entered_at, exited_at, created_at)
-                    VALUES (1, '2026-09-15T03:00:00.000Z', '2026-09-15T02:00:00.000Z',
-                        '2026-09-15T03:00:00.000Z')
-                    """));
-            statement.executeUpdate("""
-                    INSERT INTO visits(member_account_id, entered_at, exited_at, created_at)
-                    VALUES (1, '2026-09-15T04:00:00.000Z', '2026-09-15T04:00:00.500Z',
-                        '2026-09-15T04:00:00.000Z')
-                    """);
-            assertThrows(SQLException.class, () -> statement.executeUpdate("""
-                    INSERT INTO visits(member_account_id, entered_at, exited_at, created_at)
-                    VALUES (1, '2026-09-15T05:00:00.500Z', '2026-09-15T05:00:00.000Z',
-                        '2026-09-15T05:00:00.500Z')
-                    """));
-            assertThrows(SQLException.class, () -> statement.executeUpdate("""
-                    INSERT INTO visits(member_account_id, entered_at, exited_at, created_at)
-                    VALUES (1, '2026-09-15T06:00:00.500002Z', '2026-09-15T06:00:00.500001Z',
-                        '2026-09-15T06:00:00.500002Z')
-                    """));
-        }
-    }
-
-    @Test
-    void resetRemovesVisitsAndExpensesAndRecreatesLatestSchema() throws Exception {
-        GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
-        database.initialize();
-        try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
-            insertMember(statement);
-            statement.executeUpdate("""
-                    INSERT INTO visits(member_account_id, entered_at, exited_at, created_at)
-                    VALUES (1, '2026-09-15T01:00:00.000Z', '2026-09-15T02:00:00.000Z',
+                    INSERT INTO workouts(member_account_id, started_at, ended_at, created_at, updated_at)
+                    VALUES (1, '2026-09-15T01:00:00.000Z', NULL, '2026-09-15T01:00:00.000Z',
                         '2026-09-15T01:00:00.000Z')
+                    """);
+
+            assertThrows(SQLException.class, () -> statement.executeUpdate("""
+                    INSERT INTO workouts(member_account_id, started_at, ended_at, created_at, updated_at)
+                    VALUES (1, '2026-09-15T02:00:00.000Z', NULL, '2026-09-15T02:00:00.000Z',
+                        '2026-09-15T02:00:00.000Z')
+                    """));
+            assertThrows(SQLException.class, () -> statement.executeUpdate("""
+                    INSERT INTO workouts(member_account_id, started_at, ended_at, created_at, updated_at)
+                    VALUES (1, '2026-09-15T03:00:00.000Z', '2026-09-15T02:00:00.000Z',
+                        '2026-09-15T03:00:00.000Z', '2026-09-15T03:00:00.000Z')
+                    """));
+            statement.executeUpdate("""
+                    INSERT INTO workouts(member_account_id, started_at, ended_at, created_at, updated_at)
+                    VALUES (1, '2026-09-15T04:00:00.000Z', '2026-09-15T04:00:00.500Z',
+                        '2026-09-15T04:00:00.000Z', '2026-09-15T04:00:00.000Z')
+                    """);
+            assertThrows(SQLException.class, () -> statement.executeUpdate("""
+                    INSERT INTO workouts(member_account_id, started_at, ended_at, created_at, updated_at)
+                    VALUES (1, '2026-09-15T05:00:00.500Z', '2026-09-15T05:00:00.000Z',
+                        '2026-09-15T05:00:00.500Z', '2026-09-15T05:00:00.500Z')
+                    """));
+            assertThrows(SQLException.class, () -> statement.executeUpdate("""
+                    INSERT INTO workouts(member_account_id, started_at, ended_at, created_at, updated_at)
+                    VALUES (1, '2026-09-15T06:00:00.500002Z', '2026-09-15T06:00:00.500001Z',
+                        '2026-09-15T06:00:00.500002Z', '2026-09-15T06:00:00.500002Z')
+                    """));
+        }
+    }
+
+    @Test
+    void resetRemovesUnifiedSessionsAndRecreatesLatestSchema() throws Exception {
+        GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
+        database.initialize();
+        try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
+            insertMember(statement);
+            statement.executeUpdate("""
+                    INSERT INTO workouts(member_account_id, started_at, ended_at, created_at, updated_at)
+                    VALUES (1, '2026-09-15T01:00:00.000Z', '2026-09-15T02:00:00.000Z',
+                        '2026-09-15T01:00:00.000Z', '2026-09-15T01:00:00.000Z')
                     """);
             statement.executeUpdate("""
                     INSERT INTO expenses(expense_date, amount_cents, method, category, description,
@@ -111,46 +102,39 @@ class GymFlowDatabaseTest {
         database.reset();
 
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
-            assertEquals(0, value(statement, "SELECT COUNT(*) FROM visits"));
+            assertEquals(0, value(statement, "SELECT COUNT(*) FROM workouts"));
+            assertEquals(0, value(statement, "SELECT COUNT(*) FROM workout_sets"));
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM expenses"));
             assertEquals(0, value(statement, "SELECT COUNT(*) FROM announcements"));
-            assertEquals(8, value(statement, "PRAGMA user_version"));
+            assertEquals(9, value(statement, "PRAGMA user_version"));
         }
     }
 
     @Test
-    void migratesVersionTwoVisitsWithEmptyCorrectionMetadata() throws Exception {
+    void legacyVisitDatabasesAreNotImported() throws Exception {
         Path file = directory.resolve("version-two.db");
         createVersionTwoDatabase(file);
         GymFlowDatabase database = new GymFlowDatabase(file);
 
-        database.initialize();
-        database.initialize();
+        database.reset();
 
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
-            assertEquals(8, value(statement, "PRAGMA user_version"));
-            assertEquals(1, value(statement, "SELECT COUNT(*) FROM visits"));
-            assertEquals(null, text(statement, "SELECT corrected_at FROM visits WHERE id = 1"));
-            assertEquals(null, text(statement, "SELECT corrected_by_account_id FROM visits WHERE id = 1"));
-            assertEquals(null, text(statement, "SELECT correction_reason FROM visits WHERE id = 1"));
+            assertEquals(0, value(statement, "SELECT COUNT(*) FROM workouts"));
+            assertEquals(0, value(statement,
+                    "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'visits'"));
         }
     }
 
     @Test
-    void migratesVersionSixWorkoutsToStartAndEndTimes() throws Exception {
+    void resetDiscardsLegacyWorkoutRows() throws Exception {
         Path file = directory.resolve("version-six.db");
         createVersionSixWorkoutDatabase(file);
         GymFlowDatabase database = new GymFlowDatabase(file);
-        database.initialize();
-        database.initialize();
+        database.reset();
 
         try (Connection connection = database.connect(); Statement statement = connection.createStatement()) {
-            assertEquals(8, value(statement, "PRAGMA user_version"));
-            assertEquals("2026-09-15T09:00:00.000Z",
-                    text(statement, "SELECT started_at FROM workouts WHERE id = 1"));
-            assertEquals("2026-09-15T10:00:00.000Z",
-                    text(statement, "SELECT ended_at FROM workouts WHERE id = 1"));
-            assertEquals(1, value(statement, "SELECT COUNT(*) FROM workout_sets WHERE workout_id = 1"));
+            assertEquals(9, value(statement, "PRAGMA user_version"));
+            assertEquals(0, value(statement, "SELECT COUNT(*) FROM workouts"));
             assertThrows(SQLException.class, () -> statement.executeUpdate("""
                     INSERT INTO workouts(member_account_id, started_at, ended_at, notes, created_at, updated_at)
                     VALUES (1, '2026-09-15T10:00:00.000Z', '2026-09-15T10:00:00.000Z', NULL,

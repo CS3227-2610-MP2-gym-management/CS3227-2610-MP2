@@ -194,7 +194,7 @@ the [User Stories](UserStories.md).
 ## Persistence and schema evolution
 
 `GymFlowDatabase` creates parent directories, opens SQLite connections with foreign keys enabled, initializes the
-schema, applies versioned migrations, and performs full reset. The current schema version is 7.
+schema, applies supported schema changes, and performs full reset. The current schema version is 9.
 
 `member_account_id` is the database foreign key corresponding to the shared model's `memberId`.
 
@@ -204,18 +204,15 @@ schema, applies versioned migrations, and performs full reset. The current schem
 | `member_profiles` | One-to-one primary/foreign key to a Member account |
 | `memberships` | Many access periods belonging to one Member |
 | `payments` | Exactly one Payment per Membership, recorded by an Owner |
-| `visits` | Member attendance with at most one open Visit |
 | `expenses` | Independent immutable operating costs recorded by an Owner |
 | `announcements` | Gym-wide notices with nullable withdrawal metadata |
-| `workouts` | Member-owned completed Workout ranges with start before end |
+| `workouts` | Member-owned unified sessions, with at most one open Workout per Member |
 | `workout_sets` | Ordered sets cascaded from their parent Workout |
 | `body_metrics` | Member-owned body-mass readings, unique by measurement date |
 
-Migrations are ordered and idempotent through SQLite `PRAGMA user_version`. They preserve existing rows and update the
-version only after successful work. The Visit migration rebuilds its table transactionally when adding constraints
-that SQLite cannot apply with a simple `ALTER TABLE`. The Workout migration rebuilds Workout and set tables together,
-mapping legacy completion timestamps to the end time and deriving a one-hour start. New tables automatically participate
-in reset because schema creation remains centralized.
+The clean unified schema is versioned through SQLite `PRAGMA user_version`. Pre-unification Visit and Workout rows are
+not imported because their correspondence cannot be established safely; use the verified database reset workflow before
+adopting version 9. New tables automatically participate in reset because schema creation remains centralized.
 
 ## Key design decisions
 

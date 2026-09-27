@@ -124,7 +124,7 @@ public final class WorkoutStore {
                 "UPDATE workouts SET started_at = ?, ended_at = ?, notes = ?, updated_at = ? "
                         + "WHERE id = ? AND member_account_id = ?")) {
             statement.setString(1, TIMESTAMP.format(request.startedAt()));
-            statement.setString(2, TIMESTAMP.format(request.endedAt()));
+            nullableTimestamp(statement, 2, request.endedAt());
             statement.setString(3, request.notes());
             statement.setString(4, TIMESTAMP.format(now));
             statement.setLong(5, id);
@@ -145,7 +145,7 @@ public final class WorkoutStore {
             Instant now) throws SQLException {
         String timestamp = TIMESTAMP.format(now);
         statement.setString(2, TIMESTAMP.format(request.startedAt()));
-        statement.setString(3, TIMESTAMP.format(request.endedAt()));
+        nullableTimestamp(statement, 3, request.endedAt());
         statement.setString(4, request.notes());
         statement.setString(5, timestamp);
         statement.setString(6, timestamp);
@@ -194,9 +194,12 @@ public final class WorkoutStore {
                 }
                 return new Workout(id, results.getLong("member_account_id"),
                         Instant.parse(results.getString("started_at")),
-                        Instant.parse(results.getString("ended_at")), results.getString("notes"),
+                        nullableInstant(results, "ended_at"), results.getString("notes"),
                         Instant.parse(results.getString("created_at")),
-                        Instant.parse(results.getString("updated_at")), loadSets(connection, id));
+                        Instant.parse(results.getString("updated_at")), loadSets(connection, id),
+                        nullableInstant(results, "corrected_at"),
+                        nullableLong(results, "corrected_by_account_id"),
+                        results.getString("correction_reason"));
             }
         }
     }
@@ -225,6 +228,25 @@ public final class WorkoutStore {
 
     private static Integer nullableInteger(ResultSet results, String column) throws SQLException {
         int value = results.getInt(column);
+        return results.wasNull() ? null : value;
+    }
+
+    private static void nullableTimestamp(PreparedStatement statement, int index, Instant value)
+            throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.VARCHAR);
+        } else {
+            statement.setString(index, TIMESTAMP.format(value));
+        }
+    }
+
+    private static Instant nullableInstant(ResultSet results, String column) throws SQLException {
+        String value = results.getString(column);
+        return value == null ? null : Instant.parse(value);
+    }
+
+    private static Long nullableLong(ResultSet results, String column) throws SQLException {
+        long value = results.getLong(column);
         return results.wasNull() ? null : value;
     }
 
