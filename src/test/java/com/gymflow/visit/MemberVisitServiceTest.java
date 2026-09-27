@@ -59,9 +59,13 @@ class MemberVisitServiceTest {
     void checksOutAfterMembershipIsDeactivated() {
         visits.checkIn(alice);
         members.setMembershipActive(1, false, 1);
-        assertTrue(visits.checkOut(alice).exitedAt().equals(NOW));
-        assertFalse(visits.currentState(alice).checkedIn());
         assertThrows(IllegalArgumentException.class, () -> visits.checkOut(alice));
+        MemberVisitService laterVisits = new MemberVisitService(
+                new GymFlowDatabase(directory.resolve("gymflow.db")),
+                Clock.fixed(NOW.plusSeconds(1), ZoneOffset.UTC));
+        assertTrue(laterVisits.checkOut(alice).exitedAt().equals(NOW.plusSeconds(1)));
+        assertFalse(laterVisits.currentState(alice).checkedIn());
+        assertThrows(IllegalArgumentException.class, () -> laterVisits.checkOut(alice));
     }
 
     @Test
@@ -99,13 +103,14 @@ class MemberVisitServiceTest {
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:sqlite:" + directory.resolve("gymflow.db").toAbsolutePath());
                 PreparedStatement statement = connection.prepareStatement("""
-                        INSERT INTO visits (member_account_id, entered_at, exited_at, created_at)
-                        VALUES (?, ?, ?, ?)
+                        INSERT INTO workouts (member_account_id, started_at, ended_at, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?)
                         """)) {
             statement.setLong(1, memberId);
             statement.setString(2, enteredAt);
             statement.setString(3, exitedAt);
             statement.setString(4, enteredAt);
+            statement.setString(5, enteredAt);
             statement.executeUpdate();
         }
     }

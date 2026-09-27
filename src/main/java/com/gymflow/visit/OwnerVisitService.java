@@ -38,8 +38,8 @@ public final class OwnerVisitService {
         if (enteredAt == null) {
             throw new IllegalArgumentException("Entry time is required");
         }
-        if (exitedAt != null && exitedAt.isBefore(enteredAt)) {
-            throw new IllegalArgumentException("Exit time cannot precede entry time");
+        if (exitedAt != null && !enteredAt.isBefore(exitedAt)) {
+            throw new IllegalArgumentException("Exit time must be after entry time");
         }
         String reason = correctionReason == null ? "" : correctionReason.trim();
         if (reason.isEmpty()) {

@@ -31,7 +31,7 @@ public final class WorkoutStore {
     /** Returns an active Member's Workouts in deterministic newest-first order. */
     public List<Workout> findByMember(long memberId) {
         String sql = "SELECT id FROM workouts WHERE member_account_id = ? "
-                + "ORDER BY ended_at DESC, id DESC";
+                + "ORDER BY ended_at IS NULL DESC, ended_at DESC, id DESC";
         try (Connection connection = database.connect();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             requireActiveMember(connection, memberId);
@@ -121,14 +121,12 @@ public final class WorkoutStore {
     private static long replaceWorkout(Connection connection, long memberId, long id,
             SaveWorkoutRequest request, Instant now) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE workouts SET started_at = ?, ended_at = ?, notes = ?, updated_at = ? "
+                "UPDATE workouts SET notes = ?, updated_at = ? "
                         + "WHERE id = ? AND member_account_id = ?")) {
-            statement.setString(1, TIMESTAMP.format(request.startedAt()));
-            nullableTimestamp(statement, 2, request.endedAt());
-            statement.setString(3, request.notes());
-            statement.setString(4, TIMESTAMP.format(now));
-            statement.setLong(5, id);
-            statement.setLong(6, memberId);
+            statement.setString(1, request.notes());
+            statement.setString(2, TIMESTAMP.format(now));
+            statement.setLong(3, id);
+            statement.setLong(4, memberId);
             if (statement.executeUpdate() != 1) {
                 throw new IllegalArgumentException("Workout not found");
             }

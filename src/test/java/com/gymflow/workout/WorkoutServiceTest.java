@@ -81,6 +81,17 @@ class WorkoutServiceTest {
         assertEquals(List.of(), reloaded.sets());
     }
 
+    @Test
+    void keepsSessionTimesImmutableWhenReplacingExercises() {
+        Workout saved = workouts.create(member, request("2026-09-15T08:00:00Z", "2026-09-15T09:00:00Z"));
+
+        Workout updated = workouts.update(member, saved.id(),
+                request("2026-09-15T07:00:00Z", "2026-09-15T09:30:00Z"));
+
+        assertEquals(saved.startedAt(), updated.startedAt());
+        assertEquals(saved.endedAt(), updated.endedAt());
+    }
+
     private static SaveWorkoutRequest request(String startedAt, String endedAt) {
         return new SaveWorkoutRequest(Instant.parse(startedAt), Instant.parse(endedAt), null,
                 List.of(new WorkoutSetInput("Squat", 8, null, new BigDecimal("60"))));

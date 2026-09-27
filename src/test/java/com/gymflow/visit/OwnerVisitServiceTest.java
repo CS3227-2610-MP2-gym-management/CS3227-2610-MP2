@@ -155,14 +155,15 @@ class OwnerVisitServiceTest {
     private void insertVisit(long id, long memberId, String enteredAt, String exitedAt) throws Exception {
         try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile);
                 PreparedStatement statement = connection.prepareStatement("""
-                        INSERT INTO visits(id, member_account_id, entered_at, exited_at, created_at)
-                        VALUES (?, ?, ?, ?, ?)
+                        INSERT INTO workouts(id, member_account_id, started_at, ended_at, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?)
                         """)) {
             statement.setLong(1, id);
             statement.setLong(2, memberId);
             statement.setString(3, enteredAt);
             statement.setString(4, exitedAt);
             statement.setString(5, enteredAt);
+            statement.setString(6, enteredAt);
             statement.executeUpdate();
         }
     }
