@@ -101,3 +101,47 @@ WHERE id IN (
     '00000000-0000-0000-0000-000000000002',
     '00000000-0000-0000-0000-000000000003'
 );
+
+INSERT INTO public.accounts (id, email, role, is_active)
+VALUES
+    (
+        '00000000-0000-0000-0000-000000000001',
+        'owner.local@example.test',
+        'OWNER',
+        true
+    ),
+    (
+        '00000000-0000-0000-0000-000000000002',
+        'member.a.local@example.test',
+        'MEMBER',
+        true
+    ),
+    (
+        '00000000-0000-0000-0000-000000000003',
+        'member.b.local@example.test',
+        'MEMBER',
+        true
+    );
+
+INSERT INTO public.member_profiles (
+    account_id,
+    member_number,
+    full_name,
+    phone_number,
+    date_of_birth
+)
+VALUES
+    (
+        '00000000-0000-0000-0000-000000000002',
+        'M0001',
+        'Local Member A',
+        '+65 8000 0001',
+        '1995-01-01'
+    ),
+    (
+        '00000000-0000-0000-0000-000000000003',
+        'M0002',
+        'Local Member B',
+        '+65 8000 0002',
+        '1996-02-02'
+    );

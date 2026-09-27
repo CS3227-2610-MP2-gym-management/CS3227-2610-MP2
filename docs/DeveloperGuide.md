@@ -16,6 +16,7 @@ npm run supabase:start
 npm run supabase:status
 npm run supabase:reset
 npm run supabase:test
+npm run supabase:lint
 npm run supabase:stop
 ```
 

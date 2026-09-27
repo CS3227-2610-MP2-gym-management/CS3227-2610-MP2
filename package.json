@@ -7,7 +7,8 @@
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset",
     "supabase:stop": "supabase stop",
-    "supabase:test": "supabase test db"
+    "supabase:test": "supabase test db",
+    "supabase:lint": "supabase db lint --local --level warning --fail-on warning"
   },
   "devDependencies": {
     "supabase": "2.118.0"
