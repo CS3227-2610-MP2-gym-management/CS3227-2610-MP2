@@ -105,8 +105,10 @@ behaviour.
 - Local Studio, PostgreSQL, Auth, Data API, and Mailpit are reachable.
 - Rebuilding from an empty local database succeeds using committed files only.
 - Seeded users can authenticate.
-- Stopping the backend causes a clear connection error in the application.
-- Restarting it restores access without manual data repair.
+- Stopping the backend makes the local API health check fail as expected.
+- Restarting it restores the local services and seeded logins without manual data repair.
+
+The JavaFX connection-error experience is verified in Phase 3 after the application uses Supabase Auth.
 
 ## Phase 2 - Translate and version the schema
 

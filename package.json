@@ -1,0 +1,15 @@
+{
+  "name": "gymflow-local-backend",
+  "private": true,
+  "scripts": {
+    "supabase:init": "supabase init",
+    "supabase:start": "supabase start",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset",
+    "supabase:stop": "supabase stop",
+    "supabase:test": "supabase test db"
+  },
+  "devDependencies": {
+    "supabase": "2.118.0"
+  }
+}

@@ -1,5 +1,45 @@
 # GymFlow Developer Guide
 
+## Local backend
+
+GymFlow's cloud migration uses a repository-scoped Supabase CLI and a Docker-hosted local backend. Install Node.js 20
+or later and Docker Desktop before using it. Then install the pinned CLI dependency:
+
+```text
+npm install
+```
+
+Use the following commands from the repository root:
+
+```text
+npm run supabase:start
+npm run supabase:status
+npm run supabase:reset
+npm run supabase:test
+npm run supabase:stop
+```
+
+The local services use these default addresses:
+
+| Service | Address |
+| --- | --- |
+| API | `http://127.0.0.1:54321` |
+| PostgreSQL | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
+| Studio | `http://127.0.0.1:54323` |
+| Mailpit | `http://127.0.0.1:54324` |
+
+`npm run supabase:reset` is a local destructive operation. Never add `--linked` to the routine development workflow.
+The committed seed contains only fake `.test` users:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Owner | `owner.local@example.test` | `LocalOwner!2026` |
+| Member A | `member.a.local@example.test` | `LocalMemberA!2026` |
+| Member B | `member.b.local@example.test` | `LocalMemberB!2026` |
+
+These credentials are deliberately public development fixtures and must never be used in a hosted environment. The
+local Auth service rejects public signup, matching the intended production account-provisioning model.
+
 ## Product and technology
 
 GymFlow is a local-first Java SE 25 desktop application for a small gym. The current release provides Owner account
