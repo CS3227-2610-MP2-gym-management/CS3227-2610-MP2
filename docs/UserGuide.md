@@ -16,28 +16,26 @@ Download the JAR matching your operating system and processor architecture, then
 java -jar GymFlow-macos-arm64.jar
 ```
 
-Replace the filename with the JAR downloaded for your platform. GymFlow stores its local database at
-`data/gymflow.db`, relative to the directory from which it is launched.
+Replace the filename with the JAR downloaded for your platform. The application requires access to its configured
+GymFlow backend to sign in.
 
 GymFlow also creates rotating diagnostic files named `gymflow-0.log` through `gymflow-2.log` in the local
 `data/logs/` directory. If the application exits unexpectedly, include these files when reporting the problem. They
 contain startup events and sanitized error types, not passwords or values entered into forms.
 
-## First-launch Owner setup
+## Signing in
 
-When no Owner exists, the opening screen displays `Set up GymFlow`.
+Every installation opens on the same GymFlow sign-in screen.
 
-1. Enter the Owner's email address.
-2. Enter a password containing between 12 and 128 characters.
-3. Enter the same password in the confirmation field.
-4. Select `Create Owner Account`.
+1. Enter the Owner or Member email address provisioned by the gym.
+2. Enter the account password.
+3. Select `Sign In`.
 
-Email addresses are matched without regard to letter case. After successful setup, GymFlow opens Owner Home.
+After authentication, GymFlow loads the account's role and opens Owner Home or Member Home. Invalid credentials
+display `Invalid email or password` without identifying which value was incorrect. A backend outage displays a
+connection error instead.
 
 ## Owner login and logout
-
-On subsequent launches, enter the Owner email and password and select `Sign In`. Invalid credentials display
-`Invalid email or password` without identifying which value was incorrect.
 
 Select `Return to Login` in the Owner sidebar to clear the current session.
 
@@ -224,23 +222,17 @@ have one positive body-mass reading per date.
 
 ## Resetting GymFlow
 
-`Reset GymFlow`, directly above `Return to Login` in every Owner sidebar, permanently deletes the Owner account and
-every record stored in the GymFlow database. It is not available on Member screens.
-
-1. Select `Reset GymFlow`.
-2. Enter the current Owner password.
-3. Enter the exact confirmation text `RESET`.
-4. Confirm the reset.
-
-Incorrect confirmation or password leaves the database unchanged and keeps the confirmation window open for
-correction. A successful reset returns to first-launch Owner setup. This operation is irreversible and does not create
-a backup.
+The former installation-wide `Reset GymFlow` action is unavailable while GymFlow moves to shared cloud data. A local
+factory reset would not safely represent deletion for every connected installation. Any future live-data deletion
+workflow must be server-authorized, explicitly scoped, backed up, and tested separately.
 
 ## Testing from source
 
 Run the application:
 
 ```shell
+npm install
+npm run supabase:start
 ./gradlew run
 ```
 

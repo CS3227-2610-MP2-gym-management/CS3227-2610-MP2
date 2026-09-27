@@ -2,8 +2,11 @@ package com.gymflow.ui;
 
 import java.nio.file.Path;
 
-import com.gymflow.auth.AuthenticationService;
+import com.gymflow.auth.Authenticator;
+import com.gymflow.auth.SupabaseAuthenticationService;
 import com.gymflow.announcement.OwnerAnnouncementService;
+import com.gymflow.config.RuntimeEnvironment;
+import com.gymflow.config.SupabaseConfiguration;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.OwnerMemberService;
@@ -20,10 +23,10 @@ import javafx.stage.Stage;
 public final class GymFlowApp extends Application {
     private static final double MINIMUM_WIDTH = 1050;
     static final double MINIMUM_HEIGHT = 700;
-    private AuthenticationService authentication;
+    private Authenticator authentication;
     private OwnerAnnouncementService announcements;
     private OwnerExpenseService expenses;
-    private boolean ownerExists;
+    private boolean localEnvironment;
     private OwnerMemberService members;
     private MemberAccountService memberAccounts;
     private OwnerVisitService visits;
@@ -36,7 +39,9 @@ public final class GymFlowApp extends Application {
     public void init() {
         GymFlowDatabase database = new GymFlowDatabase(Path.of("data", "gymflow.db"));
         database.initialize();
-        authentication = new AuthenticationService(database);
+        SupabaseConfiguration configuration = SupabaseConfiguration.load();
+        authentication = new SupabaseAuthenticationService(configuration);
+        localEnvironment = configuration.environment() == RuntimeEnvironment.LOCAL;
         announcements = new OwnerAnnouncementService(database);
         expenses = new OwnerExpenseService(database);
         members = new OwnerMemberService(database);
@@ -45,7 +50,6 @@ public final class GymFlowApp extends Application {
         memberVisits = new MemberVisitService(database);
         workouts = new WorkoutService(database);
         bodyMetrics = new BodyMetricService(database);
-        ownerExists = authentication.hasOwner();
     }
 
     /**
@@ -60,8 +64,8 @@ public final class GymFlowApp extends Application {
         stage.setMinWidth(MINIMUM_WIDTH);
         stage.setMinHeight(MINIMUM_HEIGHT);
 
-        new AppView(stage, authentication, members, expenses, visits, memberVisits, workouts, bodyMetrics,
-                announcements, memberAccounts, ownerExists);
+        new AppView(stage, authentication, members, expenses, visits, memberVisits,
+                workouts, bodyMetrics, announcements, memberAccounts, localEnvironment);
         stage.show();
     }
 

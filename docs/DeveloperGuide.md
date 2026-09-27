@@ -43,18 +43,17 @@ local Auth service rejects public signup, matching the intended production accou
 
 ## Product and technology
 
-GymFlow is a local-first Java SE 25 desktop application for a small gym. The current release provides Owner account
-setup and login, Member administration, Membership and Payment records, Expenses, Visit oversight and correction,
-Announcements, application reset, persistent light/dark themes, Member authentication, Membership status and renewal
-guidance, and Member check-in/check-out workflows.
+GymFlow is an online-first Java SE 25 desktop application for a small gym. The cloud migration currently provides
+shared Owner and Member authentication while feature stores are being moved incrementally from SQLite to PostgreSQL.
+The product includes Member administration, Membership and Payment records, Expenses, Visit oversight and correction,
+Announcements, persistent light/dark themes, Membership guidance, and Member check-in/check-out workflows.
 
 Product rules and deferred architecture questions are maintained in the
 [Agreed Project Decisions](ProjectDecisions.md). Implementations should follow that document together with the
 [User Stories](UserStories.md) and the repository-level [Architecture](../ARCHITECTURE.md) contract.
 
-The application uses JavaFX 25 for its interface, SQLite through Xerial JDBC for persistence, Gradle for builds and
-packaging, JUnit 6 for automated tests, and Checkstyle for source checks. It does not require a server or network
-connection during normal use.
+The application uses JavaFX 25, Supabase Auth, PostgreSQL, the Supabase Data API, SQLite through Xerial JDBC for
+features not yet migrated, Gradle, JUnit 6, and Checkstyle. Sign-in requires the configured backend.
 
 ## Architecture
 
@@ -67,13 +66,11 @@ GymFlowApp
 AppView and JavaFX views              navigation, session guard, presentation
     |
     v
-Authentication and Owner services     validation, authorization, use-case rules
+Supabase Auth and Account API         shared identity, role, active status, session tokens
     |
-    v
-SQLite stores                         queries, transactions, row mapping
+    +-> PostgreSQL migrations         shared schema, constraints, RLS, server functions
     |
-    v
-GymFlowDatabase -> data/gymflow.db    schema, migrations, connections, reset
+    +-> transitional SQLite stores    feature data awaiting phased migration
 
 Shared model records and enums are used across the service, persistence, and UI layers.
 ```
@@ -87,7 +84,8 @@ omitted because each responsibility currently has one implementation.
 | Package | Responsibility |
 | --- | --- |
 | `com.gymflow.ui` | Application startup, navigation, JavaFX screens, dialogs, formatting, and themes |
-| `com.gymflow.auth` | Password hashing, Owner setup, authentication, and reset authorization |
+| `com.gymflow.auth` | Supabase authentication, session ownership, and legacy authentication tests |
+| `com.gymflow.config` | Local/production endpoint selection and client-configuration safeguards |
 | `com.gymflow.member` | Owner- and Member-facing account, Membership, Payment, and dashboard rules |
 | `com.gymflow.expense` | Owner-side Expense validation and queries |
 | `com.gymflow.visit` | Owner-side Visit searches, counts, history, and corrections |
@@ -114,16 +112,18 @@ ellipsized while the detail overlay retains the full wrapped title.
 
 ### Authentication and accounts
 
-An installation supports one Owner account. On first launch, the Login screen enters setup mode when no Owner exists.
-Emails are trimmed, lowercased, and stored under a case-insensitive uniqueness constraint.
+Every installation uses the same sign-in screen. `SupabaseAuthenticationService` submits email and password over the
+configured Auth HTTPS endpoint, retrieves the signed-in user's own `accounts` row through RLS, and maps the stable
+numeric domain account ID to the Java model. Owner and Member roles therefore come from the shared database rather
+than the installing device. Password character arrays are cleared after every authentication outcome.
 
-Passwords use PBKDF2-HMAC-SHA256 with 600,000 iterations, a random 16-byte salt, and a 32-byte derived hash. Only the
-Base64-encoded hash and salt are stored. Verification uses a constant-time comparison, and services clear submitted
-password character arrays on every outcome. Hashing and database operations run outside the JavaFX Application
-Thread.
+Local development defaults to the loopback Supabase endpoint and displays a `LOCAL DEVELOPMENT` badge. Production
+requires explicit HTTPS URL and publishable-key environment variables and refuses loopback endpoints. The client
+never accepts a database password or secret/service-role key.
 
-The full reset requires the current Owner password and exact `RESET` confirmation. `GymFlowDatabase` drops and
-recreates all application tables inside one transaction, allowing SQLite to roll back a failed reset.
+The legacy SQLite password implementation remains only for unmigrated service tests and legacy-data work. It is not
+used by the application Login screen. The former local full reset is hidden during the cloud migration because it
+cannot safely reset shared data.
 
 ### Members, Memberships, and Payments
 

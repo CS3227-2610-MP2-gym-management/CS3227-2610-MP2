@@ -3,7 +3,7 @@ package com.gymflow.ui;
 import java.util.Objects;
 import java.util.prefs.Preferences;
 
-import com.gymflow.auth.AuthenticationService;
+import com.gymflow.auth.Authenticator;
 import com.gymflow.announcement.OwnerAnnouncementService;
 import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.model.Account;
@@ -16,7 +16,7 @@ import com.gymflow.visit.MemberVisitService;
 import com.gymflow.workout.WorkoutService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.Node;
+import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
@@ -29,7 +29,7 @@ public final class AppView {
 
     private final BorderPane shell = new BorderPane();
     private final Preferences preferences = Preferences.userNodeForPackage(AppView.class);
-    private final AuthenticationService authentication;
+    private final Authenticator authentication;
     private final OwnerAnnouncementService announcements;
     private final OwnerExpenseService expenses;
     private final OwnerMemberService members;
@@ -39,7 +39,7 @@ public final class AppView {
     private final WorkoutService workouts;
     private final BodyMetricService bodyMetrics;
     private Account session;
-    private boolean ownerExists;
+    private final boolean localEnvironment;
     private Theme theme;
 
     /**
@@ -47,11 +47,11 @@ public final class AppView {
      *
      * @param stage stage that will display GymFlow
      */
-    public AppView(Stage stage, AuthenticationService authentication,
+    public AppView(Stage stage, Authenticator authentication,
             OwnerMemberService members, OwnerExpenseService expenses,
             OwnerVisitService visits, MemberVisitService memberVisits, 
             WorkoutService workouts, BodyMetricService bodyMetrics, OwnerAnnouncementService announcements,
-            MemberAccountService memberAccounts, boolean ownerExists) {
+            MemberAccountService memberAccounts, boolean localEnvironment) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
         this.announcements = Objects.requireNonNull(announcements);
@@ -62,7 +62,7 @@ public final class AppView {
         this.memberVisits = Objects.requireNonNull(memberVisits);
         this.workouts = Objects.requireNonNull(workouts);
         this.bodyMetrics = Objects.requireNonNull(bodyMetrics);
-        this.ownerExists = ownerExists;
+        this.localEnvironment = localEnvironment;
         theme = preferences.getBoolean(DARK_MODE, false) ? Theme.DARK : Theme.LIGHT;
         shell.getStyleClass().add("app-shell");
         shell.setTop(themeBar());
@@ -85,22 +85,22 @@ public final class AppView {
         case OWNER_HOME -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerHomeView.create(members, expenses, visits, session,
-                        this::show, this::showReset, this::logout);
+                        this::show, null, this::logout);
         case OWNER_MEMBERS -> !isOwnerSession(session)
                 ? createLogin()
-                : OwnerMembersView.create(members, visits, session, this::show, this::showReset, this::logout);
+                : OwnerMembersView.create(members, visits, session, this::show, null, this::logout);
         case OWNER_MEMBERSHIPS -> !isOwnerSession(session)
                 ? createLogin()
-                : OwnerMembershipsView.create(members, this::show, this::showReset, this::logout);
+                : OwnerMembershipsView.create(members, this::show, null, this::logout);
         case OWNER_FINANCES -> !isOwnerSession(session)
                 ? createLogin()
-                : OwnerFinancesView.create(members, expenses, session, this::show, this::showReset, this::logout);
+                : OwnerFinancesView.create(members, expenses, session, this::show, null, this::logout);
         case OWNER_VISITS -> !isOwnerSession(session)
                 ? createLogin()
-                : OwnerVisitsView.create(visits, session, this::show, this::showReset, this::logout);
+                : OwnerVisitsView.create(visits, session, this::show, null, this::logout);
         case OWNER_ANNOUNCEMENTS -> !isOwnerSession(session)
                 ? createLogin()
-                : OwnerAnnouncementsView.create(announcements, session, this::show, this::showReset, this::logout);
+                : OwnerAnnouncementsView.create(announcements, session, this::show, null, this::logout);
         case MEMBER_HOME -> !isMemberSession(session)
                 ? createLogin()
                 : MemberHomeView.create(memberAccounts, memberVisits, workouts, session, this::show, this::logout);
@@ -131,28 +131,18 @@ public final class AppView {
     }
 
     private Parent createLogin() {
-        return LoginView.create(authentication, !ownerExists, this::authenticated);
+        return LoginView.create(authentication, this::authenticated);
     }
 
     private void authenticated(Account account) {
         session = account;
-        ownerExists = true;
         show(account.role() == Role.OWNER ? Screen.OWNER_HOME : Screen.MEMBER_HOME);
     }
 
     private void logout() {
+        authentication.signOut();
         session = null;
         show(Screen.LOGIN);
-    }
-
-    private void resetCompleted() {
-        session = null;
-        ownerExists = false;
-        show(Screen.LOGIN);
-    }
-
-    private void showReset(Node ownerNode) {
-        OwnerResetDialog.show(ownerNode, authentication, session, this::resetCompleted);
     }
 
     private HBox themeBar() {
@@ -167,7 +157,13 @@ public final class AppView {
             applyTheme();
             updateThemeButton(toggle);
         });
-        HBox bar = new HBox(toggle);
+        HBox bar = new HBox(12);
+        if (localEnvironment) {
+            Label environment = new Label("LOCAL DEVELOPMENT");
+            environment.getStyleClass().add("environment-badge");
+            bar.getChildren().add(environment);
+        }
+        bar.getChildren().add(toggle);
         bar.getStyleClass().add("theme-bar");
         return bar;
     }

@@ -10,7 +10,7 @@ import com.gymflow.model.Account;
 import com.gymflow.model.Role;
 
 /** Handles account setup and credential verification. */
-public final class AuthenticationService {
+public final class AuthenticationService implements Authenticator {
     private final AccountStore accounts;
     private final PasswordHasher passwords;
     private final GymFlowDatabase database;
@@ -42,6 +42,7 @@ public final class AuthenticationService {
     }
 
     /** Returns the active account matching the supplied credentials. */
+    @Override
     public Optional<Account> authenticate(String email, char[] password) {
         try {
             if (email == null || password == null) {

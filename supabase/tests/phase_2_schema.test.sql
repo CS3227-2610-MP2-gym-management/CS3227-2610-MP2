@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(41);
+SELECT plan(42);
 
 SELECT has_table('public', 'accounts', 'accounts table exists');
 SELECT has_table('public', 'member_profiles', 'member profiles table exists');
@@ -12,7 +12,8 @@ SELECT has_table('public', 'workouts', 'workouts table exists');
 SELECT has_table('public', 'workout_sets', 'workout sets table exists');
 SELECT has_table('public', 'body_metrics', 'body metrics table exists');
 
-SELECT col_type_is('public', 'accounts', 'id', 'uuid', 'account identifiers use Auth UUIDs');
+SELECT col_type_is('public', 'accounts', 'id', 'bigint', 'domain Account identifiers remain numeric');
+SELECT col_type_is('public', 'accounts', 'auth_user_id', 'uuid', 'Accounts link to Auth UUIDs');
 SELECT col_type_is('public', 'memberships', 'start_date', 'date', 'membership start is a date');
 SELECT col_type_is(
     'public',
@@ -46,7 +47,7 @@ SELECT has_function(
 SELECT is(
     has_function_privilege(
         'authenticated',
-        'public.create_member_records(uuid,text,text,text,date,date,date,bigint,text,timestamp with time zone,text,uuid)',
+        'public.create_member_records(uuid,text,text,text,date,date,date,bigint,text,timestamp with time zone,text,bigint)',
         'EXECUTE'
     ),
     false,
@@ -55,7 +56,7 @@ SELECT is(
 SELECT is(
     has_function_privilege(
         'service_role',
-        'public.create_member_records(uuid,text,text,text,date,date,date,bigint,text,timestamp with time zone,text,uuid)',
+        'public.create_member_records(uuid,text,text,text,date,date,date,bigint,text,timestamp with time zone,text,bigint)',
         'EXECUTE'
     ),
     true,
@@ -65,7 +66,7 @@ SELECT is(
 SELECT throws_ok(
     $$UPDATE public.accounts
          SET role = 'OWNER'
-       WHERE id = '00000000-0000-0000-0000-000000000002'$$,
+       WHERE id = 2$$,
     '23505',
     NULL,
     'only one Owner account is allowed'
@@ -78,7 +79,7 @@ INSERT INTO public.memberships (
     is_active
 )
 VALUES (
-    '00000000-0000-0000-0000-000000000002',
+    2,
     '2026-01-01',
     '2026-01-31',
     true
@@ -91,7 +92,7 @@ SELECT throws_ok(
           expiry_date,
           is_active
       ) VALUES (
-          '00000000-0000-0000-0000-000000000002',
+          2,
           '2026-01-31',
           '2026-02-28',
           true
@@ -108,7 +109,7 @@ SELECT throws_ok(
           expiry_date,
           is_active
       ) VALUES (
-          '00000000-0000-0000-0000-000000000003',
+          3,
           '2026-02-01',
           '2026-01-01',
           true
@@ -130,7 +131,7 @@ SELECT throws_ok(
           0,
           'CARD',
           now(),
-          '00000000-0000-0000-0000-000000000001'
+          1
       )$$,
     '23514',
     NULL,
@@ -149,7 +150,7 @@ SELECT throws_ok(
           100,
           'CHEQUE',
           'OTHER',
-          '00000000-0000-0000-0000-000000000001'
+          1
       )$$,
     '23514',
     NULL,
@@ -167,7 +168,7 @@ SELECT throws_ok(
           'Notice',
           'Content',
           '2026-02-02T00:00:00Z',
-          '00000000-0000-0000-0000-000000000001',
+          1,
           '2026-02-01T00:00:00Z'
       )$$,
     '23514',
@@ -177,14 +178,14 @@ SELECT throws_ok(
 
 INSERT INTO public.workouts (member_account_id, started_at)
 VALUES (
-    '00000000-0000-0000-0000-000000000002',
+    2,
     '2026-02-01T10:00:00Z'
 );
 
 SELECT throws_ok(
     $$INSERT INTO public.workouts (member_account_id, started_at)
       VALUES (
-          '00000000-0000-0000-0000-000000000002',
+          2,
           '2026-02-01T11:00:00Z'
       )$$,
     '23505',
@@ -195,7 +196,7 @@ SELECT throws_ok(
 SELECT throws_ok(
     $$INSERT INTO public.workouts (member_account_id, started_at, ended_at)
       VALUES (
-          '00000000-0000-0000-0000-000000000003',
+          3,
           '2026-02-01T11:00:00Z',
           '2026-02-01T10:00:00Z'
       )$$,
@@ -223,7 +224,7 @@ INSERT INTO public.body_metrics (
     weight_grams
 )
 VALUES (
-    '00000000-0000-0000-0000-000000000002',
+    2,
     '2026-02-01',
     70000
 );
@@ -234,7 +235,7 @@ SELECT throws_ok(
           measurement_date,
           weight_grams
       ) VALUES (
-          '00000000-0000-0000-0000-000000000002',
+          2,
           '2026-02-01',
           71000
       )$$,
@@ -244,7 +245,7 @@ SELECT throws_ok(
 );
 
 DELETE FROM public.accounts
-WHERE id = '00000000-0000-0000-0000-000000000003';
+WHERE id = 3;
 
 SELECT throws_ok(
     $$SELECT public.create_member_records(
@@ -259,7 +260,7 @@ SELECT throws_ok(
           'CARD',
           '2026-03-01T00:00:00Z',
           NULL,
-          '00000000-0000-0000-0000-000000000001'
+          1
       )$$,
     '23514',
     NULL,
@@ -269,7 +270,7 @@ SELECT throws_ok(
 SELECT is(
     (SELECT count(*)::integer
        FROM public.accounts
-      WHERE id = '00000000-0000-0000-0000-000000000003'),
+      WHERE auth_user_id = '00000000-0000-0000-0000-000000000003'),
     0,
     'failed Member creation rolls back the Account and related records'
 );
@@ -287,7 +288,7 @@ SELECT lives_ok(
           'CARD',
           '2026-03-01T00:00:00Z',
           NULL,
-          '00000000-0000-0000-0000-000000000001'
+          1
       )$$,
     'valid Member, Membership, and Payment records are created atomically'
 );
@@ -295,7 +296,11 @@ SELECT lives_ok(
 SELECT is(
     (SELECT member_number
        FROM public.member_profiles
-      WHERE account_id = '00000000-0000-0000-0000-000000000003'),
+      WHERE account_id = (
+          SELECT id
+          FROM public.accounts
+          WHERE auth_user_id = '00000000-0000-0000-0000-000000000003'
+      )),
     'M0004',
     'rolled-back sequence values are not reused when Member creation is retried'
 );
@@ -303,7 +308,11 @@ SELECT is(
 SELECT is(
     (SELECT count(*)::integer
        FROM public.memberships
-      WHERE member_account_id = '00000000-0000-0000-0000-000000000003'),
+      WHERE member_account_id = (
+          SELECT id
+          FROM public.accounts
+          WHERE auth_user_id = '00000000-0000-0000-0000-000000000003'
+      )),
     1,
     'successful Member creation includes its initial Membership'
 );
@@ -312,7 +321,11 @@ SELECT is(
     (SELECT count(*)::integer
        FROM public.payments payment
        JOIN public.memberships membership ON membership.id = payment.membership_id
-      WHERE membership.member_account_id = '00000000-0000-0000-0000-000000000003'),
+      WHERE membership.member_account_id = (
+          SELECT id
+          FROM public.accounts
+          WHERE auth_user_id = '00000000-0000-0000-0000-000000000003'
+      )),
     1,
     'successful Member creation includes its initial Payment'
 );

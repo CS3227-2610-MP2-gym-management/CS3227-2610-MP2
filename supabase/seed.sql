@@ -102,26 +102,31 @@ WHERE id IN (
     '00000000-0000-0000-0000-000000000003'
 );
 
-INSERT INTO public.accounts (id, email, role, is_active)
+INSERT INTO public.accounts (id, auth_user_id, email, role, is_active)
 VALUES
     (
+        1,
         '00000000-0000-0000-0000-000000000001',
         'owner.local@example.test',
         'OWNER',
         true
     ),
     (
+        2,
         '00000000-0000-0000-0000-000000000002',
         'member.a.local@example.test',
         'MEMBER',
         true
     ),
     (
+        3,
         '00000000-0000-0000-0000-000000000003',
         'member.b.local@example.test',
         'MEMBER',
         true
     );
+
+SELECT setval(pg_get_serial_sequence('public.accounts', 'id'), 3, true);
 
 INSERT INTO public.member_profiles (
     account_id,
@@ -132,14 +137,14 @@ INSERT INTO public.member_profiles (
 )
 VALUES
     (
-        '00000000-0000-0000-0000-000000000002',
+        2,
         'M0001',
         'Local Member A',
         '+65 8000 0001',
         '1995-01-01'
     ),
     (
-        '00000000-0000-0000-0000-000000000003',
+        3,
         'M0002',
         'Local Member B',
         '+65 8000 0002',

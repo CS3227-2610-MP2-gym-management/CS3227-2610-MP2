@@ -1,11 +1,10 @@
 package com.gymflow.ui;
 
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
-import com.gymflow.auth.AuthenticationService;
+import com.gymflow.auth.Authenticator;
 import com.gymflow.model.Account;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
@@ -23,8 +22,7 @@ final class LoginView {
     private LoginView() {
     }
 
-    static Parent create(AuthenticationService authentication, boolean setupMode,
-            Consumer<Account> authenticated) {
+    static Parent create(Authenticator authentication, Consumer<Account> authenticated) {
         ImageView mark = new ImageView(AppIcon.IMAGE);
         mark.setFitWidth(42);
         mark.setFitHeight(42);
@@ -33,23 +31,15 @@ final class LoginView {
         HBox identity = new HBox(12, mark, brand);
         identity.setAlignment(Pos.CENTER);
 
-        Label title = new Label(setupMode ? "Set up GymFlow" : "Welcome back");
+        Label title = new Label("Welcome back");
         title.getStyleClass().add("login-title");
-        Label subtitle = new Label(setupMode
-                ? "Create the Owner account for this installation"
-                : "Sign in to access your gym account");
+        Label subtitle = new Label("Sign in to access your gym account");
         subtitle.getStyleClass().add("muted-text");
 
         TextField email = field("Email address", "name@example.com");
-        PasswordField password = passwordField("Password",
-                setupMode ? "At least 12 characters" : "Enter your password");
+        PasswordField password = passwordField("Password", "Enter your password");
         VBox form = new VBox(10, labelled("Email address", email), email,
                 labelled("Password", password), password);
-
-        PasswordField confirmation = passwordField("Confirm password", "Enter the password again");
-        if (setupMode) {
-            form.getChildren().addAll(labelled("Confirm password", confirmation), confirmation);
-        }
 
         Label error = new Label();
         error.getStyleClass().add("error-text");
@@ -57,45 +47,26 @@ final class LoginView {
         error.setVisible(false);
         error.setManaged(false);
 
-        Button submit = new Button(setupMode ? "Create Owner Account" : "Sign In");
+        Button submit = new Button("Sign In");
         submit.getStyleClass().add("primary-button");
         submit.setMaxWidth(Double.MAX_VALUE);
         submit.setDefaultButton(true);
         form.getChildren().addAll(error, submit);
 
-        if (setupMode) {
-            submit.setOnAction(event -> {
-                char[] supplied = password.getText().toCharArray();
-                char[] repeated = confirmation.getText().toCharArray();
-                if (!Arrays.equals(supplied, repeated)) {
-                    Arrays.fill(supplied, '\0');
-                    Arrays.fill(repeated, '\0');
-                    showError(error, "Passwords do not match");
-                    return;
+        submit.setOnAction(event -> {
+            char[] supplied = password.getText().toCharArray();
+            String suppliedEmail = email.getText();
+            run(submit, () -> authentication.authenticate(suppliedEmail, supplied), result -> {
+                Optional<Account> account = result;
+                if (account.isPresent()) {
+                    authenticated.accept(account.get());
+                } else {
+                    showError(error, "Invalid email or password");
                 }
-                Arrays.fill(repeated, '\0');
-                String suppliedEmail = email.getText();
-                run(submit, () -> authentication.createOwner(suppliedEmail, supplied),
-                        authenticated, failure -> showError(error, setupMessage(failure)));
-            });
-        } else {
-            submit.setOnAction(event -> {
-                char[] supplied = password.getText().toCharArray();
-                String suppliedEmail = email.getText();
-                run(submit, () -> authentication.authenticate(suppliedEmail, supplied), result -> {
-                    Optional<Account> account = result;
-                    if (account.isPresent()) {
-                        authenticated.accept(account.get());
-                    } else {
-                        showError(error, "Invalid email or password");
-                    }
-                }, failure -> showError(error, "Unable to access GymFlow data. Please try again."));
-            });
-        }
+            }, failure -> showError(error, "Unable to connect to GymFlow. Please try again."));
+        });
 
-        Label accountNote = new Label(setupMode
-                ? "This installation supports one Owner account."
-                : "Member accounts are created by the gym owner.");
+        Label accountNote = new Label("Owner and Member accounts are managed by the gym.");
         accountNote.getStyleClass().add("muted-text");
         accountNote.setWrapText(true);
 
@@ -106,7 +77,7 @@ final class LoginView {
         StackPane root = new StackPane(panel);
         root.setId("login-screen");
         root.getStyleClass().add("login-screen");
-        root.setAccessibleText(setupMode ? "GymFlow Owner setup screen" : "GymFlow login screen");
+        root.setAccessibleText("GymFlow login screen");
         return root;
     }
 
@@ -148,12 +119,6 @@ final class LoginView {
             failure.accept(task.getException());
         });
         Thread.ofVirtual().name("gymflow-auth").start(task);
-    }
-
-    private static String setupMessage(Throwable failure) {
-        return failure instanceof IllegalArgumentException
-                ? failure.getMessage()
-                : "Unable to access GymFlow data. Please try again.";
     }
 
     private static void showError(Label error, String message) {

@@ -20,23 +20,26 @@ choose the easiest interpretation. Update the affected documents when an agreed 
 
 ## System context
 
-GymFlow manages one gym with one Owner and multiple Members. It is currently a local Java SE 25 desktop application:
+GymFlow manages one gym with one Owner and multiple Members. It is migrating from a local Java SE 25 desktop
+application to an online-only shared deployment:
 
 ```text
 JavaFX views
-    -> application services
-        -> SQLite stores
-            -> data/gymflow.db
+    -> Supabase Auth and the authenticated Data API
+        -> PostgreSQL with grants, Row Level Security, and constraints
 ```
+
+During the staged migration, authentication and application account identity use the local Supabase development
+stack while feature stores still use SQLite. This transitional boundary is removed feature-by-feature; a hosted
+project is not provisioned until the local schema, authentication, and authorization tests pass.
 
 The current product includes Member authentication, Member profile and Membership screens, Membership renewal
 guidance, and unified Member Workouts created by check-in and completed by check-out. Self-registration and approval, Membership plans,
 body-weight tracking, trends, broader statistics, and an administrative audit history remain backlog work.
 
-Cloud architecture is KIV. A future shared deployment will be online-only and must support concurrent clients, but no
-server framework, protocol, cloud database, or synchronization mechanism has been selected. Keep business rules out
-of JavaFX and JDBC-specific code so a future network/persistence boundary can be introduced without rewriting the
-domain behaviour.
+The approved shared architecture uses Supabase Auth, its HTTPS Data API, PostgreSQL, RLS, and protected server-side
+functions. The desktop JAR contains only the project URL and publishable key. Database passwords and Supabase secret
+keys remain server-side.
 
 ## Architectural principles
 
@@ -314,19 +317,17 @@ Do not begin with a table or screen and infer the domain rules afterward.
 - Run `gradlew.bat check` on Windows or `./gradlew check` elsewhere before handoff. Run the relevant release task when
   packaging, module declarations, resources, or dependencies change.
 
-## Cloud-readiness constraints
+## Cloud deployment constraints
 
-Until the cloud decision is approved:
-
-- Do not add networking, remote credentials, background synchronization, or a second database implementation.
+- Do not add offline write queues or background synchronization without a separate approved design.
 - Do not expose SQLite/JDBC types beyond the data layer.
 - Do not encode local filesystem assumptions into domain services.
 - Do not rely on a client clock for a future security-sensitive access decision.
 - Do not assume writes cannot race; retain database constraints even if the local UI makes a race unlikely.
 - Do not ship database or server secrets in a desktop JAR.
 
-When shared deployment is approved, preserve the service use-case semantics and introduce the remote boundary around
-them. Online-only means failure is surfaced clearly; it does not imply offline write queues or later synchronization.
+Preserve service use-case semantics while replacing SQLite stores with the authenticated remote boundary.
+Online-only means failure is surfaced clearly; it does not imply offline write queues or later synchronization.
 
 ## Prohibited shortcuts
 

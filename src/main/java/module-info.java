@@ -3,11 +3,13 @@
  */
 module com.gymflow {
     requires java.logging;
+    requires java.net.http;
     requires java.prefs;
     requires java.sql;
     requires transitive javafx.graphics;
     requires javafx.controls;
     requires org.xerial.sqlitejdbc;
+    requires com.fasterxml.jackson.databind;
 
     exports com.gymflow.auth;
     exports com.gymflow.announcement;
