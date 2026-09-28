@@ -17,14 +17,16 @@ profile; its access token and temporary connection details must not be copied in
 
 ## Deployed baseline
 
-The hosted database has migrations `20260928010000` through `20260928080000`. The `manage-member` Edge Function is
-deployed and requires a valid Owner session. Migration `20260928080000` adds a service-role-only operation for the
-one-time initial Owner bootstrap. It derives the email from the selected Auth identity and refuses to run unless the
-application account table is empty.
+The hosted database has migrations `20260928010000` through `20260928090000`. The `manage-member` Edge Function is
+deployed and requires a valid session. Migration `20260928080000` adds a service-role-only operation for the one-time
+initial Owner bootstrap. It derives the email from the selected Auth identity and refuses to run unless the
+application account table is empty. Migration `20260928090000` adds protected co-owner creation and activation,
+current-password re-authentication, active-Owner invariants, and Owner-account audit records.
 
 The first active Owner Auth identity and GymFlow account have been provisioned. The Owner email and password are not
-stored in this repository. Additional Owners are intentionally unsupported until the controlled co-owner phase in
-the deployment plan replaces the single-Owner invariant together with its authorization and audit tests.
+stored in this repository. That Owner can use the application's `Owners` page to provision co-owners. The new Owner's
+real email and temporary password are entered only in the application; the acting Owner must confirm the change with
+their current password. No privileged key is shipped to the desktop client.
 
 Production Auth is configured with:
 

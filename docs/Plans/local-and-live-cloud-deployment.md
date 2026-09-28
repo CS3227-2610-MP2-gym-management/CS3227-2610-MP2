@@ -130,7 +130,8 @@ Make PostgreSQL migrations the authoritative schema for both local and live envi
 
 - A fresh local reset recreates the complete schema.
 - Invalid foreign keys, dates, amounts, and overlapping records are rejected.
-- The one-Owner and one-open-workout rules remain enforced.
+- Account identity uniqueness and the one-open-workout rule remain enforced. The temporary single-Owner rule is
+  replaced by the active-Owner invariants in Phase 7A.
 - Database lint and automated database tests pass.
 
 ## Phase 3 - Replace first-launch setup with universal sign-in
@@ -275,8 +276,7 @@ No workflow should run a linked remote database reset as a routine development a
 ### Goal
 
 Allow the initial Owner to provision additional Owners for the real gym without exposing public Owner signup or
-granting Members any path to elevate their role. The single-Owner constraint remains in force until this phase is
-implemented and tested as one complete authorization change.
+granting Members any path to elevate their role.
 
 ### Steps
 

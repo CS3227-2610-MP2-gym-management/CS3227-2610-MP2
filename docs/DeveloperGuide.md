@@ -34,9 +34,14 @@ The local services use these default addresses:
 | Studio | `http://127.0.0.1:54323` |
 | Mailpit | `http://127.0.0.1:54324` |
 
-Keep `npm run supabase:functions` running in a second terminal while exercising Owner Member creation, password
-reset, or profile/email updates. The function runtime uses local service credentials injected by the Supabase CLI;
-those credentials are never placed in application configuration.
+Keep `npm run supabase:functions` running in a second terminal while exercising Member creation, Owner provisioning,
+password reset, activation, or profile/email updates. The function runtime uses local service credentials injected
+by the Supabase CLI; those credentials are never placed in application configuration.
+
+The `Owners` page is the controlled co-owner path. Owner creation and activation changes require the signed-in
+Owner's current password, run through the protected function, and are recorded in `owner_account_audit`. Direct
+desktop access to the privileged database operations is denied. The database also prevents self-deactivation and any
+change that would leave no active Owner.
 
 `npm run supabase:reset` is a local destructive operation. Never add `--linked` to the routine development workflow.
 The committed seed contains only fake `.test` users:

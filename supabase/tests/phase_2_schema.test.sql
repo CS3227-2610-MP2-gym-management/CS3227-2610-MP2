@@ -63,13 +63,11 @@ SELECT is(
     'the server role can execute privileged Member creation'
 );
 
-SELECT throws_ok(
+SELECT lives_ok(
     $$UPDATE public.accounts
          SET role = 'OWNER'
        WHERE id = 2$$,
-    '23505',
-    NULL,
-    'only one Owner account is allowed'
+    'multiple Owner accounts are allowed'
 );
 
 INSERT INTO public.memberships (
@@ -275,6 +273,10 @@ SELECT is(
     'failed Member creation rolls back the Account and related records'
 );
 
+CREATE TEMPORARY TABLE failed_member_number_sequence AS
+SELECT last_value
+FROM public.member_number_sequence;
+
 SELECT lives_ok(
     $$SELECT public.create_member_records(
           '00000000-0000-0000-0000-000000000003',
@@ -301,7 +303,10 @@ SELECT is(
           FROM public.accounts
           WHERE auth_user_id = '00000000-0000-0000-0000-000000000003'
       )),
-    'M0004',
+    (
+        SELECT 'M' || lpad((last_value + 1)::text, 4, '0')
+        FROM failed_member_number_sequence
+    ),
     'rolled-back sequence values are not reused when Member creation is retried'
 );
 

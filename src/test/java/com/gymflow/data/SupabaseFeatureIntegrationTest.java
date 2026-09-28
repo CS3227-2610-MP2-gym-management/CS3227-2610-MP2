@@ -2,6 +2,7 @@ package com.gymflow.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.AddMembershipRequest;
 import com.gymflow.member.CreateMemberRequest;
 import com.gymflow.member.MemberAccountService;
+import com.gymflow.member.OwnerAccountService;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.metric.BodyMetricService;
 import com.gymflow.model.Account;
@@ -43,6 +45,7 @@ class SupabaseFeatureIntegrationTest {
                 URI.create("http://127.0.0.1:54321"), LOCAL_KEY);
         SupabaseAuthenticationService authentication = new SupabaseAuthenticationService(configuration);
         SupabaseDataClient client = new SupabaseDataClient(configuration, authentication);
+        OwnerAccountService ownerAccounts = new OwnerAccountService(client);
         OwnerMemberService members = new OwnerMemberService(client);
         OwnerExpenseService expenses = new OwnerExpenseService(client);
         OwnerAnnouncementService announcements = new OwnerAnnouncementService(client);
@@ -54,6 +57,29 @@ class SupabaseFeatureIntegrationTest {
 
         Account owner = authentication.authenticate("owner.local@example.test",
                 "LocalOwner!2026".toCharArray()).orElseThrow();
+        char[] coOwnerPassword = "LocalCoOwner!2026".toCharArray();
+        char[] currentOwnerPassword = "LocalOwner!2026".toCharArray();
+        Account coOwner = ownerAccounts.createOwner("co.owner.local@example.test",
+                coOwnerPassword, currentOwnerPassword);
+        assertTrue(new String(coOwnerPassword).chars().allMatch(value -> value == 0));
+        assertTrue(new String(currentOwnerPassword).chars().allMatch(value -> value == 0));
+        assertEquals(coOwner.id(), authentication.authenticate("co.owner.local@example.test",
+                "LocalCoOwner!2026".toCharArray()).orElseThrow().id());
+
+        authentication.authenticate("owner.local@example.test",
+                "LocalOwner!2026".toCharArray()).orElseThrow();
+        char[] selfChangePassword = "LocalOwner!2026".toCharArray();
+        assertThrows(IllegalStateException.class,
+                () -> ownerAccounts.setActive(owner.id(), false, selfChangePassword));
+        assertTrue(new String(selfChangePassword).chars().allMatch(value -> value == 0));
+        ownerAccounts.setActive(coOwner.id(), false, "LocalOwner!2026".toCharArray());
+        assertFalse(authentication.authenticate("co.owner.local@example.test",
+                "LocalCoOwner!2026".toCharArray()).isPresent());
+        authentication.authenticate("owner.local@example.test",
+                "LocalOwner!2026".toCharArray()).orElseThrow();
+        ownerAccounts.setActive(coOwner.id(), true, "LocalOwner!2026".toCharArray());
+        assertEquals(2, ownerAccounts.listOwners().size());
+
         members.addMembership(new AddMembershipRequest(2, LocalDate.now(),
                 LocalDate.now().plusDays(30), new BigDecimal("80.00"), PaymentMethod.CARD,
                 Instant.now(), "LOCAL-INTEGRATION"), owner.id());

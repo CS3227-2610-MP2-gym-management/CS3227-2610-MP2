@@ -3,16 +3,17 @@ package com.gymflow.ui;
 import java.util.Objects;
 import java.util.prefs.Preferences;
 
-import com.gymflow.auth.Authenticator;
 import com.gymflow.announcement.OwnerAnnouncementService;
+import com.gymflow.auth.Authenticator;
 import com.gymflow.expense.OwnerExpenseService;
+import com.gymflow.member.MemberAccountService;
+import com.gymflow.member.OwnerAccountService;
+import com.gymflow.member.OwnerMemberService;
+import com.gymflow.metric.BodyMetricService;
 import com.gymflow.model.Account;
 import com.gymflow.model.Role;
-import com.gymflow.member.OwnerMemberService;
-import com.gymflow.member.MemberAccountService;
-import com.gymflow.metric.BodyMetricService;
-import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.visit.MemberVisitService;
+import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.workout.WorkoutService;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -34,6 +35,7 @@ public final class AppView {
     private final OwnerExpenseService expenses;
     private final OwnerMemberService members;
     private final MemberAccountService memberAccounts;
+    private final OwnerAccountService ownerAccounts;
     private final OwnerVisitService visits;
     private final MemberVisitService memberVisits;
     private final WorkoutService workouts;
@@ -49,15 +51,17 @@ public final class AppView {
      */
     public AppView(Stage stage, Authenticator authentication,
             OwnerMemberService members, OwnerExpenseService expenses,
-            OwnerVisitService visits, MemberVisitService memberVisits, 
-            WorkoutService workouts, BodyMetricService bodyMetrics, OwnerAnnouncementService announcements,
-            MemberAccountService memberAccounts, boolean localEnvironment) {
+            OwnerVisitService visits, MemberVisitService memberVisits,
+            WorkoutService workouts, BodyMetricService bodyMetrics,
+            OwnerAnnouncementService announcements, MemberAccountService memberAccounts,
+            OwnerAccountService ownerAccounts, boolean localEnvironment) {
         Objects.requireNonNull(stage);
         this.authentication = Objects.requireNonNull(authentication);
         this.announcements = Objects.requireNonNull(announcements);
         this.expenses = Objects.requireNonNull(expenses);
         this.members = Objects.requireNonNull(members);
         this.memberAccounts = Objects.requireNonNull(memberAccounts);
+        this.ownerAccounts = Objects.requireNonNull(ownerAccounts);
         this.visits = Objects.requireNonNull(visits);
         this.memberVisits = Objects.requireNonNull(memberVisits);
         this.workouts = Objects.requireNonNull(workouts);
@@ -101,6 +105,9 @@ public final class AppView {
         case OWNER_ANNOUNCEMENTS -> !isOwnerSession(session)
                 ? createLogin()
                 : OwnerAnnouncementsView.create(announcements, session, this::show, null, this::logout);
+        case OWNER_ACCOUNTS -> !isOwnerSession(session)
+                ? createLogin()
+                : OwnerAccountsView.create(ownerAccounts, session, this::show, this::logout);
         case MEMBER_HOME -> !isMemberSession(session)
                 ? createLogin()
                 : MemberHomeView.create(memberAccounts, memberVisits, workouts, session, this::show, this::logout);

@@ -30,7 +30,7 @@ import javafx.stage.Stage;
 
 final class UiComponents {
     private static final List<String> OWNER_NAVIGATION =
-            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements");
+            List.of("Overview", "Members", "Memberships", "Finances", "Visits", "Announcements", "Owners");
 
     private UiComponents() {
     }
@@ -53,6 +53,7 @@ final class UiComponents {
         case "Finances" -> Screen.OWNER_FINANCES;
         case "Visits" -> Screen.OWNER_VISITS;
         case "Announcements" -> Screen.OWNER_ANNOUNCEMENTS;
+        case "Owners" -> Screen.OWNER_ACCOUNTS;
         default -> throw new IllegalArgumentException("Unknown Owner navigation item: " + item);
         };
     }

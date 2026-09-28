@@ -39,6 +39,17 @@ connection error instead.
 
 Select `Return to Login` in the Owner sidebar to clear the current session.
 
+## Managing Owners
+
+Open `Owners` from the Owner sidebar to view every gym administrator. Select `Add Owner`, enter the co-owner's real
+email address and a temporary password, then enter your own current password to authorize the change. Send the
+temporary password to the co-owner through a secure channel separate from their username.
+
+Use `Deactivate` to prevent another Owner from accessing GymFlow and `Activate` to restore access. Each change again
+requires your current password. You cannot change your own active status from this page, and GymFlow will never allow
+the final active Owner to be deactivated. Owner creation and activation changes are retained in an administrative
+audit record.
+
 ## Light and dark themes
 
 Use `Dark mode` or `Light mode` at the top-right of the window to change the appearance of GymFlow. The control is

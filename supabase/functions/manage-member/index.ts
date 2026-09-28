@@ -1,10 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 type Payload = {
-  action: "create" | "reset-password" | "update";
+  action: "create" | "reset-password" | "update" | "create-owner" | "set-owner-active";
   member_account_id?: number;
+  owner_account_id?: number;
+  active?: boolean;
   email?: string;
   password?: string;
+  current_password?: string;
   full_name?: string;
   phone_number?: string;
   date_of_birth?: string | null;
@@ -49,6 +52,63 @@ Deno.serve(async (request) => {
     payload = await request.json();
   } catch {
     return json(400, { message: "Invalid request" });
+  }
+
+  const recentlyReauthenticated = async () => {
+    if (!payload.current_password || !userData.user.email) return false;
+    const verifier = createClient(url, Deno.env.get("SUPABASE_ANON_KEY") ?? serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await verifier.auth.signInWithPassword({
+      email: userData.user.email,
+      password: payload.current_password,
+    });
+    return !error && data.user?.id === userData.user.id;
+  };
+
+  if (payload.action === "create-owner") {
+    if (actor.role !== "OWNER") return json(403, { message: "Owner access required" });
+    if (!payload.email || !payload.password) {
+      return json(400, { message: "Owner email and password are required" });
+    }
+    if (!(await recentlyReauthenticated())) {
+      return json(403, { message: "Current password is incorrect" });
+    }
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email: payload.email,
+      password: payload.password,
+      email_confirm: true,
+    });
+    if (createError || !created.user) {
+      return json(400, { message: createError?.message ?? "Unable to create Owner login" });
+    }
+    const { data: ownerId, error: recordsError } = await admin.rpc("create_owner_record", {
+      p_auth_user_id: created.user.id,
+      p_actor_account_id: actor.id,
+    });
+    if (recordsError) {
+      await admin.auth.admin.deleteUser(created.user.id);
+      return json(400, { message: recordsError.message });
+    }
+    return json(200, { owner_account_id: ownerId });
+  }
+
+  if (payload.action === "set-owner-active") {
+    if (actor.role !== "OWNER") return json(403, { message: "Owner access required" });
+    if (!payload.owner_account_id || typeof payload.active !== "boolean") {
+      return json(400, { message: "Owner account and active state are required" });
+    }
+    if (!(await recentlyReauthenticated())) {
+      return json(403, { message: "Current password is incorrect" });
+    }
+    const { data: changed, error } = await admin.rpc("set_owner_active", {
+      p_target_account_id: payload.owner_account_id,
+      p_active: payload.active,
+      p_actor_account_id: actor.id,
+    });
+    return error
+      ? json(400, { message: error.message })
+      : json(200, { updated: changed });
   }
 
   if (payload.action === "create") {

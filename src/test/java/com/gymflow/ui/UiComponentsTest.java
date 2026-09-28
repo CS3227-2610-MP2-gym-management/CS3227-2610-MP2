@@ -13,5 +13,6 @@ class UiComponentsTest {
         assertEquals(Screen.OWNER_FINANCES, UiComponents.ownerScreen("Finances"));
         assertEquals(Screen.OWNER_VISITS, UiComponents.ownerScreen("Visits"));
         assertEquals(Screen.OWNER_ANNOUNCEMENTS, UiComponents.ownerScreen("Announcements"));
+        assertEquals(Screen.OWNER_ACCOUNTS, UiComponents.ownerScreen("Owners"));
     }
 }

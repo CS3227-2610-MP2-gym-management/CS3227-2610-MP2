@@ -70,13 +70,14 @@ public final class SupabaseAuthenticationService implements Authenticator, Acces
                 throw new IllegalStateException("GymFlow response is missing expires_in");
             }
             String authUserId = requiredText(payload.path("user"), "id");
-            Account account = loadAccount(authUserId, accessToken);
-            if (!account.active()) {
+            Optional<Account> account = loadAccount(authUserId, accessToken);
+            if (account.isEmpty() || !account.orElseThrow().active()) {
                 return Optional.empty();
             }
+            Account activeAccount = account.orElseThrow();
             session = new Session(accessToken, refreshToken,
-                    clock.instant().plusSeconds(expiresIn), account);
-            return Optional.of(account);
+                    clock.instant().plusSeconds(expiresIn), activeAccount);
+            return Optional.of(activeAccount);
         } finally {
             clear(password);
         }
@@ -170,7 +171,7 @@ public final class SupabaseAuthenticationService implements Authenticator, Acces
                 clock.instant().plusSeconds(expiresIn), active.account());
     }
 
-    private Account loadAccount(String authUserId, String accessToken) {
+    private Optional<Account> loadAccount(String authUserId, String accessToken) {
         String query = "/rest/v1/accounts?auth_user_id=eq."
                 + URLEncoder.encode(authUserId, StandardCharsets.UTF_8)
                 + "&select=" + ACCOUNT_FIELDS + "&limit=1";
@@ -182,14 +183,20 @@ public final class SupabaseAuthenticationService implements Authenticator, Acces
                 .build());
         requireSuccess(response, "Unable to load the GymFlow account");
         JsonNode accounts = read(response.body());
-        if (!accounts.isArray() || accounts.size() != 1) {
-            throw new IllegalStateException("The authenticated user has no GymFlow account");
+        if (!accounts.isArray()) {
+            throw new IllegalStateException("GymFlow returned invalid account data");
+        }
+        if (accounts.isEmpty()) {
+            return Optional.empty();
+        }
+        if (accounts.size() != 1) {
+            throw new IllegalStateException("The authenticated user has multiple GymFlow accounts");
         }
         JsonNode account = accounts.get(0);
-        return new Account(account.path("id").asLong(), requiredText(account, "email"),
+        return Optional.of(new Account(account.path("id").asLong(), requiredText(account, "email"),
                 Role.valueOf(requiredText(account, "role")), account.path("is_active").asBoolean(),
                 Instant.parse(requiredText(account, "created_at")),
-                Instant.parse(requiredText(account, "updated_at")));
+                Instant.parse(requiredText(account, "updated_at"))));
     }
 
     private String credentials(String email, char[] password) {

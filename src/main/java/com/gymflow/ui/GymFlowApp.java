@@ -2,19 +2,20 @@ package com.gymflow.ui;
 
 import java.nio.file.Path;
 
+import com.gymflow.announcement.OwnerAnnouncementService;
 import com.gymflow.auth.Authenticator;
 import com.gymflow.auth.SupabaseAuthenticationService;
-import com.gymflow.announcement.OwnerAnnouncementService;
 import com.gymflow.config.RuntimeEnvironment;
 import com.gymflow.config.SupabaseConfiguration;
 import com.gymflow.data.SupabaseDataClient;
 import com.gymflow.expense.OwnerExpenseService;
-import com.gymflow.member.OwnerMemberService;
 import com.gymflow.member.MemberAccountService;
+import com.gymflow.member.OwnerAccountService;
+import com.gymflow.member.OwnerMemberService;
 import com.gymflow.metric.BodyMetricService;
 import com.gymflow.monitoring.AppMonitoring;
-import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.visit.MemberVisitService;
+import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.workout.WorkoutService;
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -29,6 +30,7 @@ public final class GymFlowApp extends Application {
     private boolean localEnvironment;
     private OwnerMemberService members;
     private MemberAccountService memberAccounts;
+    private OwnerAccountService ownerAccounts;
     private OwnerVisitService visits;
     private MemberVisitService memberVisits;
     private WorkoutService workouts;
@@ -47,6 +49,7 @@ public final class GymFlowApp extends Application {
         expenses = new OwnerExpenseService(data);
         members = new OwnerMemberService(data);
         memberAccounts = new MemberAccountService(data, supabaseAuthentication);
+        ownerAccounts = new OwnerAccountService(data);
         visits = new OwnerVisitService(data);
         memberVisits = new MemberVisitService(data);
         workouts = new WorkoutService(data);
@@ -66,7 +69,8 @@ public final class GymFlowApp extends Application {
         stage.setMinHeight(MINIMUM_HEIGHT);
 
         new AppView(stage, authentication, members, expenses, visits, memberVisits,
-                workouts, bodyMetrics, announcements, memberAccounts, localEnvironment);
+                workouts, bodyMetrics, announcements, memberAccounts, ownerAccounts,
+                localEnvironment);
         stage.show();
     }
 

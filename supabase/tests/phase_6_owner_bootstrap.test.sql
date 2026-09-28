@@ -29,7 +29,7 @@ select is(
   'the protected server role can execute the initial Owner bootstrap'
 );
 
-delete from public.accounts;
+truncate table public.accounts cascade;
 
 set local role authenticated;
 select throws_ok(
