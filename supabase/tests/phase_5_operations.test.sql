@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(21);
 
 select is(
   has_function_privilege(
@@ -36,6 +36,70 @@ select is((select count(*)::integer from public.memberships), 1,
   'Owner Membership operation creates one Membership');
 select is((select count(*)::integer from public.payments), 1,
   'Owner Membership operation creates its Payment in the same transaction');
+select is(
+  has_function_privilege(
+    'authenticated',
+    'public.owner_set_membership_active(bigint,boolean)',
+    'EXECUTE'
+  ),
+  true,
+  'authenticated Owners can call the protected Membership state operation'
+);
+select is(
+  has_table_privilege('authenticated', 'public.memberships', 'UPDATE'),
+  false,
+  'desktop users cannot update Membership state directly'
+);
+select lives_ok(
+  $$select public.owner_set_membership_active(
+      (select membership_id from public.payments where reference = 'PHASE5'), false
+    )$$,
+  'Owner can deactivate a Membership'
+);
+select lives_ok(
+  $$select public.owner_set_membership_active(
+      (select membership_id from public.payments where reference = 'PHASE5'), true
+    )$$,
+  'Owner can reactivate a current Membership'
+);
+reset role;
+insert into public.memberships (
+  member_account_id, start_date, expiry_date, is_active
+) values (
+  2, current_date - 60, current_date - 30, false
+);
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
+select throws_ok(
+  $$select public.owner_set_membership_active(
+      (select id from public.memberships where expiry_date = current_date - 30), true
+    )$$,
+  '23514',
+  null,
+  'Owner cannot reactivate an expired Membership'
+);
+select lives_ok(
+  $$select public.owner_set_membership_active(
+      (select membership_id from public.payments where reference = 'PHASE5'), false
+    )$$,
+  'Owner can deactivate the current Membership before an overlap test'
+);
+reset role;
+insert into public.memberships (
+  member_account_id, start_date, expiry_date, is_active
+) values (
+  2, current_date, current_date + 30, true
+);
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
+select throws_ok(
+  $$select public.owner_set_membership_active(
+      (select membership_id from public.payments where reference = 'PHASE5'), true
+    )$$,
+  '23P01',
+  null,
+  'Owner cannot reactivate a Membership that overlaps an active Membership'
+);
 select throws_ok(
   $$select public.save_member_workout(
       null, now() - interval '1 hour', now(), null, '[]'::jsonb

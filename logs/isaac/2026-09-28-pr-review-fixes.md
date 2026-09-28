@@ -24,3 +24,24 @@ signatures exist, preventing a modified client from invoking the former backdati
 Automated Java verification passed with an external temporary Gradle cache. The local Supabase reset and pgTAP run
 could not execute because Docker Desktop's Linux engine was not running; those commands remain the required database
 verification once Docker is available.
+
+## Fix 2: Protected Membership activation
+
+Membership activation and deactivation now use the `owner_set_membership_active` security-definer function instead
+of a direct REST update. The function requires an active Owner, locks and validates the target Membership, rejects
+expired reactivation using Singapore's current date, and rejects overlap with another active Membership. The existing
+database exclusion constraint remains the final concurrency safeguard.
+
+Authenticated desktop users no longer have direct update permission on Membership state. Database tests cover Owner
+deactivation, valid reactivation, expired reactivation, overlapping reactivation, function access, and removal of
+direct table-update access.
+
+### Verification
+
+- Reset local Supabase and run `npm run supabase:test`.
+- Run `gradlew.bat checkstyleMain test`.
+- As an Owner, deactivate and reactivate a current Membership; then confirm an expired Membership cannot be
+  reactivated and an overlapping Membership is rejected.
+
+Java Checkstyle and regression tests passed. The pgTAP cases are ready but require the currently stopped Docker
+Desktop Linux engine before they can be executed locally.

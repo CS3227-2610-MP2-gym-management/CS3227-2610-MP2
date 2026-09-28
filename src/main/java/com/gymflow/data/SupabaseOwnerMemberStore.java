@@ -147,10 +147,8 @@ public final class SupabaseOwnerMemberStore {
     /** Activates or deactivates a Membership. */
     public Membership setMembershipActive(long membershipId, boolean active,
             long ownerAccountId) {
-        JsonNode rows = client.patch("memberships?id=eq." + membershipId
-                + "&select=" + MEMBERSHIP_FIELDS,
-                Map.of("is_active", active, "updated_at", java.time.Instant.now().toString()));
-        return SupabaseRows.membership(single(rows, "Membership"));
+        return SupabaseRows.membership(client.rpc("owner_set_membership_active",
+                Map.of("p_membership_id", membershipId, "p_active", active)));
     }
 
     /** Checks whether the Member has access on a date. */
