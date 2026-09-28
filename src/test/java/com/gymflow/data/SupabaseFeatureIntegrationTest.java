@@ -107,10 +107,12 @@ class SupabaseFeatureIntegrationTest {
                 "cloud.member.updated.local@example.test",
                 "CloudMemberReset!2026".toCharArray()).orElseThrow();
         assertEquals(created.accountId(), createdAccount.id());
+        memberAccounts.updateContact(createdAccount,
+                "cloud.member.self.local@example.test", "+65 8000 0097");
         memberAccounts.changePassword(createdAccount, "CloudMemberReset!2026".toCharArray(),
                 "CloudMemberChanged!2026".toCharArray());
         assertEquals(created.accountId(), authentication.authenticate(
-                "cloud.member.updated.local@example.test",
+                "cloud.member.self.local@example.test",
                 "CloudMemberChanged!2026".toCharArray()).orElseThrow().id());
 
         Account member = authentication.authenticate("member.a.local@example.test",

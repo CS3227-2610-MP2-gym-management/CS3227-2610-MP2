@@ -76,7 +76,7 @@ public final class SupabaseAuthenticationService implements Authenticator, Acces
             }
             Account activeAccount = account.orElseThrow();
             session = new Session(accessToken, refreshToken,
-                    clock.instant().plusSeconds(expiresIn), activeAccount);
+                    clock.instant().plusSeconds(expiresIn), authUserId, activeAccount);
             return Optional.of(activeAccount);
         } finally {
             clear(password);
@@ -100,10 +100,28 @@ public final class SupabaseAuthenticationService implements Authenticator, Acces
                 new IllegalStateException("Sign in before accessing GymFlow data"));
     }
 
+    /** Reloads and returns the current application Account. */
+    public synchronized Account refreshAccount() {
+        Session active = session;
+        if (active == null) {
+            throw new IllegalStateException("Sign in before accessing GymFlow data");
+        }
+        String accessToken = requireAccessToken();
+        Account account = loadAccount(active.authUserId(), accessToken)
+                .filter(Account::active)
+                .orElseThrow(() -> new IllegalStateException(
+                        "The signed-in GymFlow account is unavailable"));
+        active = session;
+        session = new Session(active.accessToken(), active.refreshToken(), active.expiresAt(),
+                active.authUserId(), account);
+        return account;
+    }
+
     /** Verifies the current password and replaces it for the signed-in user. */
-    public synchronized void changePassword(String email, char[] currentPassword, char[] newPassword) {
+    public synchronized void changePassword(char[] currentPassword, char[] newPassword) {
         try {
-            if (authenticate(email, currentPassword).isEmpty()) {
+            String currentEmail = refreshAccount().email();
+            if (authenticate(currentEmail, currentPassword).isEmpty()) {
                 throw new IllegalArgumentException("Current password is incorrect");
             }
             String body = json.writeValueAsString(new PasswordUpdate(new String(newPassword)));
@@ -168,7 +186,7 @@ public final class SupabaseAuthenticationService implements Authenticator, Acces
         }
         session = new Session(requiredText(payload, "access_token"),
                 requiredText(payload, "refresh_token"),
-                clock.instant().plusSeconds(expiresIn), active.account());
+                clock.instant().plusSeconds(expiresIn), active.authUserId(), active.account());
     }
 
     private Optional<Account> loadAccount(String authUserId, String accessToken) {
@@ -260,6 +278,6 @@ public final class SupabaseAuthenticationService implements Authenticator, Acces
     }
 
     private record Session(String accessToken, String refreshToken,
-            Instant expiresAt, Account account) {
+            Instant expiresAt, String authUserId, Account account) {
     }
 }

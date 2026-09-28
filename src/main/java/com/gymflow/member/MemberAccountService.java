@@ -66,9 +66,13 @@ public final class MemberAccountService {
         requireMember(actor);
         String normalizedEmail = AccountValidation.normalizeEmail(email);
         String normalizedPhone = AccountValidation.normalizePhone(phoneNumber);
-        return cloudAccounts == null
-                ? accounts.updateContact(actor.id(), normalizedEmail, normalizedPhone)
-                : cloudAccounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+        if (cloudAccounts == null) {
+            return accounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+        }
+        com.gymflow.model.Member member = cloudAccounts.updateContact(
+                actor.id(), normalizedEmail, normalizedPhone);
+        cloudAuthentication.refreshAccount();
+        return member;
     }
 
     /** Replaces the authenticated Member's password after verifying the current password. */
@@ -86,7 +90,7 @@ public final class MemberAccountService {
                 }
                 accountStore.updateMemberPassword(actor.id(), passwords.hash(newPassword));
             } else {
-                cloudAuthentication.changePassword(actor.email(), currentPassword, newPassword);
+                cloudAuthentication.changePassword(currentPassword, newPassword);
             }
         } finally {
             clear(currentPassword);

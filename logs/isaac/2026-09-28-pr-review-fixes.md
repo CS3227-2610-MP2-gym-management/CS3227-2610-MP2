@@ -62,3 +62,23 @@ The Visit pgTAP suite repeats a correction with the stored timestamps and verifi
   change either timestamp and confirm the correction and audit metadata are saved.
 
 Java Checkstyle and regression tests passed. Database execution remains pending until Docker Desktop is running.
+
+## Fix 4: Refresh authentication after Member email changes
+
+The Supabase authentication session now retains the Auth user identifier and can reload its application Account.
+After a Member changes their own email, `MemberAccountService` refreshes that session Account. Cloud password changes
+reload the current identity and authenticate with its current email instead of the stale Account object captured by
+the JavaFX screen.
+
+The environment-gated Supabase integration flow now changes a Member's email and immediately changes the password
+using the original Account object, then confirms sign-in succeeds with the new email and password.
+
+### Verification
+
+- Run `gradlew.bat checkstyleMain test`.
+- With local Supabase running, set `GYMFLOW_LOCAL_INTEGRATION=true` and run the Java integration tests.
+- Manually sign in as a Member, change the email, then change the password without signing out. Sign out afterward
+  and confirm the new email and password authenticate successfully while the old email does not.
+
+Java Checkstyle and regression tests passed. The end-to-end stale-Account scenario is included in the gated cloud
+integration test and requires local Supabase to execute.
