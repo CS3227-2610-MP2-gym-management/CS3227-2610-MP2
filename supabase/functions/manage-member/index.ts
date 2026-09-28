@@ -1,4 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  DUPLICATE_EMAIL_CODE,
+  DUPLICATE_EMAIL_MESSAGE,
+  isDuplicateEmailError,
+  normalizeAccountEmail,
+} from "./email-policy.mjs";
 
 type Payload = {
   action: "create" | "reset-password" | "update" | "create-owner" | "set-owner-active";
@@ -24,6 +30,14 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
   headers: { "Content-Type": "application/json" },
 });
 
+const duplicateEmailError = () => json(400, {
+  code: DUPLICATE_EMAIL_CODE,
+  message: DUPLICATE_EMAIL_MESSAGE,
+});
+
+const accountError = (error: unknown, fallback: string) =>
+  isDuplicateEmailError(error) ? duplicateEmailError() : json(400, { message: fallback });
+
 Deno.serve(async (request) => {
   if (request.method !== "POST") return json(405, { message: "Method not allowed" });
 
@@ -37,6 +51,12 @@ Deno.serve(async (request) => {
   const admin = createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+  const emailConflict = async (email: string, excludedAccountId?: number) => {
+    let query = admin.from("accounts").select("id").eq("email", email);
+    if (excludedAccountId) query = query.neq("id", excludedAccountId);
+    const { data, error } = await query.limit(1);
+    return { conflict: Boolean(data?.length), error };
+  };
   const token = authorization.slice("Bearer ".length);
   const { data: userData, error: userError } = await admin.auth.getUser(token);
   if (userError || !userData.user) return json(401, { message: "Invalid session" });
@@ -74,13 +94,17 @@ Deno.serve(async (request) => {
     if (!(await recentlyReauthenticated())) {
       return json(403, { message: "Current password is incorrect" });
     }
+    const email = normalizeAccountEmail(payload.email);
+    const availability = await emailConflict(email);
+    if (availability.error) return json(500, { message: "Unable to verify email availability" });
+    if (availability.conflict) return duplicateEmailError();
     const { data: created, error: createError } = await admin.auth.admin.createUser({
-      email: payload.email,
+      email,
       password: payload.password,
       email_confirm: true,
     });
     if (createError || !created.user) {
-      return json(400, { message: createError?.message ?? "Unable to create Owner login" });
+      return accountError(createError, "Unable to create Owner login");
     }
     const { data: ownerId, error: recordsError } = await admin.rpc("create_owner_record", {
       p_auth_user_id: created.user.id,
@@ -88,7 +112,7 @@ Deno.serve(async (request) => {
     });
     if (recordsError) {
       await admin.auth.admin.deleteUser(created.user.id);
-      return json(400, { message: recordsError.message });
+      return accountError(recordsError, "Unable to create Owner account");
     }
     return json(200, { owner_account_id: ownerId });
   }
@@ -113,17 +137,24 @@ Deno.serve(async (request) => {
 
   if (payload.action === "create") {
     if (actor.role !== "OWNER") return json(403, { message: "Owner access required" });
+    if (!payload.email || !payload.password) {
+      return json(400, { message: "Member email and password are required" });
+    }
+    const email = normalizeAccountEmail(payload.email);
+    const availability = await emailConflict(email);
+    if (availability.error) return json(500, { message: "Unable to verify email availability" });
+    if (availability.conflict) return duplicateEmailError();
     const { data: created, error: createError } = await admin.auth.admin.createUser({
-      email: payload.email,
+      email,
       password: payload.password,
       email_confirm: true,
     });
     if (createError || !created.user) {
-      return json(400, { message: createError?.message ?? "Unable to create login" });
+      return accountError(createError, "Unable to create login");
     }
     const { data: memberId, error: recordsError } = await admin.rpc("create_member_records", {
       p_member_auth_user_id: created.user.id,
-      p_email: payload.email,
+      p_email: email,
       p_full_name: payload.full_name,
       p_phone_number: payload.phone_number,
       p_date_of_birth: payload.date_of_birth,
@@ -137,7 +168,7 @@ Deno.serve(async (request) => {
     });
     if (recordsError) {
       await admin.auth.admin.deleteUser(created.user.id);
-      return json(400, { message: recordsError.message });
+      return accountError(recordsError, "Unable to create Member account");
     }
     return json(200, { member_account_id: memberId });
   }
@@ -166,16 +197,20 @@ Deno.serve(async (request) => {
   if (payload.action !== "update" || !payload.email || !payload.phone_number) {
     return json(400, { message: "Invalid Member update" });
   }
+  const email = normalizeAccountEmail(payload.email);
+  const availability = await emailConflict(email, memberId);
+  if (availability.error) return json(500, { message: "Unable to verify email availability" });
+  if (availability.conflict) return duplicateEmailError();
   const oldEmail = member.email;
   const { error: authUpdateError } = await admin.auth.admin.updateUserById(member.auth_user_id, {
-    email: payload.email,
+    email,
     email_confirm: true,
   });
-  if (authUpdateError) return json(400, { message: authUpdateError.message });
+  if (authUpdateError) return accountError(authUpdateError, "Unable to update Member login");
 
   const { error: recordsUpdateError } = await admin.rpc("update_member_records", {
     p_member_account_id: memberId,
-    p_email: payload.email,
+    p_email: email,
     p_phone_number: payload.phone_number,
     p_update_identity: actor.role === "OWNER",
     p_full_name: payload.full_name ?? "",
@@ -186,7 +221,7 @@ Deno.serve(async (request) => {
       email: oldEmail,
       email_confirm: true,
     });
-    return json(400, { message: recordsUpdateError.message });
+    return accountError(recordsUpdateError, "Unable to update Member account");
   }
   return json(200, { updated: true });
 });
