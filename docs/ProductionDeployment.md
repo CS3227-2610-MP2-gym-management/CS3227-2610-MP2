@@ -17,7 +17,7 @@ profile; its access token and temporary connection details must not be copied in
 
 ## Deployed baseline
 
-The hosted database has migrations `20260928010000` through `20260928092000`. The `manage-member` Edge Function is
+The hosted database has migrations `20260928010000` through `20260929002000`. The `manage-member` Edge Function is
 deployed and requires a valid session. Migration `20260928080000` adds a service-role-only operation for the one-time
 initial Owner bootstrap. It derives the email from the selected Auth identity and refuses to run unless the
 application account table is empty. Migration `20260928090000` adds protected co-owner creation and activation,
@@ -99,19 +99,73 @@ matching the computer's operating system and processor architecture from `releas
 
 ## Deployment verification
 
+In plain language, applying a migration upgrades the hosted database to the structure and operations expected by the
+application. Supabase keeps a migration history, so an ordinary push applies each pending migration once; it does not
+re-run all migrations or erase application data. Do this when a new file under `supabase/migrations/` is ready for the
+hosted environment, not every time GymFlow starts.
+
 Before and after a production deployment:
 
-1. Run `npm run supabase:reset`, `npm run supabase:test`, and `npm run supabase:lint` locally.
-2. Run `gradlew.bat verifyLocal` with both Gradle cache locations outside the repository.
-3. Set `GYMFLOW_CONFIRM_PRODUCTION_PROJECT=ixbhtfqsznxteurqmguw` only after checking the displayed target, then use
-   `npm run supabase:push:production`. The guarded command verifies the linked project, performs a dry run, creates a
-   timestamped logical backup, and only then applies migrations.
-4. Keep backups under `work/production-backups` on encrypted storage. They contain Auth and application data, are
+1. Rebuild the disposable local database from every committed migration, then test it:
+
+   ```powershell
+   npm run supabase:reset
+   npm run supabase:test
+   npm run supabase:lint
+   .\gradlew.bat verifyLocal
+   ```
+
+   `supabase:reset` erases and recreates only the local database, proving that the migration history can construct a
+   working system from scratch. The test, lint, and Gradle commands check database behavior, database warnings, and
+   application behavior respectively.
+2. Compare the committed migrations with the linked hosted project:
+
+   ```powershell
+   npx supabase migration list
+   ```
+
+   A migration shown locally but not remotely is pending. Stop if the linked project is not the intended target or
+   if the histories diverge unexpectedly; do not use `migration repair` merely to silence a mismatch.
+3. Preview the guarded hosted deployment without changing the database:
+
+   ```powershell
+   npm run supabase:push:production
+   ```
+
+   The command verifies the linked project and runs a dry-run. It deliberately stops before making changes until the
+   exact project reference is confirmed.
+4. After reviewing the target and pending SQL, authorize the guarded deployment:
+
+   ```powershell
+   $env:GYMFLOW_CONFIRM_PRODUCTION_PROJECT = "ixbhtfqsznxteurqmguw"
+   npm run supabase:push:production
+   Remove-Item Env:GYMFLOW_CONFIRM_PRODUCTION_PROJECT
+   ```
+
+   This creates a timestamped logical backup and then applies only pending migrations. Keep backups under
+   `work/production-backups` on encrypted storage. They contain Auth and application data, are
    ignored by Git, and must not be uploaded or committed.
-5. Deploy only reviewed Edge Functions.
-6. Set the production client variables, run `gradlew.bat productionSmokeTest`, and then run
+5. If an Edge Function changed, deploy only the reviewed function after the migrations it needs:
+
+   ```powershell
+   npx supabase functions deploy manage-member
+   ```
+
+   This publishes the server-side `manage-member` code; it is separate from database migration deployment.
+6. Confirm that no migration remains pending:
+
+   ```powershell
+   npx supabase migration list
+   ```
+
+7. Set the production client variables, run `gradlew.bat productionSmokeTest`, and then run
    `gradlew.bat releaseJars`. Both commands reject missing, loopback, insecure, or privileged-key configuration.
-7. Sign in with the production Owner account and confirm that the Owner dashboard loads.
+8. Sign in with the production Owner account and confirm that the Owner dashboard loads. Test any feature introduced
+   by the pending migrations—for example, deactivate and reactivate a disposable Membership when that test data and
+   cleanup have been explicitly approved.
+
+Always deploy in this order: database migrations, Edge Functions, smoke test, and release JARs. This prevents a new
+desktop build from calling a table, column, or PostgreSQL function that the hosted database does not have yet.
 
 Use the [User Guide manual acceptance checklist](UserGuide.md#manual-acceptance-checklist) for role and feature checks.
 Run its full disposable-data sequence locally; in production, use the retained real Owner for the minimal dashboard
@@ -121,8 +175,10 @@ Never run `supabase db reset --linked`. Production test data and eventual real d
 explicit, reviewed administrative procedure. Free projects can pause after inactivity and do not provide a
 production service-level agreement, so resume checks and manual logical backups are operational requirements.
 
-The final Phase 10 promotion check on 28 September 2026 reported no pending remote migrations. The production security
-smoke test and all four platform release-JAR validation tasks passed against migrations through `20260928092000`.
+The deployment check on 29 September 2026 reported no pending remote migrations after the guarded backup and migration
+push. The current `manage-member` Edge Function was also deployed. Run the production security smoke test from a
+terminal containing the production client variables before distributing a release built against migrations through
+`20260929002000`.
 
 ## Temporary production reviewer access
 

@@ -103,10 +103,36 @@ The seeded local test accounts are:
 | Owner | `owner.local@example.test` | `LocalOwner!2026` |
 | Member | `member.a.local@example.test` | `LocalMemberA!2026` |
 
+### When database migrations must run
+
+A migration is a one-time database upgrade instruction, such as adding a table, security rule, or operation used by
+new application code. It is not something to run whenever GymFlow starts. Supabase records each applied migration
+and applies only newer pending files.
+
+- After creating or pulling files under `supabase/migrations/`, rebuild the disposable local database with
+  `npm run supabase:reset`, then run the automated local checks below.
+- Before releasing application code that depends on a new migration, compare and apply the hosted project's pending
+  migrations by following the guarded [Deployment verification](docs/ProductionDeployment.md#deployment-verification)
+  procedure.
+- If only Java or UI code changed and it does not depend on a database change, no migration deployment is needed.
+- If `supabase/functions/` changed, deploy the affected Edge Function before releasing dependent application code.
+
+Use this release order whenever database or Edge Function behavior changed:
+
+```text
+database migrations -> Edge Functions -> smoke test -> release JARs
+```
+
+Releasing the JAR first can produce generic errors such as `Unable to access GymFlow data` when the application calls
+a database operation that has not been deployed yet.
+
 ### Live production - Windows
 
 You need the production publishable key and your own provisioned GymFlow account from the maintainer. In PowerShell,
 replace the key placeholder, verify the connection, build, and launch from the same window:
+
+This section launches an already-deployed version. It does not apply migrations or deploy Edge Functions. A
+maintainer must complete the deployment verification procedure first whenever backend code has changed.
 
 ```powershell
 $env:GYMFLOW_ENV = "production"

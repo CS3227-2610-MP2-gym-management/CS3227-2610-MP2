@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(7);
 
 delete from public.workouts where member_account_id = 2;
 delete from public.body_metrics where member_account_id = 2;
@@ -71,5 +71,10 @@ select throws_ok(
 );
 
 reset role;
+select matches(
+  pg_get_functiondef('public.require_current_membership_for_tracking()'::regprocedure),
+  'Asia/Singapore',
+  'Membership tracking uses the Singapore business date instead of the database session date'
+);
 select * from finish();
 rollback;

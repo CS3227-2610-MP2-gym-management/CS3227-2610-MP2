@@ -185,6 +185,24 @@ SELECT throws_ok(
     'Announcements cannot be withdrawn before publication'
 );
 
+INSERT INTO public.memberships (
+    member_account_id,
+    start_date,
+    expiry_date,
+    is_active
+)
+VALUES (
+    2,
+    current_date - 1,
+    current_date + 1,
+    true
+), (
+    3,
+    current_date - 1,
+    current_date + 1,
+    true
+);
+
 INSERT INTO public.workouts (member_account_id, started_at)
 VALUES (
     2,

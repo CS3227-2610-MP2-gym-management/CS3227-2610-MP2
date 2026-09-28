@@ -3,6 +3,9 @@ export const DUPLICATE_EMAIL_MESSAGE = "An account with this email already exist
 
 export const normalizeAccountEmail = (email) => email.trim().toLowerCase();
 
+export const shouldUpdateLoginEmail = (currentEmail, requestedEmail) =>
+  normalizeAccountEmail(currentEmail) !== normalizeAccountEmail(requestedEmail);
+
 export const isDuplicateEmailError = (error) => {
   const code = String(error?.code ?? "").toLowerCase();
   const message = String(error?.message ?? "").toLowerCase();
