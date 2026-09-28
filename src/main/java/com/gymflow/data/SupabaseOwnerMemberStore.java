@@ -71,8 +71,7 @@ public final class SupabaseOwnerMemberStore {
                 + "&order=full_name.asc");
         return StreamSupport.stream(rows.spliterator(), false).map(SupabaseRows::member)
                 .filter(member -> normalized.isEmpty() || contains(member.fullName(), normalized)
-                        || contains(member.email(), normalized)
-                        || contains(member.memberNumber(), normalized))
+                        || contains(member.email(), normalized))
                 .toList();
     }
 
@@ -93,8 +92,7 @@ public final class SupabaseOwnerMemberStore {
         String normalized = query.toLowerCase(Locale.ROOT);
         return StreamSupport.stream(rows.spliterator(), false).map(this::paymentOverview)
                 .filter(item -> normalized.isEmpty() || contains(item.memberName(), normalized)
-                        || contains(item.memberEmail(), normalized)
-                        || contains(item.memberNumber(), normalized))
+                        || contains(item.memberEmail(), normalized))
                 .toList();
     }
 
@@ -126,8 +124,7 @@ public final class SupabaseOwnerMemberStore {
         String normalized = query.toLowerCase(Locale.ROOT);
         return StreamSupport.stream(rows.spliterator(), false).map(this::membershipOverview)
                 .filter(item -> normalized.isEmpty() || contains(item.memberName(), normalized)
-                        || contains(item.memberEmail(), normalized)
-                        || contains(item.memberNumber(), normalized))
+                        || contains(item.memberEmail(), normalized))
                 .toList();
     }
 

@@ -145,6 +145,10 @@ class SupabaseFeatureIntegrationTest {
         assertEquals(3, members.searchMembers("").size());
         assertEquals(2, members.searchMemberships("").size());
         assertEquals(2, members.searchPayments("").size());
+        assertTrue(members.searchMembers("M0001").isEmpty());
+        assertTrue(members.searchMemberships("M0001").isEmpty());
+        assertTrue(members.searchPayments("M0001").isEmpty());
+        assertTrue(ownerVisits.searchVisits("M0001", false).isEmpty());
         assertEquals(3, members.ownerDashboard().totalMembers());
         assertEquals(1, expenses.listExpensesByCategory(ExpenseCategory.SUPPLIES).size());
         var published = announcements.listPublished().get(0);

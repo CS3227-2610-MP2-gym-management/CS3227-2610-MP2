@@ -82,3 +82,20 @@ using the original Account object, then confirms sign-in succeeds with the new e
 
 Java Checkstyle and regression tests passed. The end-to-end stale-Account scenario is included in the gated cloud
 integration test and requires local Supabase to execute.
+
+## Fix 5: Search by Member name or email only
+
+Supabase searches for Members, Memberships, Payments, and Visits no longer match Member numbers. Member numbers
+remain present in result models and UI labels as stable identifiers after an Owner finds a record. This aligns cloud
+behavior with the existing SQLite contract and all four search prompts.
+
+The Supabase integration test now asserts that a known seeded Member number returns no results from each search.
+
+### Verification
+
+- Run `gradlew.bat checkstyleMain test`.
+- With local Supabase running, enable and run the cloud integration tests.
+- On each Owner Members, Memberships, Payments, and Visits screen, verify a name fragment and email fragment match,
+  while `M0001` returns no results.
+
+Java Checkstyle and regression tests passed. The four cloud assertions require local Supabase for execution.

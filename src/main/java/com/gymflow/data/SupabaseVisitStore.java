@@ -58,8 +58,7 @@ public final class SupabaseVisitStore {
         return StreamSupport.stream(rows.spliterator(), false)
                 .map(this::overview)
                 .filter(item -> normalized.isEmpty() || contains(item.memberName(), normalized)
-                        || contains(item.memberEmail(), normalized)
-                        || contains(item.memberNumber(), normalized))
+                        || contains(item.memberEmail(), normalized))
                 .toList();
     }
 
