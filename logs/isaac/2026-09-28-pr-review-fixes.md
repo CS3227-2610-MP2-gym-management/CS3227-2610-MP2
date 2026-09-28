@@ -45,3 +45,20 @@ direct table-update access.
 
 Java Checkstyle and regression tests passed. The pgTAP cases are ready but require the currently stopped Docker
 Desktop Linux engine before they can be executed locally.
+
+## Fix 3: Reject unchanged Visit corrections
+
+The Owner Visit correction function now locks and loads the existing Visit before writing correction metadata. It
+uses null-safe timestamp comparisons and rejects a correction unless entry time, exit time, or both actually change.
+Not-found Visits and unchanged Visits now produce distinct database errors.
+
+The Visit pgTAP suite repeats a correction with the stored timestamps and verifies that it is rejected.
+
+### Verification
+
+- Reset local Supabase and run `npm run supabase:test`.
+- Run `gradlew.bat checkstyleMain test`.
+- In Owner Visits, submit the existing entry and exit values with a new reason and confirm it is rejected; then
+  change either timestamp and confirm the correction and audit metadata are saved.
+
+Java Checkstyle and regression tests passed. Database execution remains pending until Docker Desktop is running.

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(17);
 
 insert into public.memberships (
   id, member_account_id, start_date, expiry_date
@@ -79,6 +79,17 @@ select is(
   (select correction_reason from public.visits limit 1),
   'Corrected in Phase 5 test',
   'Visit correction keeps its audit reason'
+);
+select throws_ok(
+  $$select public.owner_correct_visit(
+      (select id from public.visits limit 1),
+      (select entered_at from public.visits limit 1),
+      (select exited_at from public.visits limit 1),
+      'No timestamps changed'
+    )$$,
+  '23514',
+  null,
+  'Owner cannot record a correction without changing a timestamp'
 );
 
 reset role;
