@@ -328,6 +328,10 @@ Verify cross-device sharing and authorization before importing real data.
 
 Move verified legacy data without treating SQLite as the ongoing source of truth.
 
+The repository's current SQLite dataset was confirmed on 28 September 2026 to contain demo data only. It is retained
+for regression and reference purposes and will not be imported into the live environment. The migration steps below
+apply only if a separate real legacy dataset is identified later.
+
 ### Steps
 
 1. Freeze changes in the old application and take a final SQLite backup.

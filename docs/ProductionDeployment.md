@@ -95,3 +95,14 @@ atomic Member-creation function. Both corrections passed the full local database
 A logical backup was created immediately before cleanup. The three disposable Auth identities and their dependent
 test records were then removed through a transaction limited to their reserved test addresses. Post-cleanup checks
 reported one active Owner, one total application Account, and zero remaining Phase 8 Auth users.
+
+## Legacy SQLite disposition
+
+The current `data/gymflow.db` contains demo data only: two Accounts, one Member profile, one Membership, one Payment,
+four Workouts, nine Workout Sets, and two body measurements. It must not be imported into production. The SQLite file
+and its pre-cloud backup remain local for regression and reference; they are not an ongoing source of truth and must
+not be included in production releases.
+
+If real legacy records are supplied later, treat them as a new migration exercise: take a read-only backup, reconcile
+counts and financial totals, provision real Auth identities, obtain Owner acceptance, and run the Phase 9 checks
+before importing anything into the hosted database.
