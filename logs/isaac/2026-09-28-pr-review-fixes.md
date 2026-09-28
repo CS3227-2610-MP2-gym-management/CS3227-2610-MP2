@@ -164,3 +164,18 @@ job is the independent verification gate for all database and cloud behavior.
 | 6 | `b394e6d` | Protected one-time announcement withdrawal |
 | 7 | `c28926a` | Deterministic cloud query ordering |
 | 8 | Final commit in this sequence | Supabase database and Java integration coverage in CI |
+
+## Follow-up: Visit test transaction timestamps
+
+The first local pgTAP run exposed a PostgreSQL time-semantics issue: `now()` is fixed at transaction start, while the
+Visit test intentionally performs check-in and checkout inside one transaction. Both operations therefore received
+the same timestamp and checkout correctly refused to create a zero-duration Visit.
+
+Migration `20260928097000` changes the two server-owned Visit timestamps to `statement_timestamp()`. The value is
+still assigned entirely by PostgreSQL, but reflects the start of each check-in or checkout statement rather than the
+start of the surrounding transaction. This preserves the security fix and makes consecutive operations correct in
+both transactional tests and normal RPC use.
+
+A clean local reset applied every migration through `20260928097000`. The complete pgTAP suite then passed all 157
+tests, including all 17 Visit tests and the two check-out assertions that originally failed. The full Gradle `check`
+task also passed, including Checkstyle for every Java source set.
