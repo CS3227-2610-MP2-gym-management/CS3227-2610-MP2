@@ -119,6 +119,15 @@ so nothing was partly deleted. The corrected process backed up the data, selecte
 dependent records in order, and verified that the real Owner remained. Local tests were necessary but insufficient for
 stateful cloud behaviour.
 
+Later failures reinforced the need to locate the rule at every boundary. A Member without a current Membership could
+still start tracking through both the UI and direct Supabase requests, so the fix covered button state, service
+authorization, and database triggers rather than only the visible screen. A separate production failure came from a
+date mismatch: the desktop used Singapore's calendar date while PostgreSQL used its session date. The fix made the
+business date explicit in the database and tested the boundary. The body-mass HTTP 409 had a different cause: the
+editor chose create or update from a cached reading for today even when a past date was selected. A date-keyed upsert
+and a disabled Save button during requests corrected that workflow. These cases taught me to check the actual key,
+clock, and authorization rule before treating an HTTP status as the root cause.
+
 ## What the agent handled effectively
 
 - It converted agreed stories into models, services, database rules, screens, tests, and documentation.
@@ -134,6 +143,11 @@ stateful cloud behaviour.
 - Initial Workout code had extensive Checkstyle violations until style became a repository instruction.
 - A detailed early plan amplified assumptions later changed by the Visit/Workout unification.
 - Local success sometimes hid cloud differences involving grants, tokens, sequences, seed data, and foreign keys.
+- A broad Root Owner change added a new database field before the running backend had it, breaking the Owners list.
+  Reverting that data-contract change and using the existing ordering restored the screen, but showed the cost of a
+  fix that crossed more layers than the requirement demanded.
+- IDE warnings could remain after the source was fixed. The Problems-tab cleanup required checking current code and
+  refreshing VS Code's Java project model; a clean Gradle build alone did not clear stale editor diagnostics.
 - Long plans and logs sometimes became chronology rather than concise reasoning, creating later editing work.
 
 The agent was most productive when I supplied a named workflow, observable result, exact edge cases, and required
@@ -154,6 +168,9 @@ verification level. Human review remained essential for product decisions, visua
 5. Isolate integration data from the start using unique identities, no fixed sequence assumptions, disposable local
    resets, and transactional dependency-aware cleanup.
 6. Use short phase checkpoints to review changed assumptions, automated evidence, manual evidence, and uncertainty.
+7. For membership, date, and identity rules, state which layer enforces them and test a direct backend request as well
+   as the UI path. For JavaFX changes, check asynchronous button state and layout at widths near wrapping thresholds;
+   the Owner dashboard's width binding caused a scrollbar and card-wrapping feedback loop that ordinary tests missed.
 
 ## What I learned about designing one effective agent
 
