@@ -70,6 +70,27 @@ public final class BodyMetricStore {
         }
     }
 
+    /** Creates or replaces the Member's reading for a date. */
+    public BodyMetric save(long memberId, LocalDate date, long grams, Instant now) {
+        String sql = "INSERT INTO body_metrics(member_account_id, measurement_date, weight_grams, "
+                + "created_at, updated_at) VALUES (?, ?, ?, ?, ?) "
+                + "ON CONFLICT(member_account_id, measurement_date) DO UPDATE SET "
+                + "weight_grams = excluded.weight_grams, updated_at = excluded.updated_at";
+        try (Connection connection = database.connect();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            requireActiveMember(connection, memberId);
+            statement.setLong(1, memberId);
+            statement.setString(2, date.toString());
+            statement.setLong(3, grams);
+            statement.setString(4, TIMESTAMP.format(now));
+            statement.setString(5, TIMESTAMP.format(now));
+            statement.executeUpdate();
+            return find(connection, memberId, date);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Unable to save body-mass reading", exception);
+        }
+    }
+
     /** Updates a Member-owned reading. */
     public BodyMetric update(long memberId, long id, LocalDate date, long grams, Instant now) {
         String sql = "UPDATE body_metrics SET measurement_date = ?, weight_grams = ?, updated_at = ? "
@@ -112,6 +133,20 @@ public final class BodyMetricStore {
                 "SELECT * FROM body_metrics WHERE id = ? AND member_account_id = ?")) {
             statement.setLong(1, id);
             statement.setLong(2, memberId);
+            try (ResultSet results = statement.executeQuery()) {
+                if (!results.next()) {
+                    throw new IllegalArgumentException("Body-mass reading not found");
+                }
+                return metric(results);
+            }
+        }
+    }
+
+    private static BodyMetric find(Connection connection, long memberId, LocalDate date) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT * FROM body_metrics WHERE member_account_id = ? AND measurement_date = ?")) {
+            statement.setLong(1, memberId);
+            statement.setString(2, date.toString());
             try (ResultSet results = statement.executeQuery()) {
                 if (!results.next()) {
                     throw new IllegalArgumentException("Body-mass reading not found");

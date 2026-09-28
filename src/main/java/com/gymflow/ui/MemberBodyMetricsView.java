@@ -75,7 +75,7 @@ final class MemberBodyMetricsView {
                 Platform.runLater(() -> status.setText("Unable to load body-mass readings."));
             }
         });
-        save.setOnAction(event -> save(service, session, date, kilograms, editor, load));
+        save.setOnAction(event -> save(service, session, date, kilograms, save, editor, load));
         readings.setOnMouseClicked(event -> {
             BodyMetric selected = readings.getSelectionModel().getSelectedItem();
             if (selected != null) {
@@ -165,32 +165,31 @@ final class MemberBodyMetricsView {
         if (history.isEmpty()) {
             change.setText("Add your first measurement to begin tracking.");
         }
-        editor.setExisting(history.stream().filter(metric -> metric.measurementDate().equals(LocalDate.now()))
-                .findFirst().orElse(null));
         chart.show(history);
         status.setText(history.isEmpty() ? "Add your first reading above."
                 : "Select a past reading to edit or delete it.");
     }
 
     private static void save(BodyMetricService service, Account session, DatePicker date,
-            TextField kilograms, EditorState editor, Runnable reload) {
+            TextField kilograms, Button save, EditorState editor, Runnable reload) {
         try {
+            LocalDate selectedDate = date.getValue();
             BigDecimal mass = value(kilograms);
-            BodyMetric existing = editor.existing();
             editor.setTouched(true);
+            save.setDisable(true);
             Thread.startVirtualThread(() -> {
                 try {
-                    if (existing == null) {
-                        service.create(session, date.getValue(), mass);
-                    } else {
-                        service.update(session, existing.id(), date.getValue(), mass);
-                    }
+                    service.save(session, selectedDate, mass);
                     Platform.runLater(() -> {
                         editor.setTouched(false);
+                        save.setDisable(false);
                         reload.run();
                     });
                 } catch (RuntimeException exception) {
-                    Platform.runLater(() -> error(exception));
+                    Platform.runLater(() -> {
+                        save.setDisable(false);
+                        error(exception);
+                    });
                 }
             });
         } catch (RuntimeException exception) {
@@ -398,16 +397,7 @@ final class MemberBodyMetricsView {
     }
 
     private static final class EditorState {
-        private BodyMetric existing;
         private boolean touched;
-
-        BodyMetric existing() {
-            return existing;
-        }
-
-        void setExisting(BodyMetric value) {
-            existing = value;
-        }
 
         boolean touched() {
             return touched;

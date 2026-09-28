@@ -48,6 +48,15 @@ public final class SupabaseDataClient {
                 .build(), "save GymFlow data");
     }
 
+    /** Inserts a row or updates the row selected by the requested conflict target. */
+    public JsonNode upsert(String path, Object body) {
+        return send(builder("/rest/v1/" + path)
+                .header("Content-Type", "application/json")
+                .header("Prefer", "resolution=merge-duplicates,return=representation")
+                .POST(HttpRequest.BodyPublishers.ofString(write(body)))
+                .build(), "save GymFlow data");
+    }
+
     /** Updates matching rows and returns their new representations. */
     public JsonNode patch(String path, Object body) {
         return send(builder("/rest/v1/" + path)

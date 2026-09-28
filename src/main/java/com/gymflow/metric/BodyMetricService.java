@@ -65,6 +65,16 @@ public final class BodyMetricService {
                 : cloudStore.create(actor.id(), validated, grams(kilograms), clock.instant());
     }
 
+    /** Creates or updates the authenticated Member's reading for the selected date. */
+    public BodyMetric save(Account actor, LocalDate date, BigDecimal kilograms) {
+        requireMember(actor);
+        requireCurrentMembership(actor);
+        LocalDate validated = validateDate(date);
+        return cloudStore == null
+                ? store.save(actor.id(), validated, grams(kilograms), clock.instant())
+                : cloudStore.save(actor.id(), validated, grams(kilograms), clock.instant());
+    }
+
     /** Updates a body-mass reading. */
     public BodyMetric update(Account actor, long id, LocalDate date, BigDecimal kilograms) {
         requireMember(actor);

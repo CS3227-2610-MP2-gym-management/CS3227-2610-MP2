@@ -36,6 +36,14 @@ public final class SupabaseBodyMetricStore {
         return SupabaseRows.bodyMetric(single(rows));
     }
 
+    /** Creates or replaces the Member's metric for a date. */
+    public BodyMetric save(long memberId, LocalDate date, long grams, Instant now) {
+        JsonNode rows = client.upsert("body_metrics?on_conflict=member_account_id,measurement_date&select="
+                + FIELDS, Map.of("member_account_id", memberId, "measurement_date", date.toString(),
+                        "weight_grams", grams, "updated_at", now.toString()));
+        return SupabaseRows.bodyMetric(single(rows));
+    }
+
     /** Updates a metric. */
     public BodyMetric update(long memberId, long id, LocalDate date, long grams, Instant now) {
         JsonNode rows = client.patch("body_metrics?id=eq." + id + "&member_account_id=eq."

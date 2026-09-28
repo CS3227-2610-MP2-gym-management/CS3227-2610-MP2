@@ -54,6 +54,18 @@ class BodyMetricServiceTest {
     }
 
     @Test
+    void savesTodayThenPastAndUpdatesOnlyTheSelectedDate() {
+        var today = metrics.save(member, LocalDate.of(2026, 9, 15), new BigDecimal("69.9"));
+        var past = metrics.save(member, LocalDate.of(2026, 9, 14), new BigDecimal("70.5"));
+        var correctedPast = metrics.save(member, LocalDate.of(2026, 9, 14), new BigDecimal("70.25"));
+
+        assertEquals(past.id(), correctedPast.id());
+        assertEquals(2, metrics.history(member).size());
+        assertEquals(today.id(), metrics.history(member).getFirst().id());
+        assertEquals(new BigDecimal("70.250"), metrics.history(member).get(1).weightKilograms());
+    }
+
+    @Test
     void rejectsInvalidDatesWeightsAndDuplicateDates() {
         metrics.create(member, LocalDate.of(2026, 9, 15), new BigDecimal("70"));
 
