@@ -6,6 +6,7 @@ module com.gymflow {
     requires java.net.http;
     requires java.prefs;
     requires java.sql;
+    requires static jdk.httpserver;
     requires transitive javafx.graphics;
     requires javafx.controls;
     requires org.xerial.sqlitejdbc;
