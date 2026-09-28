@@ -154,5 +154,7 @@ class SupabaseFeatureIntegrationTest {
         var published = announcements.listPublished().get(0);
         announcements.withdraw(published.id(), owner.id());
         assertEquals(1, announcements.listWithdrawn().size());
+        assertThrows(IllegalStateException.class,
+                () -> announcements.withdraw(published.id(), owner.id()));
     }
 }

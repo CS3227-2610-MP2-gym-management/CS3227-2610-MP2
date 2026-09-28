@@ -38,10 +38,8 @@ public final class SupabaseAnnouncementStore {
 
     /** Withdraws an announcement. */
     public Announcement withdraw(long announcementId, long ownerAccountId) {
-        JsonNode rows = client.patch("announcements?id=eq." + announcementId + "&select=" + FIELDS,
-                Map.of("withdrawn_at", Instant.now().toString(),
-                        "updated_at", Instant.now().toString()));
-        return SupabaseRows.announcement(single(rows));
+        return SupabaseRows.announcement(client.rpc("owner_withdraw_announcement",
+                Map.of("p_announcement_id", announcementId)));
     }
 
     private static JsonNode single(JsonNode rows) {

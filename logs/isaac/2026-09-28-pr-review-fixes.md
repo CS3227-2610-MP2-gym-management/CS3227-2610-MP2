@@ -99,3 +99,21 @@ The Supabase integration test now asserts that a known seeded Member number retu
   while `M0001` returns no results.
 
 Java Checkstyle and regression tests passed. The four cloud assertions require local Supabase for execution.
+
+## Fix 6: Prevent repeated announcement withdrawal
+
+Announcement withdrawal now uses an active-Owner security-definer function. The update succeeds only while
+`withdrawn_at` is null, so a missing or already withdrawn announcement is rejected without rewriting its audit time.
+Authenticated clients no longer have direct permission to update announcement withdrawal fields.
+
+A dedicated pgTAP test covers permissions, successful withdrawal, repeated withdrawal, and Member denial. The Java
+cloud integration test also attempts a second withdrawal and expects it to fail.
+
+### Verification
+
+- Reset local Supabase and run `npm run supabase:test`.
+- Run `gradlew.bat checkstyleMain test` and the environment-gated cloud integration test.
+- Publish and withdraw an announcement as an Owner. A second withdrawal through the service should fail, and the
+  original `withdrawn_at` value should remain unchanged.
+
+Java Checkstyle and regression tests passed. The database and cloud withdrawal cases require local Supabase.
