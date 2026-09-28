@@ -9,7 +9,6 @@ import com.gymflow.expense.OwnerExpenseService;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.model.Account;
 import com.gymflow.visit.OwnerVisitService;
-import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -50,8 +49,6 @@ final class OwnerHomeView {
                 UiComponents.statCard("All-Time Net", netTotal));
         stats.getChildren().forEach(card -> {
             Region region = (Region) card;
-            region.prefWidthProperty().bind(
-                    Bindings.max(stats.widthProperty().subtract(32).divide(3), 200));
             region.setPrefHeight(220);
         });
         BigDecimal[] incomeValue = {null};
