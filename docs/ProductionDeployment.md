@@ -71,3 +71,27 @@ Before and after a production deployment:
 Never run `supabase db reset --linked`. Production test data and eventual real data must be removed only through an
 explicit, reviewed administrative procedure. Free projects can pause after inactivity and do not provide a
 production service-level agreement, so resume checks and manual logical backups are operational requirements.
+
+## Live acceptance result
+
+Phase 8 production-readiness testing completed on 28 September 2026:
+
+- The initial Owner provisioned a disposable co-owner after current-password verification, and that co-owner signed
+  in from a separate application process.
+- The co-owner created two disposable Members. Member A signed in independently and saw an active Membership.
+- An Owner-added future Membership appeared in Member A's application as upcoming.
+- A body-mass record created as Member A was visible to the Owner, while Member B saw neither Member A's profile nor
+  measurement.
+- Two concurrent writes for the same Member and measurement date produced one successful insert and one uniqueness
+  conflict, leaving exactly one record.
+- Deactivating the disposable co-owner prevented a new login.
+- Fresh application processes authenticated successfully, and an automated unavailable-backend test verifies that a
+  connection failure is reported separately from invalid credentials.
+
+The live test exposed two remote privilege gaps that the local service-role environment had masked. Migrations
+`20260928091000` and `20260928092000` added narrowly scoped Member-number access and hardened the service-role-only
+atomic Member-creation function. Both corrections passed the full local database suite before deployment.
+
+A logical backup was created immediately before cleanup. The three disposable Auth identities and their dependent
+test records were then removed through a transaction limited to their reserved test addresses. Post-cleanup checks
+reported one active Owner, one total application Account, and zero remaining Phase 8 Auth users.
