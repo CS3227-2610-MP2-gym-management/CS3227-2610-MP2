@@ -10,6 +10,8 @@ import com.gymflow.auth.PasswordHasher;
 import com.gymflow.auth.AccountValidation;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.data.OwnerMemberStore;
+import com.gymflow.data.SupabaseDataClient;
+import com.gymflow.data.SupabaseOwnerMemberStore;
 import com.gymflow.model.Member;
 import com.gymflow.model.MemberPayment;
 import com.gymflow.model.Membership;
@@ -20,11 +22,19 @@ import com.gymflow.model.OwnerDashboard;
 /** Implements Owner-side Member onboarding and profile management. */
 public final class OwnerMemberService {
     private final OwnerMemberStore members;
+    private final SupabaseOwnerMemberStore cloudMembers;
     private final PasswordHasher passwords = new PasswordHasher();
 
     /** Creates a Member service backed by the supplied database. */
     public OwnerMemberService(GymFlowDatabase database) {
         members = new OwnerMemberStore(database);
+        cloudMembers = null;
+    }
+
+    /** Creates a Member service backed by Supabase. */
+    public OwnerMemberService(SupabaseDataClient client) {
+        members = null;
+        cloudMembers = new SupabaseOwnerMemberStore(client);
     }
 
     /** Atomically creates a Member account, profile, Membership, and Payment. */
@@ -34,8 +44,11 @@ public final class OwnerMemberService {
             validate(request);
             String email = AccountValidation.normalizeEmail(request.email());
             String phone = AccountValidation.normalizePhone(request.phoneNumber());
-            PasswordHash hash = passwords.hash(password);
-            return members.create(request, email, phone, hash, ownerAccountId);
+            if (cloudMembers == null) {
+                PasswordHash hash = passwords.hash(password);
+                return members.create(request, email, phone, hash, ownerAccountId);
+            }
+            return cloudMembers.create(request, email, phone, ownerAccountId);
         } finally {
             clear(password);
         }
@@ -46,7 +59,11 @@ public final class OwnerMemberService {
             long ownerAccountId) {
         try {
             AccountValidation.validatePassword(newPassword);
-            members.updatePassword(memberAccountId, passwords.hash(newPassword), ownerAccountId);
+            if (cloudMembers == null) {
+                members.updatePassword(memberAccountId, passwords.hash(newPassword), ownerAccountId);
+            } else {
+                cloudMembers.updatePassword(memberAccountId, newPassword, ownerAccountId);
+            }
         } finally {
             clear(newPassword);
         }
@@ -54,45 +71,59 @@ public final class OwnerMemberService {
 
     /** Searches all Members when the query is blank, otherwise matches name or email. */
     public List<Member> searchMembers(String query) {
-        return members.search(query == null ? "" : query.trim());
+        String normalized = query == null ? "" : query.trim();
+        return cloudMembers == null ? members.search(normalized) : cloudMembers.search(normalized);
     }
 
     /** Lists payments recorded for a Member. */
     public List<MemberPayment> paymentHistory(long memberAccountId) {
-        return members.paymentHistory(memberAccountId);
+        return cloudMembers == null
+                ? members.paymentHistory(memberAccountId)
+                : cloudMembers.paymentHistory(memberAccountId);
     }
 
     /** Searches all Payments by Member name or email. */
     public List<PaymentOverview> searchPayments(String query) {
-        return members.searchPayments(query == null ? "" : query.trim());
+        String normalized = query == null ? "" : query.trim();
+        return cloudMembers == null
+                ? members.searchPayments(normalized) : cloudMembers.searchPayments(normalized);
     }
 
     /** Loads the current Owner overview. */
     public OwnerDashboard ownerDashboard() {
         LocalDate today = LocalDate.now();
-        return members.ownerDashboard(today);
+        return cloudMembers == null
+                ? members.ownerDashboard(today) : cloudMembers.ownerDashboard(today);
     }
 
     /** Lists one Member's Membership history. */
     public List<Membership> membershipHistory(long memberAccountId) {
-        return members.membershipHistory(memberAccountId);
+        return cloudMembers == null
+                ? members.membershipHistory(memberAccountId)
+                : cloudMembers.membershipHistory(memberAccountId);
     }
 
     /** Searches Memberships by Member name or email. */
     public List<MembershipOverview> searchMemberships(String query) {
-        return members.searchMemberships(query == null ? "" : query.trim());
+        String normalized = query == null ? "" : query.trim();
+        return cloudMembers == null
+                ? members.searchMemberships(normalized) : cloudMembers.searchMemberships(normalized);
     }
 
     /** Atomically creates one Membership and its Payment. */
     public Membership addMembership(AddMembershipRequest request, long ownerAccountId) {
         validate(request);
-        return members.addMembership(request, ownerAccountId);
+        return cloudMembers == null
+                ? members.addMembership(request, ownerAccountId)
+                : cloudMembers.addMembership(request, ownerAccountId);
     }
 
     /** Activates or deactivates a Membership. */
     public Membership setMembershipActive(long membershipId, boolean active,
             long ownerAccountId) {
-        return members.setMembershipActive(membershipId, active, ownerAccountId);
+        return cloudMembers == null
+                ? members.setMembershipActive(membershipId, active, ownerAccountId)
+                : cloudMembers.setMembershipActive(membershipId, active, ownerAccountId);
     }
 
     /** Returns whether a Member may access the gym on the supplied date. */
@@ -100,7 +131,9 @@ public final class OwnerMemberService {
         if (date == null) {
             throw new IllegalArgumentException("Membership date is required");
         }
-        return members.hasValidMembership(memberAccountId, date);
+        return cloudMembers == null
+                ? members.hasValidMembership(memberAccountId, date)
+                : cloudMembers.hasValidMembership(memberAccountId, date);
     }
 
     /** Updates editable account and profile fields. */
@@ -110,7 +143,10 @@ public final class OwnerMemberService {
         requireText(fullName, "Full name is required");
         String normalizedPhone = AccountValidation.normalizePhone(phoneNumber);
         validateDateOfBirth(dateOfBirth);
-        return members.update(accountId, normalizedEmail, fullName.trim(), normalizedPhone, dateOfBirth);
+        return cloudMembers == null
+                ? members.update(accountId, normalizedEmail, fullName.trim(), normalizedPhone, dateOfBirth)
+                : cloudMembers.update(accountId, normalizedEmail, fullName.trim(),
+                        normalizedPhone, dateOfBirth);
     }
 
     private static void validate(CreateMemberRequest request) {

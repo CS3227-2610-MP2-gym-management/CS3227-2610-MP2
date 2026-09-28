@@ -7,6 +7,7 @@ current release.
 
 - Java SE 25
 - A supported Windows x64, Linux x64, macOS x64, or macOS ARM64 computer
+- Internet access to the configured GymFlow service
 
 ## Starting GymFlow
 
@@ -16,30 +17,39 @@ Download the JAR matching your operating system and processor architecture, then
 java -jar GymFlow-macos-arm64.jar
 ```
 
-Replace the filename with the JAR downloaded for your platform. GymFlow stores its local database at
-`data/gymflow.db`, relative to the directory from which it is launched.
+Replace the filename with the JAR downloaded for your platform. The application requires access to its configured
+GymFlow backend to sign in.
 
 GymFlow also creates rotating diagnostic files named `gymflow-0.log` through `gymflow-2.log` in the local
 `data/logs/` directory. If the application exits unexpectedly, include these files when reporting the problem. They
 contain startup events and sanitized error types, not passwords or values entered into forms.
 
-## First-launch Owner setup
+## Signing in
 
-When no Owner exists, the opening screen displays `Set up GymFlow`.
+Every installation opens on the same GymFlow sign-in screen.
 
-1. Enter the Owner's email address.
-2. Enter a password containing between 12 and 128 characters.
-3. Enter the same password in the confirmation field.
-4. Select `Create Owner Account`.
+1. Enter the Owner or Member email address provisioned by the gym.
+2. Enter the account password.
+3. Select `Sign In`.
 
-Email addresses are matched without regard to letter case. After successful setup, GymFlow opens Owner Home.
+After authentication, GymFlow loads the account's role and opens Owner Home or Member Home. Invalid credentials
+display `Invalid email or password` without identifying which value was incorrect. A backend outage displays a
+connection error instead.
 
 ## Owner login and logout
 
-On subsequent launches, enter the Owner email and password and select `Sign In`. Invalid credentials display
-`Invalid email or password` without identifying which value was incorrect.
-
 Select `Return to Login` in the Owner sidebar to clear the current session.
+
+## Managing Owners
+
+Open `Owners` from the Owner sidebar to view every gym administrator. Select `Add Owner`, enter the co-owner's real
+email address and a temporary password, then enter your own current password to authorize the change. Send the
+temporary password to the co-owner through a secure channel separate from their username.
+
+Use `Deactivate` to prevent another Owner from accessing GymFlow and `Activate` to restore access. Each change again
+requires your current password. You cannot change your own active status from this page, and GymFlow will never allow
+the final active Owner to be deactivated. Owner creation and activation changes are retained in an administrative
+audit record.
 
 ## Light and dark themes
 
@@ -222,32 +232,42 @@ weight and select `Save reading` for the usual daily update. Choose `Change date
 past reading; it opens the calendar directly. Select an item in Weight history to edit or delete it. Each Member can
 have one positive body-mass reading per date.
 
-## Resetting GymFlow
+## Shared-data safety
 
-`Reset GymFlow`, directly above `Return to Login` in every Owner sidebar, permanently deletes the Owner account and
-every record stored in the GymFlow database. It is not available on Member screens.
-
-1. Select `Reset GymFlow`.
-2. Enter the current Owner password.
-3. Enter the exact confirmation text `RESET`.
-4. Confirm the reset.
-
-Incorrect confirmation or password leaves the database unchanged and keeps the confirmation window open for
-correction. A successful reset returns to first-launch Owner setup. This operation is irreversible and does not create
-a backup.
+The former installation-wide `Reset GymFlow` action is unavailable. GymFlow now uses shared cloud data, so a reset on
+one computer could affect every Owner and Member. Production deletion or restoration must be server-authorized,
+explicitly scoped, backed up, and tested separately.
 
 ## Testing from source
 
-Run the application:
+For a complete local test, start Docker Desktop and run:
 
 ```shell
-./gradlew run
+npm install
+npm run supabase:start
 ```
+
+Keep the Edge Function runtime open in a second terminal:
+
+```shell
+npm run supabase:functions
+```
+
+Then launch GymFlow from a third terminal:
+
+```shell
+./gradlew runLocal
+```
+
+On Windows, use `gradlew.bat runLocal` for the final command. Local mode shows a `LOCAL DEVELOPMENT` badge and uses
+only the local test database. It never writes to the hosted production database.
 
 Run automated checks:
 
 ```shell
-./gradlew clean check
+npm run supabase:test
+npm run supabase:lint
+./gradlew verifyLocal
 ```
 
 Run rendered Member-page layout checks on a desktop display:
@@ -256,8 +276,28 @@ Run rendered Member-page layout checks on a desktop display:
 ./gradlew renderedUiTest
 ```
 
-Build all supported release JARs:
+Production smoke tests and release builds require the production URL, publishable key, and explicit production
+environment selection. Follow [Production Deployment: Deployment verification](ProductionDeployment.md#deployment-verification)
+instead of placing those values in a tracked file.
 
-```shell
-./gradlew releaseJars
-```
+## Manual acceptance checklist
+
+Use local mode for disposable test data. Use production only for the short smoke checks marked below.
+
+1. Follow [Starting GymFlow](#starting-gymflow) and confirm the sign-in screen appears without an Owner-setup screen.
+2. Follow [Signing in](#signing-in) once as an Owner and once as a Member. Confirm each role opens only its own pages.
+3. As an Owner, follow [Managing Members](#managing-members) and [Managing Memberships](#managing-memberships) to
+   create a test Member with one current and one future Membership.
+4. Sign in as that Member and verify [Member dashboard](#member-dashboard), [Managing Workouts](#managing-workouts),
+   and [Tracking Body Mass](#tracking-body-mass). Restart the app and confirm the same records remain.
+5. In a second app process, sign in as another test Member and confirm the first Member's profile, Workouts, and body
+   mass are not visible.
+6. Follow [Managing Owners](#managing-owners) locally for normal review. Confirm a newly created co-owner can sign in
+   from another computer, an inactive Owner cannot sign in, and the final active Owner cannot be disabled.
+7. For a production smoke test, sign in with the retained real Owner, load Owner Home, and stop. A trusted developer
+   may test with a separate temporary production co-owner only by following
+   [Temporary production reviewer access](ProductionDeployment.md#temporary-production-reviewer-access), including
+   backup, full-access acknowledgement, a fixed test window, and deactivation afterward.
+
+Record the date, environment (`LOCAL DEVELOPMENT` or production), account role, and result for each check. Never put
+passwords, access tokens, database passwords, or secret keys in the test record.

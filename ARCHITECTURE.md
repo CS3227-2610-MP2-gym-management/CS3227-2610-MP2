@@ -20,23 +20,27 @@ choose the easiest interpretation. Update the affected documents when an agreed 
 
 ## System context
 
-GymFlow manages one gym with one Owner and multiple Members. It is currently a local Java SE 25 desktop application:
+GymFlow manages one gym with one or more Owners and multiple Members. It is an online-first Java SE 25 desktop
+application backed by one shared Supabase project per environment:
 
 ```text
 JavaFX views
-    -> application services
-        -> SQLite stores
-            -> data/gymflow.db
+    -> Supabase Auth and the authenticated Data API
+        -> PostgreSQL with grants, Row Level Security, and constraints
 ```
 
-The current product includes Member authentication, Member profile and Membership screens, Membership renewal
-guidance, and unified Member Workouts created by check-in and completed by check-out. Self-registration and approval, Membership plans,
-body-weight tracking, trends, broader statistics, and an administrative audit history remain backlog work.
+Local development uses a Docker-hosted Supabase stack. Production uses an isolated hosted Supabase project in
+Singapore. SQLite remains only for regression tests and read-only legacy reference; the known local data is demo data
+and is not imported into production.
 
-Cloud architecture is KIV. A future shared deployment will be online-only and must support concurrent clients, but no
-server framework, protocol, cloud database, or synchronization mechanism has been selected. Keep business rules out
-of JavaFX and JDBC-specific code so a future network/persistence boundary can be introduced without rewriting the
-domain behaviour.
+The current product includes shared Owner and Member authentication, controlled co-owner provisioning, Member
+profiles and Memberships, renewal guidance, announcements, unified Workouts created by check-in and completed by
+check-out, and body-mass tracking. Self-registration, Membership plans, trends, broader statistics, and a complete
+cross-feature administrative audit history remain backlog work.
+
+The approved shared architecture uses Supabase Auth, its HTTPS Data API, PostgreSQL, RLS, and protected server-side
+functions. The desktop JAR contains only the project URL and publishable key. Database passwords and Supabase secret
+keys remain server-side.
 
 ## Architectural principles
 
@@ -55,7 +59,7 @@ domain behaviour.
 
 ### Composition root
 
-`GymFlowApp` owns startup and dependency construction. It initializes persistence, creates services, and supplies them
+`GymFlowApp` owns startup and dependency construction. It initializes remote clients, creates services, and supplies them
 to `AppView`. Avoid service locators, global mutable state, and constructing stores or databases inside views.
 
 ### Presentation layer
@@ -68,7 +72,7 @@ Responsibilities:
 - Hold transient form and selection state.
 - Perform lightweight input restrictions for immediate feedback.
 - Call services for all reads and writes.
-- Run hashing, database, file, and future network work off the JavaFX Application Thread.
+- Run authentication, network, database, and file work off the JavaFX Application Thread.
 - Apply results and UI state changes on the JavaFX Application Thread.
 
 Views must not issue SQL, enforce the only copy of a business rule, inspect password hashes, or bypass route/session
@@ -90,19 +94,21 @@ Services define use cases and are the authoritative boundary for:
 Member-facing and Owner-facing screens should reuse shared rules rather than duplicate them. For example, entry
 eligibility must use one service contract regardless of which screen initiates check-in.
 
-Place a planned feature in a focused package when implemented, such as workouts or body metrics. Do not expand
+Place a new feature in a focused package when appropriate. Do not expand
 `OwnerMemberService` into a universal application service merely because it already has database access.
 
 ### Persistence layer
 
 Package: `com.gymflow.data`
 
-Stores own SQL, transactions, row mapping, and persistence-level authorization checks. They return model records or
-purpose-built read projections, not JDBC objects. Connections, statements, and results must use try-with-resources.
+Supabase stores own authenticated Data API requests and row mapping. PostgreSQL migrations own schema, transactions,
+constraints, grants, and Row Level Security. Protected PostgreSQL functions handle atomic record groups; Edge
+Functions hold service-role access for Auth administration. Stores return model records or purpose-built read
+projections, not transport objects.
 
-`GymFlowDatabase` owns connection creation, schema initialization, ordered migrations, and local reset. Every SQLite
-connection enables foreign keys. New tables and indexes must be created centrally, migrated transactionally, covered
-by tests, and included in reset behaviour.
+`GymFlowDatabase` and the SQLite stores remain only for isolated regression tests and read-only legacy reference or a
+separately approved import.
+They are not constructed by `GymFlowApp`.
 
 SQL constraints are required for invariants vulnerable to races or programming errors, including uniqueness,
 foreign keys, positive amounts, valid date ordering, and one open Workout per Member. Service validation is still
@@ -127,7 +133,7 @@ currently displayed.” Export logic must prevent CSV formula injection and excl
 ### Allowed dependency direction
 
 ```text
-ui -> services -> data -> java.sql
+ui -> services -> data -> HTTPS/PostgreSQL
  |       |          |
  +------ model <----+
 
@@ -141,13 +147,14 @@ Views may depend on models and services but not stores.
 
 ### Account and MemberProfile
 
-- `Account` represents identity, credentials, role, and login permission.
+- `Account` represents the application's identity, role, and login permission; Supabase Auth owns credentials.
 - `MemberProfile` contains Member-specific personal information and belongs only to a `MEMBER` account.
 - Email is trimmed, normalized to lowercase, and unique without regard to case.
-- Passwords are 12-128 characters in the current policy and are stored only as salted PBKDF2-HMAC-SHA256 hashes.
+- Passwords are 12-128 characters in the current application policy and are stored only by Supabase Auth.
 - Authentication returns the same public failure for an unknown email, wrong password, or disabled account.
 - Plaintext password buffers are cleared after use and never logged.
-- One installation has exactly one Owner.
+- A gym has one or more Owners, and the database prevents deactivation of the final active Owner.
+- Owner creation and activation changes require current-password re-authentication and append an Owner audit record.
 
 Account state and Membership state are independent. Account deactivation is an administrative/security action;
 Membership expiry must not disable an established account.
@@ -227,11 +234,11 @@ The current unified session and body metric entities are:
 Keep the initial model specific to the stories. Do not add exercise catalogues, generic metric frameworks, body-fat
 tracking, or other speculative entities. Trends are read projections calculated from stored workouts and body weights.
 
-### AuditLog
+### Administrative audit
 
-An append-only administrative audit history is planned. Do not treat the Visit's latest correction fields as a full
-audit log. The exact audited actions, before/after representation, and retention policy remain open and must be agreed
-before implementation.
+Owner creation, activation, and deactivation produce append-only `owner_account_audit` records. Do not treat these or
+the Visit's latest correction fields as a complete administrative audit log. Broader action coverage, before/after
+representation, and retention policy remain open.
 
 ## Time, dates, and ordering
 
@@ -252,10 +259,10 @@ operations must be all-or-nothing:
 - planned self-registration approval: account activation, Membership, and Payment;
 - renewal/purchase: Membership and Payment;
 - any correction that changes multiple related records;
-- schema migration and full local reset.
+- schema migration and local Supabase reset.
 
-Rollback on every failure. Never expose a partially completed aggregate. Before cloud work begins, concurrency,
-optimistic locking, and duplicate-request/idempotency behaviour must be agreed rather than guessed.
+Rollback on every failure. Never expose a partially completed aggregate. New concurrent-write and
+duplicate-request/idempotency behaviour must be agreed and protected by authoritative database rules.
 
 ## Validation and error handling
 
@@ -273,8 +280,8 @@ in sanitized form and presented without SQL, paths, stack traces, credentials, o
 
 ## Authorization
 
-- The current in-memory session controls navigation, but privileged service/store operations must independently
-  verify an active Owner where they perform writes.
+- The in-memory session controls navigation, while PostgreSQL grants, RLS, protected database functions, and Edge
+  Functions independently authorize reads and writes.
 - Owner routes require an authenticated `OWNER`; Member routes require an authenticated `MEMBER` whose account may
   log in.
 - Every Member read or write must be scoped to the authenticated Member unless the Owner use case explicitly grants
@@ -300,7 +307,8 @@ Do not begin with a table or screen and infer the domain rules afterward.
 
 ## Testing and verification
 
-- Use JUnit 6 and isolated temporary SQLite databases for persistence tests.
+- Use JUnit 6, isolated temporary SQLite databases for legacy regression tests, and the local Supabase stack for
+  authoritative schema, RLS, transaction, and concurrency tests.
 - Test observable behaviour rather than private implementation details.
 - Every business rule needs service-level coverage; every database constraint or migration needs integration coverage.
 - Multi-record operations need rollback tests.
@@ -314,19 +322,17 @@ Do not begin with a table or screen and infer the domain rules afterward.
 - Run `gradlew.bat check` on Windows or `./gradlew check` elsewhere before handoff. Run the relevant release task when
   packaging, module declarations, resources, or dependencies change.
 
-## Cloud-readiness constraints
+## Deployment constraints
 
-Until the cloud decision is approved:
-
-- Do not add networking, remote credentials, background synchronization, or a second database implementation.
+- Do not add offline write queues or background synchronization without a separate approved design.
 - Do not expose SQLite/JDBC types beyond the data layer.
 - Do not encode local filesystem assumptions into domain services.
-- Do not rely on a client clock for a future security-sensitive access decision.
+- Do not rely only on a client clock for a security-sensitive access decision.
 - Do not assume writes cannot race; retain database constraints even if the local UI makes a race unlikely.
 - Do not ship database or server secrets in a desktop JAR.
 
-When shared deployment is approved, preserve the service use-case semantics and introduce the remote boundary around
-them. Online-only means failure is surfaced clearly; it does not imply offline write queues or later synchronization.
+Preserve service use-case semantics at the authenticated remote boundary and in the legacy regression suite.
+Online-only means failure is surfaced clearly; it does not imply offline write queues or later synchronization.
 
 ## Prohibited shortcuts
 
@@ -346,16 +352,16 @@ them. Online-only means failure is surfaced clearly; it does not imply offline w
 
 | Area | Current state | Intended extension |
 | --- | --- | --- |
-| Owner authentication | Implemented | Preserve one-Owner rule |
+| Owner authentication | Implemented | Preserve final-active-Owner invariant and current-password confirmation |
 | Member accounts/profiles | Owner creation/editing and Member login/profile views implemented | Add agreed self-registration/approval |
 | Memberships/Payments | Explicit periods and amounts implemented | Add MembershipPlan and purchase snapshots |
 | Member attendance | Owner oversight and Member check-in/check-out/state implemented | Preserve unified Workout history |
-| Announcements | Owner management and published query implemented | Display published notices to Members |
+| Announcements | Owner management and Member display implemented | Add only approved notification features |
 | Expenses/finances | Owner creation, filtering, and totals implemented | Extend only through approved stories |
 | Workouts/body weight | Workouts and body mass recording implemented | Add derived trends |
 | Statistics | Current counts and financial totals implemented | Add attendance and peak-use projections |
-| Audit history | Not implemented | Add only after audit scope and retention are agreed |
-| Shared cloud deployment | KIV | Preserve boundaries; do not choose infrastructure yet |
+| Audit history | Owner-account audit implemented | Agree broader audit scope and retention before extending |
+| Shared cloud deployment | Local and hosted Supabase implemented | Preserve safe promotion, backup, and secret boundaries |
 
 ## Handoff checklist for coding agents
 

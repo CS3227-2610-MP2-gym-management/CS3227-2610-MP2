@@ -14,7 +14,7 @@ feature is merged.
 | Member management       | Atomic onboarding, Singapore profile validation, search, full-page profiles, payment history, and in-page editing | `3d4b995`, PR #2                       |
 | Membership management   | Membership overview, renewal Payments, activation controls, validity contract, and schema migration               | `c95711e`, PR #3                       |
 | Visit oversight         | All/current Visit review, per-Member history, and current visitor count                                           | `732dc64`, PR #4                       |
-| Member password reset   | Owner-authorized Member credential replacement with fresh PBKDF2 salts                                            | `65871d7`, PR #5                       |
+| Member password reset   | Owner-authorized credential replacement, later migrated from local PBKDF2 to protected Supabase Auth           | `65871d7`, PR #5                       |
 | Visit correction        | Owner correction of Visit timestamps with latest reason and responsible Owner                                     | `2b7c76a`, PR #6                       |
 | Payments overview       | Read-only global Payment ledger with Member search and Membership links                                           | `596ac0d`, PR #6                       |
 | Owner overview          | Live Member, Membership, all-time financial, visitor, and recent-Member summaries                                 | `3a26cb7`, PR #6                       |

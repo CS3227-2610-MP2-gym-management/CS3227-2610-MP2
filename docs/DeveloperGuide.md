@@ -1,19 +1,78 @@
 # GymFlow Developer Guide
 
+## Local backend
+
+GymFlow uses a repository-scoped Supabase CLI and a Docker-hosted local backend. Install Node.js 20
+or later and Docker Desktop before using it. Then install the pinned CLI dependency:
+
+```text
+npm install
+```
+
+Use the following commands from the repository root:
+
+```text
+npm run supabase:start
+npm run supabase:functions
+npm run supabase:status
+npm run supabase:reset
+npm run supabase:test
+npm run supabase:lint
+npm run supabase:stop
+```
+
+`npm run supabase:reset` is a guarded local-only command: it supplies `--local`, rejects extra CLI arguments, and
+refuses a production environment or non-loopback configured URL. Use `gradlew.bat runLocal` to launch the application
+against the same loopback backend and `gradlew.bat verifyLocal` for the complete local Java verification workflow.
+
+The local services use these default addresses:
+
+| Service | Address |
+| --- | --- |
+| API | `http://127.0.0.1:54321` |
+| PostgreSQL | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
+| Studio | `http://127.0.0.1:54323` |
+| Mailpit | `http://127.0.0.1:54324` |
+
+Keep `npm run supabase:functions` running in a second terminal while exercising Member creation, Owner provisioning,
+password reset, activation, or profile/email updates. The function runtime uses local service credentials injected
+by the Supabase CLI; those credentials are never placed in application configuration.
+
+The `Owners` page is the controlled co-owner path. Owner creation and activation changes require the signed-in
+Owner's current password, run through the protected function, and are recorded in `owner_account_audit`. Direct
+desktop access to the privileged database operations is denied. The database also prevents self-deactivation and any
+change that would leave no active Owner.
+
+`npm run supabase:reset` is a local destructive operation. Never add `--linked` to the routine development workflow.
+The committed seed contains only fake `.test` users:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Owner | `owner.local@example.test` | `LocalOwner!2026` |
+| Member A | `member.a.local@example.test` | `LocalMemberA!2026` |
+| Member B | `member.b.local@example.test` | `LocalMemberB!2026` |
+
+These credentials are deliberately public development fixtures and must never be used in a hosted environment. The
+local Auth service rejects public signup, matching the intended production account-provisioning model.
+
+Hosted project details, release environment variables, deployment checks, and live-environment cautions are recorded
+in the [Production Deployment guide](ProductionDeployment.md). Production credentials and privileged keys remain
+outside the repository.
+
 ## Product and technology
 
-GymFlow is a local-first Java SE 25 desktop application for a small gym. The current release provides Owner account
-setup and login, Member administration, Membership and Payment records, Expenses, Visit oversight and correction,
-Announcements, application reset, persistent light/dark themes, Member authentication, Membership status and renewal
-guidance, and Member check-in/check-out workflows.
+GymFlow is an online-first Java SE 25 desktop application for a small gym. The application uses shared Owner and
+Member authentication and shared feature records in PostgreSQL.
+The product includes Member administration, Membership and Payment records, Expenses, Visit oversight and correction,
+Announcements, persistent light/dark themes, Membership guidance, and Member check-in/check-out workflows.
 
 Product rules and deferred architecture questions are maintained in the
 [Agreed Project Decisions](ProjectDecisions.md). Implementations should follow that document together with the
 [User Stories](UserStories.md) and the repository-level [Architecture](../ARCHITECTURE.md) contract.
 
-The application uses JavaFX 25 for its interface, SQLite through Xerial JDBC for persistence, Gradle for builds and
-packaging, JUnit 6 for automated tests, and Checkstyle for source checks. It does not require a server or network
-connection during normal use.
+The application uses JavaFX 25, Supabase Auth, PostgreSQL, the Supabase Data API, protected Edge Functions, Gradle,
+JUnit 6, and Checkstyle. SQLite through Xerial JDBC remains available only to legacy regression tests and reference
+work. Sign-in and feature access require the configured backend.
 
 ## Architecture
 
@@ -26,13 +85,11 @@ GymFlowApp
 AppView and JavaFX views              navigation, session guard, presentation
     |
     v
-Authentication and Owner services     validation, authorization, use-case rules
+Supabase Auth and Account API         shared identity, role, active status, session tokens
     |
-    v
-SQLite stores                         queries, transactions, row mapping
+    +-> PostgreSQL migrations         shared schema, constraints, RLS, server functions
     |
-    v
-GymFlowDatabase -> data/gymflow.db    schema, migrations, connections, reset
+    +-> Edge Functions                privileged Auth account administration
 
 Shared model records and enums are used across the service, persistence, and UI layers.
 ```
@@ -46,18 +103,19 @@ omitted because each responsibility currently has one implementation.
 | Package | Responsibility |
 | --- | --- |
 | `com.gymflow.ui` | Application startup, navigation, JavaFX screens, dialogs, formatting, and themes |
-| `com.gymflow.auth` | Password hashing, Owner setup, authentication, and reset authorization |
+| `com.gymflow.auth` | Supabase authentication, session ownership, and legacy authentication tests |
+| `com.gymflow.config` | Local/production endpoint selection and client-configuration safeguards |
 | `com.gymflow.member` | Owner- and Member-facing account, Membership, Payment, and dashboard rules |
 | `com.gymflow.expense` | Owner-side Expense validation and queries |
 | `com.gymflow.visit` | Owner-side Visit searches, counts, history, and corrections |
 | `com.gymflow.announcement` | Announcement publication, listing, and withdrawal |
-| `com.gymflow.data` | SQLite schema management, stores, transactions, and row mapping |
+| `com.gymflow.data` | Authenticated Data API clients, Supabase row mapping, and legacy SQLite stores |
 | `com.gymflow.model` | Shared immutable records and fixed-value enums |
 | `com.gymflow.monitoring` | Local startup and sanitized unexpected-error diagnostics |
 
 ### Application shell and navigation
 
-`GymFlowApp` initializes the database and services before constructing `AppView`. `AppView` owns one JavaFX `Scene`
+`GymFlowApp` initializes the Supabase session/data clients and services before constructing `AppView`. `AppView` owns one JavaFX `Scene`
 and replaces the centre of a persistent shell when navigating, so screen changes do not create extra windows. Every
 Owner route checks that the in-memory session exists and has the `OWNER` role. Store-level active-Owner checks repeat
 authorization for persistent write operations rather than trusting the UI alone.
@@ -73,16 +131,69 @@ ellipsized while the detail overlay retains the full wrapped title.
 
 ### Authentication and accounts
 
-An installation supports one Owner account. On first launch, the Login screen enters setup mode when no Owner exists.
-Emails are trimmed, lowercased, and stored under a case-insensitive uniqueness constraint.
+Every installation uses the same sign-in screen. `SupabaseAuthenticationService` submits email and password over the
+configured Auth HTTPS endpoint, retrieves the signed-in user's own `accounts` row through RLS, and maps the stable
+numeric domain account ID to the Java model. Owner and Member roles therefore come from the shared database rather
+than the installing device. Password character arrays are cleared after every authentication outcome.
 
-Passwords use PBKDF2-HMAC-SHA256 with 600,000 iterations, a random 16-byte salt, and a 32-byte derived hash. Only the
-Base64-encoded hash and salt are stored. Verification uses a constant-time comparison, and services clear submitted
-password character arrays on every outcome. Hashing and database operations run outside the JavaFX Application
-Thread.
+Local development defaults to the loopback Supabase endpoint and displays a `LOCAL DEVELOPMENT` badge. Production
+requires explicit HTTPS URL and publishable-key environment variables and refuses loopback endpoints. The client
+never accepts a database password or secret/service-role key.
 
-The full reset requires the current Owner password and exact `RESET` confirmation. `GymFlowDatabase` drops and
-recreates all application tables inside one transaction, allowing SQLite to roll back a failed reset.
+The legacy SQLite password implementation remains only for regression tests and legacy-data work. It is not used by
+the running application. The former local full reset is hidden because it cannot safely reset shared data.
+
+#### Forcing a Supabase session refresh after an Auth change
+
+Use a forced session refresh when server-side code changes a property that Supabase stores in the authenticated
+user's JWT. In GymFlow, the important example is the `manage-member` Edge Function changing the currently signed-in
+Member's email through `auth.admin.updateUserById`. The access token already held by the desktop application was
+issued before that change and may contain stale identity claims.
+
+Do **not** force a refresh after ordinary PostgreSQL/Data API changes such as editing a phone number, adding a
+Membership, or saving a Workout. Those values are not Auth token claims. Normal token-expiry handling is also
+automatic in `requireAccessToken()`.
+
+Use this order whenever the current user's Supabase Auth record is changed by an Edge Function or another
+administrator-backed operation:
+
+1. Complete the Auth-changing operation.
+2. Call `SupabaseAuthenticationService.refreshAccount()` immediately, before making another authenticated Data API
+   request.
+3. Only then reload the profile or other protected data.
+4. Keep or publish the `Account` returned by `refreshAccount()` if the calling layer stores its own Account snapshot.
+
+Copy this pattern:
+
+```java
+cloudAccounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+Account refreshedActor = cloudAuthentication.refreshAccount();
+Member updatedMember = cloudAccounts.profile(refreshedActor.id());
+```
+
+`refreshAccount()` is intentionally stronger than its name may suggest. It first exchanges the stored refresh token
+for a new access token, then reloads the `accounts` row, and finally replaces the authentication service's in-memory
+session. Calling `requireAccessToken()` is **not** an equivalent manual fix: it reuses a token that has not nearly
+expired, so its claims can remain stale.
+
+The order is important. This is wrong:
+
+```java
+cloudAccounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+Member updatedMember = cloudAccounts.profile(actor.id()); // May use the stale token.
+cloudAuthentication.refreshAccount();                    // Too late.
+```
+
+If `SupabaseFeatureIntegrationTest.ownerAndMemberFeaturesShareTheLocalCloudBackend()` fails on the contact-update
+line immediately after an email change, check these items in order:
+
+1. Confirm the Edge Function successfully changed both `auth.users.email` and `public.accounts.email`.
+2. Confirm `refreshAccount()` occurs before `profile()` or any other authenticated request.
+3. Confirm `refreshAccount()` still calls the refresh-token endpoint unconditionally; it must not only refresh when
+   the access token is close to expiry.
+4. Reset the local Supabase database, run the Edge Function runtime, set `GYMFLOW_LOCAL_INTEGRATION=true`, and rerun
+   `SupabaseFeatureIntegrationTest`.
+5. Never print access tokens, refresh tokens, passwords, or the service-role key while debugging.
 
 ### Members, Memberships, and Payments
 
@@ -97,8 +208,8 @@ transaction. Profile validation is authoritative in `OwnerMemberService`:
 - Monetary amounts are positive, limited to two decimal places, and stored as integer SGD cents.
 
 Member search escapes SQL wildcard characters and matches names or emails without regard to case. Selecting a Member
-card opens an in-page profile containing Membership, Visit, and Payment history. Password reset replaces only the
-credential fields with a freshly salted hash; it does not alter the Member's records or active state.
+card opens an in-page profile containing Membership, Visit, and Payment history. Password reset delegates credential
+replacement to the protected `manage-member` Edge Function; it does not alter the Member's records or active state.
 
 Each Membership represents one purchased access period and has exactly one immutable Payment. Access on a date is
 derived rather than stored:
@@ -122,7 +233,7 @@ changes appear after the Member reopens a screen.
 
 ### Visits
 
-A Workout is the sole persisted gym session and stores a start time and optional end time. A partial unique SQLite index prevents more than one open
+A Workout stores a start time and optional end time. A partial unique PostgreSQL index prevents more than one open
 Workout per Member, while a table constraint prevents an exit from preceding entry. A null exit derives the currently
 checked-in state; no separate Workout status is stored.
 
@@ -160,8 +271,8 @@ The implementation uses the JDK writer and JavaFX `FileChooser`, avoiding a CSV 
 ### Announcements
 
 Announcements are published by an active Owner. Withdrawal sets `withdrawn_at` and `updated_at` instead of deleting
-the row, preserving Owner-visible history. `OwnerAnnouncementService.listPublished()` is the read-only contract for
-the future Member interface. Read/unread tracking is not required by the current stories.
+the row, preserving Owner-visible history. `MemberAnnouncementService` maps the published-list query to the Member
+interface. Read/unread tracking is not required by the current stories.
 
 ## Domain model
 
@@ -171,7 +282,7 @@ one-to-one `MemberProfile` for Owner-facing reads.
 
 | Entity | Principal fields and relationships | Important rules |
 | --- | --- | --- |
-| `Account` | `id`, normalized `email`, `role`, `active`, `createdAt`, `updatedAt`; secret hash, salt, and iteration fields remain in persistence | Role is `OWNER` or `MEMBER`; email is case-insensitively unique; one Owner per installation |
+| `Account` | `id`, Auth user ID, normalized `email`, `role`, `active`, `createdAt`, `updatedAt` | Role is `OWNER` or `MEMBER`; email is case-insensitively unique; at least one Owner remains active |
 | `Member` / `MemberProfile` | Account ID, unique Member number, full name, phone number, optional date of birth | Exists only for a Member account; Singapore phone and minimum-age validation apply |
 | `Membership` | ID, Member ID, start date, expiry date, active flag, creation and update times | Expiry cannot precede start; active periods cannot overlap; status is derived |
 | `MemberPayment` | ID, Membership ID, amount, method, paid time, optional reference, recording Owner, creation time | Exactly one immutable Payment per Membership; positive SGD amount with at most two decimals |
@@ -185,20 +296,21 @@ instant (the date selected in the form), highlights dates with one and multiple 
 multi-session date's selection overlay by start instant ascending before the existing edit form is opened.
 
 `Role`, `PaymentMethod`, `ExpenseCategory`, and derived `MembershipStatus` are enums because each has a fixed set of
-values. Planned entities such as `MembershipPlan` and `AuditLog` are not part of the current schema and
-must not be treated as implemented features. The complete prioritized backlog and implementation status are recorded in
-the [User Stories](UserStories.md).
+values. `MembershipPlan` and a general `AuditLog` are not implemented. The narrower `owner_account_audit` table is
+implemented only for Owner creation and activation changes. The complete prioritized backlog and implementation
+status are recorded in the [User Stories](UserStories.md).
 
-## Persistence and schema evolution
+## Legacy SQLite persistence and cloud schema evolution
 
-`GymFlowDatabase` creates parent directories, opens SQLite connections with foreign keys enabled, initializes the
-schema, applies supported schema changes, and performs full reset. The current schema version is 9.
+`GymFlowDatabase` creates temporary SQLite databases for the regression suite and can read a legacy snapshot. It is
+not used by `GymFlowApp`. The current legacy schema version is 9. The retained snapshot contains demo data and is not
+scheduled for production import.
 
 `member_account_id` is the database foreign key corresponding to the shared model's `memberId`.
 
 | Table | Main relationship or constraint |
 | --- | --- |
-| `accounts` | Normalized unique email, fixed `OWNER`/`MEMBER` role, one-Owner partial index |
+| `accounts` | Normalized unique email and fixed `OWNER`/`MEMBER` role in the legacy format |
 | `member_profiles` | One-to-one primary/foreign key to a Member account |
 | `memberships` | Many access periods belonging to one Member |
 | `payments` | Exactly one Payment per Membership, recorded by an Owner |
@@ -208,16 +320,16 @@ schema, applies supported schema changes, and performs full reset. The current s
 | `workout_sets` | Ordered sets cascaded from their parent Workout |
 | `body_metrics` | Member-owned body-mass readings, unique by measurement date |
 
-The clean unified schema is versioned through SQLite `PRAGMA user_version`. Pre-unification Visit and Workout rows are
-not imported because their correspondence cannot be established safely; use the verified database reset workflow before
-adopting version 9. New tables automatically participate in reset because schema creation remains centralized.
+The shared PostgreSQL schema is authoritative and versioned through ordered files in `supabase/migrations`. Local
+rebuilds apply those files and `supabase/seed.sql` from scratch. SQLite `PRAGMA user_version` now describes only the
+legacy test/import format.
 
 ## Key design decisions
 
 | Decision | Reason and accepted trade-off |
 | --- | --- |
-| One local Owner per installation | Fits one gym and makes first-run setup simple; multi-Owner administration is unsupported |
-| Local SQLite database | Keeps the desktop app self-contained; installations do not share records automatically |
+| One or more Owner accounts | Co-owners use separate credentials; the final active Owner cannot be deactivated |
+| Supabase/PostgreSQL backend | Lets installations share records while RLS protects Owner and Member boundaries |
 | Concrete services and stores | Avoids speculative interfaces; add an abstraction only when a second implementation exists |
 | Immutable purchase records | Membership and Payment history remains explainable; corrections require deactivation and replacement |
 | Derived statuses and totals | Prevents stored values drifting from dates and source records; values are recomputed on read |
@@ -246,24 +358,40 @@ top-level `logs/` directory contains reviewed AI interaction summaries.
 Useful commands from the repository root are:
 
 ```shell
-./gradlew run          # compile and launch on the current platform
-./gradlew test         # run JUnit 6 tests
-./gradlew check        # run tests and Checkstyle
+./gradlew runLocal     # launch against the loopback Supabase backend
+./gradlew verifyLocal  # run Java tests, Checkstyle, and local backend verification
 ./gradlew renderedUiTest # run rendered JavaFX layout tests on a desktop display
-./gradlew releaseJars  # build and verify all four platform JARs
+./gradlew productionSmokeTest # verify safe production client configuration and connectivity
+./gradlew releaseJars  # build and verify all four production JARs
 ```
 
-Windows uses the equivalent commands through `gradlew.bat`. Release tasks produce self-contained JARs for Windows
+Windows uses the equivalent commands through `gradlew.bat`. `runLocal` and `verifyLocal` require the local Supabase
+stack; privileged feature tests also require its Edge Function runtime. Production tasks require an HTTPS URL, a
+publishable key, and explicit production environment selection. The migration-promotion script separately requires
+the exact project reference as confirmation. Release tasks produce self-contained JARs for Windows
 x64, Linux x64, macOS x64, and macOS ARM64. `Launcher` provides a plain Java entry point so packaged JARs can reach
 the bundled JavaFX runtime. `verifyReleaseJars` checks the stylesheet, SQLite service metadata, and matching native
 libraries.
+
+### Reviewer environment policy
+
+| Review need | Environment and account |
+| --- | --- |
+| Feature, authorization, or co-owner review | Local Supabase with the committed fake `.test` accounts |
+| Hosted multi-computer co-owner test | Prefer a fake-data staging project; if unavailable, use the controlled temporary production procedure below |
+| Production deployment smoke test | Retained production Owner, performed by the maintainer |
+
+Reviewers never receive the retained production Owner's credentials. A temporary production co-owner is a full
+administrator, not a limited test role. If such access is necessary, follow
+[Temporary production reviewer access](ProductionDeployment.md#temporary-production-reviewer-access) and deactivate
+the account when the agreed test window ends.
 
 Automated test responsibilities are grouped as follows:
 
 | Area | Observable behavior covered |
 | --- | --- |
-| Authentication | Setup, email normalization, credential failures, password hashing, reset authorization |
-| Persistence | Schema creation, migrations, database constraints, transactions, and full reset |
+| Authentication | Shared sign-in, role routing, credential failures, inactive accounts, password and Owner-change authorization |
+| Persistence | PostgreSQL migrations, RLS, constraints, transactions, concurrency, plus legacy SQLite regression |
 | Members and Memberships | Validation, atomic onboarding, search, renewal, overlap, activation, Payments, dashboard |
 | Visits | Search, current visitors, history, ordering, correction rules, and open-Visit uniqueness |
 | Expenses and Announcements | Authorization, validation, ordering, totals, filtering, publishing, and withdrawal |
@@ -274,8 +402,10 @@ Automated test responsibilities are grouped as follows:
 `renderedUiTest` is intentionally separate from `check`: it creates real JavaFX windows and therefore requires a
 desktop display. It is run explicitly on a supported local desktop before handoff. Complex keyboard focus, dialogs,
 theme contrast, native launch, and interaction flows remain manual-test concerns.
-Release verification should cover first-run setup, login, each Owner page, invalid input retention, reset cancellation,
-database persistence after restart, and the matching JAR on each supported platform.
+Release verification should cover the universal sign-in screen, Owner and Member role routing, each Owner page,
+invalid input retention, shared persistence after restart, cross-Member isolation, and the matching JAR on each
+supported platform. Use the [User Guide manual acceptance checklist](UserGuide.md#manual-acceptance-checklist) for the
+UI sequence and the [Production Deployment guide](ProductionDeployment.md#deployment-verification) for promotion.
 
 The **Tests** GitHub Actions workflow runs `check` and the matching release task across Windows, Linux, Intel macOS,
 and Apple silicon macOS on pushes and pull requests. **CodeQL** analyzes Java on the same events and weekly. The
@@ -299,7 +429,7 @@ under `logs/<member>/` and remain marked pending until the named member reviews 
 
 - Extend the Member notice only through an approved story, for example an agreed expiring-soon threshold; do not turn
   the current informational renewal notice into an online purchase flow.
-- Read active notices through `OwnerAnnouncementService.listPublished()` for the future Member dashboard.
+- Read active notices through `MemberAnnouncementService` for the Member dashboard.
 - Keep new schema changes ordered, versioned, transactional, and included in centralized reset.
 - Add new persistence abstractions only when another implementation or a genuine test boundary requires them.
 

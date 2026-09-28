@@ -12,30 +12,32 @@ follow. Update this document whenever the team changes a decision or resolves an
 
 ## Agreed scope and architecture
 
-### Local application and future cloud deployment
+### Local and hosted cloud environments
 
-**Status: KIV**
+**Status: Agreed and implemented**
 
-GymFlow will be completed as a local Java SE 25 desktop application before the team chooses its cloud architecture.
-The eventual deployment should allow multiple Members and the Owner to use shared data concurrently, but the choice
-between a server API and other deployment designs is deferred. New code should continue to keep business rules out of
-JavaFX views so that a future persistence or network boundary remains practical.
+GymFlow is a Java SE 25 desktop application with a shared Supabase backend. Development uses a Docker-hosted local
+Supabase stack; production uses a separate hosted Supabase project. Both use the same ordered PostgreSQL migrations,
+RLS policies, and protected functions. Production configuration is explicit and rejects loopback URLs and privileged
+keys. SQLite is retained only for isolated legacy regression and reference.
 
 ### Gym and Owner model
 
 **Status: Agreed**
 
-- One GymFlow installation represents one gym.
-- The system has one Owner account.
+- One configured Supabase project represents one gym environment.
+- The system supports multiple Owner accounts with separate credentials and always retains at least one active Owner.
+- An active Owner may provision or change another Owner only after current-password confirmation; these changes are
+  recorded in an append-only Owner audit table.
 - Additional administrator, manager, or staff roles are outside the current scope.
 
 ### Connectivity
 
-**Status: Agreed for a future shared deployment**
+**Status: Agreed and implemented**
 
-The application will be online-only when it eventually uses shared remote data. Offline writes, queued synchronization,
-and conflict resolution for disconnected clients are outside the current scope. The local development version may
-continue using its local SQLite database without a network connection.
+The application is online-only and reports backend unavailability separately from invalid credentials. Offline
+writes, queued synchronization, and disconnected conflict resolution are outside the current scope. Local development
+still needs network access to its loopback Supabase services.
 
 ## Accounts, Memberships, Payments, and gym access
 
@@ -142,35 +144,36 @@ If any of these are required, they should be modelled explicitly instead of edit
 
 **Status: Agreed and implemented unless noted otherwise**
 
-- The desktop application uses Java SE 25, JavaFX 25, Gradle, and SQLite through JDBC.
+- The desktop application uses Java SE 25, JavaFX 25, Gradle, Supabase Auth, the Data API, PostgreSQL, and protected
+  Edge Functions. SQLite through JDBC is legacy test/reference infrastructure only.
 - The application follows UI, service, store, and database layers. JavaFX views do not issue SQL.
 - Email addresses are normalized and unique without regard to case.
-- Passwords are salted and hashed; plaintext passwords are not stored.
+- Supabase Auth stores credentials; plaintext passwords and session tokens are not logged or persisted by GymFlow.
 - Monetary amounts use integer SGD cents.
 - Event timestamps use UTC `Instant` values; Membership periods use `LocalDate` values.
 - Membership and Workout display statuses are derived rather than stored redundantly.
 - Multi-record writes use transactions, and important integrity rules are also enforced by database constraints.
 - Schema changes are versioned migrations.
 - Announcements are withdrawn rather than deleted.
-- Workout records retain the latest correction metadata. A complete administrative audit history is planned but not yet
-  implemented.
+- Workout records retain the latest correction metadata. Owner creation and activation changes have an append-only
+  audit record; a complete cross-feature administrative audit history is not yet implemented.
 
 ## Open decisions
 
 The following matters are not settled by this document and should be resolved before their affected features are
 implemented:
 
-1. Authentication sessions, password recovery, email verification, login rate limits, and whether the Owner needs
-   multi-factor authentication in a shared deployment.
+1. Operational password recovery and invitations after custom SMTP is configured, plus whether Owners require
+   multi-factor authentication.
 2. The explicit account statuses used to distinguish pending approval from administrative deactivation.
-3. Behaviour when two users update the same record, including optimistic locking and duplicate-request protection.
-4. The authoritative gym timezone and whether eligibility uses server time in a shared deployment.
+3. General optimistic locking for simultaneous edits. Database uniqueness and atomic functions already protect the
+   tested duplicate Member-number, open-Workout, and body-metric cases.
+4. The authoritative gym timezone and which remaining eligibility decisions should use server time.
 5. Payment refunds, cancellations, voids, instalments, and correction procedures.
-6. The exact administrative audit events and retention period.
+6. Administrative audit coverage beyond Owner-account changes, and the retention period.
 7. Account deletion, anonymization, backup, restoration, and production reset policy.
-8. Remote API and schema version compatibility after the cloud architecture is chosen.
-9. The shared validation and error-response contract for future remote clients.
-10. The required concurrency, authorization, migration, and operational tests for a shared deployment.
+8. Remote API and schema compatibility across independently updated desktop clients.
+9. A fully standardized validation and error-response contract across protected remote operations.
 
 ## Updating this document
 

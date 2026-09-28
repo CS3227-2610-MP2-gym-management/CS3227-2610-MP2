@@ -1,0 +1,185 @@
+# Production Deployment
+
+## Hosted environment
+
+The production-ready test environment is an isolated Supabase Free project:
+
+| Setting | Value |
+| --- | --- |
+| Organization | `GymFlow` |
+| Project | `GymFlow Production` |
+| Project reference | `ixbhtfqsznxteurqmguw` |
+| Region | Southeast Asia (Singapore) |
+| API URL | `https://ixbhtfqsznxteurqmguw.supabase.co` |
+
+The database password is held outside the repository. The CLI is linked through the developer's local Supabase
+profile; its access token and temporary connection details must not be copied into documentation or commits.
+
+## Deployed baseline
+
+The hosted database has migrations `20260928010000` through `20260928092000`. The `manage-member` Edge Function is
+deployed and requires a valid session. Migration `20260928080000` adds a service-role-only operation for the one-time
+initial Owner bootstrap. It derives the email from the selected Auth identity and refuses to run unless the
+application account table is empty. Migration `20260928090000` adds protected co-owner creation and activation,
+current-password re-authentication, active-Owner invariants, and Owner-account audit records.
+Migration `20260928091000` gives only the protected server role access to allocate Member numbers; desktop and
+signed-out callers retain no direct sequence access. Migration `20260928092000` runs the service-role-only atomic
+Member creation operation with its function owner's privileges, without granting direct table writes to the server
+role or desktop clients.
+
+The first active Owner Auth identity and GymFlow account have been provisioned. The Owner email and password are not
+stored in this repository. That Owner can use the application's `Owners` page to provision co-owners. The new Owner's
+real email and temporary password are entered only in the application; the acting Owner must confirm the change with
+their current password. No privileged key is shipped to the desktop client.
+
+Production Auth is configured with:
+
+- Public signup, anonymous sign-in, and manual identity linking disabled.
+- Email confirmation enabled.
+- A 12-character minimum password with lower-case, upper-case, digit, and symbol requirements.
+
+The default Supabase email service is not suitable for operational password recovery or invitations. Configure and
+test custom SMTP before onboarding real Members or relying on email recovery.
+
+## Release client configuration
+
+Production clients receive only the HTTPS API URL and publishable key. Start from
+`config/production.env.example`, obtain the project's current **publishable** key from **Project Settings > API
+Keys**, and set the three values in the launching process environment. Do not use either the secret key or the legacy
+`service_role` key in the desktop application.
+
+The publishable key is not an authorization secret. Database grants, Row Level Security, and the signed-in user's
+access token enforce access. Nevertheless, avoid printing the key unnecessarily and never print user access or
+refresh tokens.
+
+## Test the live application from Windows
+
+Use this procedure when you only need to launch and test the already-deployed live version. It does not deploy
+migrations or change the hosted configuration. You need Java 25, the production publishable key, and your own
+provisioned GymFlow account. Ask the maintainer for the key and account access through an approved private channel;
+do not use a secret or `service_role` key.
+
+1. Open PowerShell in the repository root.
+2. Set the production client configuration for that PowerShell window. Replace only the placeholder on the final
+   line:
+
+   ```powershell
+   $env:GYMFLOW_ENV = "production"
+   $env:GYMFLOW_SUPABASE_URL = "https://ixbhtfqsznxteurqmguw.supabase.co"
+   $env:GYMFLOW_SUPABASE_PUBLISHABLE_KEY = "replace-with-publishable-key"
+   ```
+
+3. Confirm that the live backend and client safeguards are reachable:
+
+   ```powershell
+   .\gradlew.bat productionSmokeTest
+   ```
+
+4. Build the release JARs, then launch the Windows version from the same PowerShell window:
+
+   ```powershell
+   .\gradlew.bat releaseJars
+   java -jar .\release\GymFlow-windows-x64.jar
+   ```
+
+5. Sign in with your provisioned account. For the normal production smoke test, load the correct Home page and stop.
+   Do not create disposable records in production. If a broader multi-computer test is explicitly required, follow
+   [Temporary production reviewer access](#temporary-production-reviewer-access) before testing.
+6. After closing GymFlow, remove the values from the PowerShell window (or close the window):
+
+   ```powershell
+   Remove-Item Env:GYMFLOW_ENV
+   Remove-Item Env:GYMFLOW_SUPABASE_URL
+   Remove-Item Env:GYMFLOW_SUPABASE_PUBLISHABLE_KEY
+   ```
+
+Do not use `gradlew.bat runLocal` for this procedure: that task deliberately forces the loopback development backend.
+On Linux or macOS, export the same three variables, run the corresponding `./gradlew` commands, and launch the JAR
+matching the computer's operating system and processor architecture from `release/`.
+
+## Deployment verification
+
+Before and after a production deployment:
+
+1. Run `npm run supabase:reset`, `npm run supabase:test`, and `npm run supabase:lint` locally.
+2. Run `gradlew.bat verifyLocal` with both Gradle cache locations outside the repository.
+3. Set `GYMFLOW_CONFIRM_PRODUCTION_PROJECT=ixbhtfqsznxteurqmguw` only after checking the displayed target, then use
+   `npm run supabase:push:production`. The guarded command verifies the linked project, performs a dry run, creates a
+   timestamped logical backup, and only then applies migrations.
+4. Keep backups under `work/production-backups` on encrypted storage. They contain Auth and application data, are
+   ignored by Git, and must not be uploaded or committed.
+5. Deploy only reviewed Edge Functions.
+6. Set the production client variables, run `gradlew.bat productionSmokeTest`, and then run
+   `gradlew.bat releaseJars`. Both commands reject missing, loopback, insecure, or privileged-key configuration.
+7. Sign in with the production Owner account and confirm that the Owner dashboard loads.
+
+Use the [User Guide manual acceptance checklist](UserGuide.md#manual-acceptance-checklist) for role and feature checks.
+Run its full disposable-data sequence locally; in production, use the retained real Owner for the minimal dashboard
+smoke check unless a backup and reviewed cleanup procedure are ready.
+
+Never run `supabase db reset --linked`. Production test data and eventual real data must be removed only through an
+explicit, reviewed administrative procedure. Free projects can pause after inactivity and do not provide a
+production service-level agreement, so resume checks and manual logical backups are operational requirements.
+
+The final Phase 10 promotion check on 28 September 2026 reported no pending remote migrations. The production security
+smoke test and all four platform release-JAR validation tasks passed against migrations through `20260928092000`.
+
+## Temporary production reviewer access
+
+Local Supabase and its committed `.test` accounts remain the normal PR review environment. A trusted developer may be
+given a temporary production co-owner account only when a live multi-computer test is necessary and all of these
+safeguards are accepted:
+
+1. Confirm that production contains no personal Member data, or obtain explicit authorization for the reviewer to see
+   and administer all existing gym data. An Owner has full administrative access and can change other Owner accounts.
+2. Take and verify a logical backup before provisioning the reviewer.
+3. Create a separate account through GymFlow's `Owners` page using an email controlled by that reviewer and a unique
+   temporary password. Never share the retained Owner's password, session, or tokens.
+4. Send the temporary password through a secure channel separate from the email address. Do not place credentials in
+   the PR, issue tracker, chat transcript, screenshots, test report, or repository.
+5. Agree on the exact test window and allowed actions. Use unmistakably disposable records and avoid deleting or
+   changing retained production data.
+6. Have the reviewer sign in from a separate computer, create a disposable co-owner if that specific flow is under
+   review, and verify login, activation, deactivation, and final-active-Owner protection.
+7. When review ends, the retained Owner deactivates every temporary reviewer account and confirms that a fresh login
+   is rejected. Keep the Owner audit records. Removing Auth identities or dependent rows requires a separate reviewed
+   cleanup; do not delete them casually in the dashboard.
+
+Deactivation is the required access-removal step even if the reviewer account is kept for audit history. If the
+developer will be a real ongoing gym administrator, use their real individual account and leave it active only with
+the gym's approval.
+
+## Live acceptance result
+
+Phase 8 production-readiness testing completed on 28 September 2026:
+
+- The initial Owner provisioned a disposable co-owner after current-password verification, and that co-owner signed
+  in from a separate application process.
+- The co-owner created two disposable Members. Member A signed in independently and saw an active Membership.
+- An Owner-added future Membership appeared in Member A's application as upcoming.
+- A body-mass record created as Member A was visible to the Owner, while Member B saw neither Member A's profile nor
+  measurement.
+- Two concurrent writes for the same Member and measurement date produced one successful insert and one uniqueness
+  conflict, leaving exactly one record.
+- Deactivating the disposable co-owner prevented a new login.
+- Fresh application processes authenticated successfully, and an automated unavailable-backend test verifies that a
+  connection failure is reported separately from invalid credentials.
+
+The live test exposed two remote privilege gaps that the local service-role environment had masked. Migrations
+`20260928091000` and `20260928092000` added narrowly scoped Member-number access and hardened the service-role-only
+atomic Member-creation function. Both corrections passed the full local database suite before deployment.
+
+A logical backup was created immediately before cleanup. The three disposable Auth identities and their dependent
+test records were then removed through a transaction limited to their reserved test addresses. Post-cleanup checks
+reported one active Owner, one total application Account, and zero remaining Phase 8 Auth users.
+
+## Legacy SQLite disposition
+
+The current `data/gymflow.db` contains demo data only: two Accounts, one Member profile, one Membership, one Payment,
+four Workouts, nine Workout Sets, and two body measurements. It must not be imported into production. The SQLite file
+and its pre-cloud backup remain local for regression and reference; they are not an ongoing source of truth and must
+not be included in production releases.
+
+If real legacy records are supplied later, treat them as a new migration exercise: take a read-only backup, reconcile
+counts and financial totals, provision real Auth identities, obtain Owner acceptance, and run the Phase 9 checks
+before importing anything into the hosted database.

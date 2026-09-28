@@ -2,16 +2,20 @@ package com.gymflow.ui;
 
 import java.nio.file.Path;
 
-import com.gymflow.auth.AuthenticationService;
 import com.gymflow.announcement.OwnerAnnouncementService;
-import com.gymflow.data.GymFlowDatabase;
+import com.gymflow.auth.Authenticator;
+import com.gymflow.auth.SupabaseAuthenticationService;
+import com.gymflow.config.RuntimeEnvironment;
+import com.gymflow.config.SupabaseConfiguration;
+import com.gymflow.data.SupabaseDataClient;
 import com.gymflow.expense.OwnerExpenseService;
-import com.gymflow.member.OwnerMemberService;
 import com.gymflow.member.MemberAccountService;
+import com.gymflow.member.OwnerAccountService;
+import com.gymflow.member.OwnerMemberService;
 import com.gymflow.metric.BodyMetricService;
 import com.gymflow.monitoring.AppMonitoring;
-import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.visit.MemberVisitService;
+import com.gymflow.visit.OwnerVisitService;
 import com.gymflow.workout.WorkoutService;
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -20,12 +24,13 @@ import javafx.stage.Stage;
 public final class GymFlowApp extends Application {
     private static final double MINIMUM_WIDTH = 1050;
     static final double MINIMUM_HEIGHT = 700;
-    private AuthenticationService authentication;
+    private Authenticator authentication;
     private OwnerAnnouncementService announcements;
     private OwnerExpenseService expenses;
-    private boolean ownerExists;
+    private boolean localEnvironment;
     private OwnerMemberService members;
     private MemberAccountService memberAccounts;
+    private OwnerAccountService ownerAccounts;
     private OwnerVisitService visits;
     private MemberVisitService memberVisits;
     private WorkoutService workouts;
@@ -34,18 +39,21 @@ public final class GymFlowApp extends Application {
     /** Initializes local storage before the JavaFX application thread starts. */
     @Override
     public void init() {
-        GymFlowDatabase database = new GymFlowDatabase(Path.of("data", "gymflow.db"));
-        database.initialize();
-        authentication = new AuthenticationService(database);
-        announcements = new OwnerAnnouncementService(database);
-        expenses = new OwnerExpenseService(database);
-        members = new OwnerMemberService(database);
-        memberAccounts = new MemberAccountService(database);
-        visits = new OwnerVisitService(database);
-        memberVisits = new MemberVisitService(database);
-        workouts = new WorkoutService(database);
-        bodyMetrics = new BodyMetricService(database);
-        ownerExists = authentication.hasOwner();
+        SupabaseConfiguration configuration = SupabaseConfiguration.load();
+        SupabaseAuthenticationService supabaseAuthentication =
+                new SupabaseAuthenticationService(configuration);
+        authentication = supabaseAuthentication;
+        SupabaseDataClient data = new SupabaseDataClient(configuration, supabaseAuthentication);
+        localEnvironment = configuration.environment() == RuntimeEnvironment.LOCAL;
+        announcements = new OwnerAnnouncementService(data);
+        expenses = new OwnerExpenseService(data);
+        members = new OwnerMemberService(data);
+        memberAccounts = new MemberAccountService(data, supabaseAuthentication);
+        ownerAccounts = new OwnerAccountService(data);
+        visits = new OwnerVisitService(data);
+        memberVisits = new MemberVisitService(data);
+        workouts = new WorkoutService(data);
+        bodyMetrics = new BodyMetricService(data);
     }
 
     /**
@@ -60,8 +68,9 @@ public final class GymFlowApp extends Application {
         stage.setMinWidth(MINIMUM_WIDTH);
         stage.setMinHeight(MINIMUM_HEIGHT);
 
-        new AppView(stage, authentication, members, expenses, visits, memberVisits, workouts, bodyMetrics,
-                announcements, memberAccounts, ownerExists);
+        new AppView(stage, authentication, members, expenses, visits, memberVisits,
+                workouts, bodyMetrics, announcements, memberAccounts, ownerAccounts,
+                localEnvironment);
         stage.show();
     }
 

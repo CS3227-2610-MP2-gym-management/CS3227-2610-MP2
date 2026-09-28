@@ -6,27 +6,40 @@ import java.util.List;
 
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.data.OwnerExpenseStore;
+import com.gymflow.data.SupabaseDataClient;
+import com.gymflow.data.SupabaseExpenseStore;
 import com.gymflow.model.Expense;
 import com.gymflow.model.ExpenseCategory;
 
 /** Validates and retrieves Owner-managed operating Expenses. */
 public final class OwnerExpenseService {
     private final OwnerExpenseStore expenses;
+    private final SupabaseExpenseStore cloudExpenses;
 
     /** Creates an Expense service backed by the supplied database. */
     public OwnerExpenseService(GymFlowDatabase database) {
         expenses = new OwnerExpenseStore(database);
+        cloudExpenses = null;
+    }
+
+    /** Creates an Expense service backed by Supabase. */
+    public OwnerExpenseService(SupabaseDataClient client) {
+        expenses = null;
+        cloudExpenses = new SupabaseExpenseStore(client);
     }
 
     /** Validates and records one immutable Expense. */
     public Expense addExpense(AddExpenseRequest request, long ownerAccountId) {
         validate(request);
-        return expenses.add(request, normalizeDescription(request.description()), ownerAccountId);
+        String description = normalizeDescription(request.description());
+        return cloudExpenses == null
+                ? expenses.add(request, description, ownerAccountId)
+                : cloudExpenses.add(request, description, ownerAccountId);
     }
 
     /** Lists all Expenses newest first. */
     public List<Expense> listExpenses() {
-        return expenses.list(null);
+        return cloudExpenses == null ? expenses.list(null) : cloudExpenses.list(null);
     }
 
     /** Lists Expenses belonging to one category, newest first. */
@@ -34,12 +47,12 @@ public final class OwnerExpenseService {
         if (category == null) {
             throw new IllegalArgumentException("Expense category is required");
         }
-        return expenses.list(category);
+        return cloudExpenses == null ? expenses.list(category) : cloudExpenses.list(category);
     }
 
     /** Totals every recorded Expense. */
     public BigDecimal totalExpenses() {
-        return expenses.total();
+        return cloudExpenses == null ? expenses.total() : cloudExpenses.total();
     }
 
     private static void validate(AddExpenseRequest request) {

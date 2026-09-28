@@ -48,6 +48,9 @@ jobs:
           distribution: temurin
           java-version: "25"
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Check and package
         run: ${{ matrix.gradle }} --no-daemon clean check ${{ matrix.release-task }}
 
@@ -56,4 +59,43 @@ jobs:
         with:
           name: GymFlow-${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-path }}
+
+  supabase-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Reset and test the database
+        run: |
+          supabase db reset --local
+          supabase test db
+
+      - name: Run cloud integration tests
+        env:
+          GYMFLOW_LOCAL_INTEGRATION: "true"
+        run: ./gradlew --no-daemon test --stacktrace --info
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
 

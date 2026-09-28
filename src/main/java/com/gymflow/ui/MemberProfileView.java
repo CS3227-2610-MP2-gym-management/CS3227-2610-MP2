@@ -27,11 +27,13 @@ final class MemberProfileView {
         phone.setTextFormatter(new javafx.scene.control.TextFormatter<>(change ->
                 change.getControlNewText().matches("\\d{0,8}") ? change : null));
         Label contactStatus = UiComponents.statusLabel();
+        PasswordField contactPassword = passwordField("Current password");
         Button saveContact = new Button("Save contact details");
         saveContact.getStyleClass().add("primary-button");
-        saveContact.setOnAction(event -> updateContact(accounts, session, email, phone, saveContact, contactStatus));
+        saveContact.setOnAction(event -> updateContact(accounts, session, email, phone,
+                contactPassword, saveContact, contactStatus));
         VBox contact = UiComponents.card(title("Contact details"), new Label("Email"), email,
-                new Label("Phone (+65)"), phone, contactStatus, saveContact);
+                new Label("Phone (+65)"), phone, contactPassword, contactStatus, saveContact);
 
         PasswordField current = passwordField("Current password");
         PasswordField next = passwordField("New password (12–128 characters)");
@@ -65,11 +67,14 @@ final class MemberProfileView {
     }
 
     private static void updateContact(MemberAccountService accounts, Account session, TextField email,
-            TextField phone, Button save, Label status) {
+            TextField phone, PasswordField current, Button save, Label status) {
+        char[] currentPassword = current.getText().toCharArray();
+        current.clear();
         save.setDisable(true);
         Thread.startVirtualThread(() -> {
             try {
-                var member = accounts.updateContact(session, email.getText(), phone.getText());
+                var member = accounts.updateContact(session, email.getText(), phone.getText(),
+                        currentPassword);
                 Platform.runLater(() -> {
                     setContact(email, phone, member.email(), member.phoneNumber());
                     UiComponents.showStatus(status, "Contact details saved.", false);

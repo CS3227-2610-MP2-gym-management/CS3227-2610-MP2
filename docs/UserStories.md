@@ -37,7 +37,7 @@ Shared storage and service contracts may exist before the corresponding Member i
 | M-P1-02 | As a gym Member, I want to record exercises and ordered sets using repetitions or duration and optional resistance so that I can monitor training progress. | Implemented | A Workout has zero or more ordered sets. Named exercises may retain an incomplete draft set; completed sets have exactly one positive measure and optional non-negative resistance. |
 | M-P1-03 | As a gym Member, I want to view and edit my previous workouts so that my personal exercise history remains useful and accurate. | Implemented | Members may edit notes and exercises only; they cannot edit session times or delete Workouts, and cannot access another Member's records. |
 | M-P1-04 | As a gym Member, I want to record, edit, and delete body-mass readings so that I can monitor fitness progress.                 | Implemented | Each Member may store one positive kilogram reading per calendar date; future-dated readings are not allowed. |
-| M-P1-05 | As a gym Member, I want to view Owner announcements so that I stay informed about gym operations.                             | Planned | Members see published announcements only; read/unread tracking is not required. |
+| M-P1-05 | As a gym Member, I want to view Owner announcements so that I stay informed about gym operations.                             | Implemented | Members see published announcements only; read/unread tracking is not required. |
 | M-P1-06 | As a gym Member, I want to update selected profile details so that my contact information remains current.                    | Implemented | Self-service editing is limited to email address and phone number. |
 | M-P1-07 | As a gym Member, I want to change my password so that I can keep my account secure.                                           | Implemented | The Member must provide the current password and a matching new password of 12–128 characters. |
 
@@ -53,7 +53,7 @@ Shared storage and service contracts may exist before the corresponding Member i
 
 | ID      | User story                                                                                                                       | Status      | Notes                                                                                        |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------- |
-| O-P0-01 | As a gym Owner, I want to log in securely so that I can access administrative features.                                          | Implemented | Includes first-run Owner setup and logout.                                                   |
+| O-P0-01 | As a gym Owner, I want to log in securely so that I can access administrative features.                                          | Implemented | The retained initial Owner and provisioned co-owners use the universal sign-in screen.      |
 | O-P0-02 | As a gym Owner, I want to create a Member account so that a new Member can access the application.                               | Implemented | The Owner chooses the initial password.                                                      |
 | O-P0-03 | As a gym Owner, I want to view and search Members so that I can quickly find their records.                                      | Implemented | Search matches name or email.                                                                |
 | O-P0-04 | As a gym Owner, I want to edit a Member profile so that I can correct or update its information.                                 | Implemented | Editing does not rewrite historical records.                                                 |
@@ -62,34 +62,34 @@ Shared storage and service contracts may exist before the corresponding Member i
 | O-P0-07 | As a gym Owner, I want to renew a Membership so that a Member can continue using the gym.                                        | Implemented | Renewal creates a new immutable Membership and Payment rather than extending history.        |
 | O-P0-08 | As a gym Owner, I want to record a Membership Payment so that the gym has accurate income history.                               | Implemented | Each Membership purchase has exactly one Payment.                                            |
 | O-P0-09 | As a gym Owner, I want to view a Member's Payment history so that I can verify what was paid.                                    | Implemented | Available from the Member profile and global Finances page.                                  |
-| O-P0-10 | As a gym Owner, I want to view one Member's Workout history so that I can review individual attendance.                        | Planned | Available from the Member profile and uses the authoritative Workout records.               |
-| O-P0-11 | As a gym Owner, I want to view all Workout records so that I can monitor collective attendance.                                | Planned | Includes all and currently-active views of the authoritative Workout records.               |
-| O-P0-12 | As a gym Owner, I want entry without a valid Membership to be rejected so that access rules are enforced.                        | Partial     | `hasValidMembership(memberId, date)` exists; Member entry submission remains teammate-owned. |
+| O-P0-10 | As a gym Owner, I want to view one Member's Workout history so that I can review individual attendance.                        | Implemented | Available from the Member profile and uses the authoritative Workout records.               |
+| O-P0-11 | As a gym Owner, I want to view all Workout records so that I can monitor collective attendance.                                | Implemented | Includes all and currently-active views of the authoritative Workout records.               |
+| O-P0-12 | As a gym Owner, I want entry without a valid Membership to be rejected so that access rules are enforced.                        | Implemented | Member check-in applies account, Membership-date, and open-Workout rules.                    |
 
 ### P1 — Should have
 
 | ID      | User story                                                                                                    | Status      | Notes                                                                                  |
 | ------- | ------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
-| O-P1-01 | As a gym Owner, I want to correct inaccurate Workout times so that attendance records remain accurate.        | Planned | The latest correction records its Owner, time, and reason; Members cannot change those times. |
+| O-P1-01 | As a gym Owner, I want to correct inaccurate Workout times so that attendance records remain accurate.        | Implemented | The latest correction records its Owner, time, and reason; Members cannot change those times. |
 | O-P1-02 | As a gym Owner, I want to create, edit, and deactivate Membership plans so that I can offer reusable options. | Planned     | Memberships currently use explicit dates and Payment amounts.                          |
 | O-P1-03 | As a gym Owner, I want to assign a Membership plan so that a Member receives its conditions.                  | Planned     | No MembershipPlan entity exists.                                                       |
-| O-P1-04 | As a gym Owner, I want to publish and withdraw announcements so that Members receive current information.     | Implemented | Owner management and the shared published-list query exist; Member display is planned. |
+| O-P1-04 | As a gym Owner, I want to publish and withdraw announcements so that Members receive current information.     | Implemented | Owner management and Member display share the published-list query.                    |
 | O-P1-05 | As a gym Owner, I want to view basic attendance statistics so that I can understand gym usage.                | Partial     | The dashboard shows the current visitor count but no broader trends.                   |
 | O-P1-06 | As a gym Owner, I want to view all-time revenue so that I can monitor Membership income.                      | Implemented | The dashboard also shows Expenses and net income.                                      |
-| O-P1-07 | As a gym Owner, I want to reset a Member password so that I can restore account access.                       | Implemented | Reset creates a fresh PBKDF2 salt and hash.                                            |
+| O-P1-07 | As a gym Owner, I want to reset a Member password so that I can restore account access.                       | Implemented | A protected Edge Function updates only the Supabase Auth credential.                   |
 | O-P1-08 | As a gym Owner, I want to record Expenses so that the gym has accurate expenditure history.                   | Implemented | Expenses are immutable and filterable by category.                                     |
 
 ### P2 — Could have
 
 | ID      | User story                                                                                                          | Status  |
 | ------- | ------------------------------------------------------------------------------------------------------------------- | ------- |
-| O-P2-01 | As a gym Owner, I want to export Member, Payment, or Workout records as CSV files for external analysis or archiving. | Planned |
+| O-P2-01 | As a gym Owner, I want to export Member, Payment, or Workout records as CSV files for external analysis or archiving. | Implemented |
 | O-P2-02 | As a gym Owner, I want to identify peak usage periods so that I can make operational decisions.                     | Planned |
 | O-P2-03 | As a gym Owner, I want to view an audit history of important administrative changes.                                | Planned |
 
 ## Scope decisions
 
-- One installation represents one gym and supports one Owner account.
+- One configured backend represents one gym environment and supports one or more Owners; at least one remains active.
 - Currency is fixed to SGD.
 - Membership validity and display status are derived from the active flag and dates rather than stored as permanent
   status values.
