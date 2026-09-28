@@ -66,7 +66,7 @@ final class SupabaseRows {
         return new MemberPayment(row.path("id").asLong(), row.path("membership_id").asLong(),
                 cents(row.path("amount_cents").asLong()),
                 PaymentMethod.valueOf(required(row, "method")), instant(row, "paid_at"),
-                nullableText(row, "reference"), row.path("recorded_by_account_id").asLong(),
+                row.path("reference").asText(""), row.path("recorded_by_account_id").asLong(),
                 instant(row, "created_at"));
     }
 

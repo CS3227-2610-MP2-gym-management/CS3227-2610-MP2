@@ -179,3 +179,17 @@ both transactional tests and normal RPC use.
 A clean local reset applied every migration through `20260928097000`. The complete pgTAP suite then passed all 157
 tests, including all 17 Visit tests and the two check-out assertions that originally failed. The full Gradle `check`
 task also passed, including Checkstyle for every Java source set.
+
+## Follow-up: Blank Member window after Membership activation
+
+Smoke testing exposed a JavaFX `NullPointerException` after a Membership state change refreshed the Member details
+screen. Supabase represented a Payment without a reference as Java `null`, while the equivalent SQLite mapper and
+the Payment UI contract use an empty string. Rebuilding Payment history called `isBlank()` on that null reference,
+interrupting screen construction after the Membership update had already succeeded.
+
+The Supabase Payment mapper now normalizes a database null reference to an empty string. A focused mapping test
+covers this case so Member details can safely refresh after Membership activation or deactivation.
+
+The full Gradle `check` task passed. After resetting smoke-test data to the seeded baseline, all 157 Supabase tests
+also passed. Running pgTAP before the reset correctly exposed overlapping Membership data left by manual testing;
+the suite is designed to run after `npm run supabase:reset`.
