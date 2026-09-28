@@ -26,7 +26,7 @@ Product website: [GymFlow on GitHub Pages](https://cs3227-2610-mp2-gym-managemen
 ## Owner and Member login
 
 Every installation opens on the same sign-in screen. Owners and Members use credentials provisioned for the shared
-gym. GymFlow loads the authenticated account's role and opens the corresponding dashboard. Use `Return to Login` in
+gym. GymFlow loads the authenticated account's role and opens the corresponding dashboard. Use `Logout` in
 the sidebar to end the current session.
 
 Authentication and shared feature data are provided by Supabase Auth, PostgreSQL, the Data API, and protected Edge

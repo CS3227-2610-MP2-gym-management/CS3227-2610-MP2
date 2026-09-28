@@ -325,6 +325,10 @@
     -fx-pref-width: 500px;
 }
 
+.logout-dialog {
+    -fx-pref-width: 460px;
+}
+
 .membership-dialog {
     -fx-pref-width: 560px;
 }

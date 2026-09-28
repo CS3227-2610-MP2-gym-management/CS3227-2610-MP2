@@ -38,7 +38,7 @@ connection error instead.
 
 ## Owner login and logout
 
-Select `Return to Login` in the Owner sidebar to clear the current session.
+Select `Logout` in the Owner sidebar and confirm the dialog to clear the current session.
 
 ## Managing Owners
 
