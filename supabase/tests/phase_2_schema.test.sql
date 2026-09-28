@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(42);
+SELECT plan(43);
 
 SELECT has_table('public', 'accounts', 'accounts table exists');
 SELECT has_table('public', 'member_profiles', 'member profiles table exists');
@@ -63,11 +63,22 @@ SELECT is(
     'the server role can execute privileged Member creation'
 );
 
-SELECT lives_ok(
+SELECT throws_ok(
     $$UPDATE public.accounts
          SET role = 'OWNER'
        WHERE id = 2$$,
-    'multiple Owner accounts are allowed'
+    '22023',
+    'Account roles cannot be changed',
+    'an existing Member cannot be converted into an Owner'
+);
+
+SELECT throws_ok(
+    $$UPDATE public.accounts
+         SET email = 'owner.local@example.test'
+       WHERE id = 2$$,
+    '23505',
+    NULL,
+    'Owner and Member accounts cannot share an email address'
 );
 
 INSERT INTO public.memberships (

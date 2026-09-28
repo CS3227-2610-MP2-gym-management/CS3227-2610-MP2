@@ -136,6 +136,13 @@ configured Auth HTTPS endpoint, retrieves the signed-in user's own `accounts` ro
 numeric domain account ID to the Java model. Owner and Member roles therefore come from the shared database rather
 than the installing device. Password character arrays are cleared after every authentication outcome.
 
+One normalized email identifies exactly one account and one permanent role. The protected account Edge Function
+trims and lowercases emails before Owner or Member creation and Member email updates, rejects an address held by any
+other account, and maps Supabase Auth or PostgreSQL uniqueness failures to the same safe validation message. The
+database-wide `accounts_email_unique` index remains the race-safe final constraint, while
+`accounts_prevent_role_change` prevents converting an existing Member into an Owner or vice versa. Supported
+co-owners are created as separate accounts through `create_owner_record`.
+
 Local development defaults to the loopback Supabase endpoint and displays a `LOCAL DEVELOPMENT` badge. Production
 requires explicit HTTPS URL and publishable-key environment variables and refuses loopback endpoints. The client
 never accepts a database password or secret/service-role key.
@@ -201,6 +208,7 @@ Member onboarding creates an account, generated Member number, profile, initial 
 transaction. Profile validation is authoritative in `OwnerMemberService`:
 
 - Email must contain exactly one `@` with text on both sides and is normalized to lowercase.
+- Email must be unique across both Owner and Member accounts without regard to case.
 - Phone numbers are eight-digit Singapore numbers beginning with `3`, `6`, `8`, or `9` and are stored as
   `+65 XXXX XXXX`.
 - Date of birth is optional; when supplied, the Member must be at least 12 years old.

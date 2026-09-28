@@ -46,6 +46,9 @@ Open `Owners` from the Owner sidebar to view every gym administrator. Select `Ad
 email address and a temporary password, then enter your own current password to authorize the change. Send the
 temporary password to the co-owner through a secure channel separate from their username.
 
+An email address can belong to only one GymFlow account, without regard to capitalization or surrounding spaces. An
+email already used by a Member cannot be reused for an Owner, and an Owner email cannot be reused for a Member.
+
 Use `Deactivate` to prevent another Owner from accessing GymFlow and `Activate` to restore access. Each change again
 requires your current password. You cannot change your own active status from this page, and GymFlow will never allow
 the final active Owner to be deactivated. Owner creation and activation changes are retained in an administrative
@@ -61,8 +64,8 @@ Changing the theme does not affect gym records or other installations of the app
 
 Owner Home displays the total number of registered Members, the number of Members with a currently valid active
 Membership, the current visitor count, all recorded income and expenses, and their calculated net. Financial values
-are displayed in SGD and cover all records currently stored in GymFlow. The Member overview lists the five most
-recently created Members with their most relevant Membership period and its derived status.
+are displayed in SGD and cover all records currently stored in GymFlow. The six summary cards resize and wrap with
+the available window width.
 
 Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, `Finances` to
 review membership income and operating expenses, `Visits` to review attendance, or `Announcements` to manage gym
@@ -88,6 +91,9 @@ The password must contain 12–128 characters. GymFlow currently supports Singap
 digits beginning with `3`, `6`, `8`, or `9`; the fixed `+65` prefix is stored automatically. Date of birth is optional,
 but a supplied date must show that the Member is at least 12 years old. Membership expiry cannot precede its start, and
 the SGD payment must be positive with at most two decimal places.
+
+The Member email must not already belong to any Owner or Member account. Email matching is case-insensitive and
+ignores surrounding spaces.
 
 GymFlow assigns the next number such as `M000001`. Account, profile, Membership, and Payment creation succeed together;
 an error creates none of them. Validation and storage errors appear in the form without closing it or clearing entered

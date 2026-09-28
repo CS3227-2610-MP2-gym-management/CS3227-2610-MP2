@@ -27,9 +27,16 @@ keys. SQLite is retained only for isolated legacy regression and reference.
 
 - One configured Supabase project represents one gym environment.
 - The system supports multiple Owner accounts with separate credentials and always retains at least one active Owner.
+- One normalized email identifies one account with one permanent `OWNER` or `MEMBER` role. Shared-email accounts,
+  aliases, account merging, and role conversion are outside the current scope.
 - An active Owner may provision or change another Owner only after current-password confirmation; these changes are
   recorded in an append-only Owner audit table.
 - Additional administrator, manager, or staff roles are outside the current scope.
+
+The project assumes each person uses one email address for GymFlow. Authenticated Owners are trusted administrators
+who will not deliberately misuse their access. GymFlow still applies role checks, current-password confirmation for
+sensitive Owner administration, and database constraints, but defending against a malicious authorized Owner or
+performing real-world identity-document verification is outside the project threat model.
 
 ### Connectivity
 

@@ -2,6 +2,7 @@
   "name": "gymflow-local-backend",
   "private": true,
   "scripts": {
+    "test:edge-functions": "node --test supabase/functions/**/*.test.mjs",
     "supabase:init": "supabase init",
     "supabase:start": "supabase start",
     "supabase:functions": "supabase functions serve manage-member",

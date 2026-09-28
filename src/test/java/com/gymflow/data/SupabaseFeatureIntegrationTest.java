@@ -80,6 +80,18 @@ class SupabaseFeatureIntegrationTest {
         ownerAccounts.setActive(coOwner.id(), true, "LocalOwner!2026".toCharArray());
         assertEquals(2, ownerAccounts.listOwners().size());
 
+        int memberCount = members.searchMembers("").size();
+        int membershipCount = members.searchMemberships("").size();
+        int paymentCount = members.searchPayments("").size();
+        assertDuplicateEmail(() -> members.createMember(new CreateMemberRequest(
+                "  OWNER.LOCAL@EXAMPLE.TEST ", "DuplicateMember!2026".toCharArray(),
+                "Duplicate Member", "+65 8000 0088", LocalDate.of(1997, 3, 3),
+                LocalDate.now(), LocalDate.now().plusDays(30), new BigDecimal("90.00"),
+                PaymentMethod.TRANSFER, Instant.now(), "DUPLICATE"), owner.id()));
+        assertEquals(memberCount, members.searchMembers("").size());
+        assertEquals(membershipCount, members.searchMemberships("").size());
+        assertEquals(paymentCount, members.searchPayments("").size());
+
         members.addMembership(new AddMembershipRequest(2, LocalDate.now(),
                 LocalDate.now().plusDays(30), new BigDecimal("80.00"), PaymentMethod.CARD,
                 Instant.now(), "LOCAL-INTEGRATION"), owner.id());
@@ -97,6 +109,19 @@ class SupabaseFeatureIntegrationTest {
                 Instant.now(), "EDGE-FUNCTION"), owner.id());
         assertEquals("Cloud Member", created.fullName());
         assertTrue(new String(initialPassword).chars().allMatch(value -> value == 0));
+        assertDuplicateEmail(() -> ownerAccounts.createOwner(
+                " CLOUD.MEMBER.LOCAL@EXAMPLE.TEST ", "DuplicateOwner!2026".toCharArray(),
+                "LocalOwner!2026".toCharArray()));
+        assertEquals(2, ownerAccounts.listOwners().size());
+        assertDuplicateEmail(() -> members.updateMember(created.accountId(),
+                "owner.local@example.test", created.fullName(), created.phoneNumber(),
+                created.dateOfBirth()));
+        assertDuplicateEmail(() -> members.updateMember(created.accountId(),
+                "member.a.local@example.test", created.fullName(), created.phoneNumber(),
+                created.dateOfBirth()));
+        assertEquals(created.email(), members.updateMember(created.accountId(),
+                " CLOUD.MEMBER.LOCAL@EXAMPLE.TEST ", created.fullName(), created.phoneNumber(),
+                created.dateOfBirth()).email());
         var updated = members.updateMember(created.accountId(),
                 "cloud.member.updated.local@example.test", "Cloud Member Updated",
                 "+65 8000 0098", LocalDate.of(1997, 3, 3));
@@ -107,6 +132,12 @@ class SupabaseFeatureIntegrationTest {
                 "cloud.member.updated.local@example.test",
                 "CloudMemberReset!2026".toCharArray()).orElseThrow();
         assertEquals(created.accountId(), createdAccount.id());
+        assertDuplicateEmail(() -> memberAccounts.updateContact(createdAccount,
+                " OWNER.LOCAL@EXAMPLE.TEST ", "+65 8000 0098",
+                "CloudMemberReset!2026".toCharArray()));
+        assertDuplicateEmail(() -> memberAccounts.updateContact(createdAccount,
+                "member.a.local@example.test", "+65 8000 0098",
+                "CloudMemberReset!2026".toCharArray()));
         memberAccounts.updateContact(createdAccount,
                 "cloud.member.self.local@example.test", "+65 8000 0097",
                 "CloudMemberReset!2026".toCharArray());
@@ -168,5 +199,10 @@ class SupabaseFeatureIntegrationTest {
         assertEquals(1, announcements.listWithdrawn().size());
         assertThrows(IllegalStateException.class,
                 () -> announcements.withdraw(published.id(), owner.id()));
+    }
+
+    private static void assertDuplicateEmail(Runnable operation) {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, operation::run);
+        assertTrue(exception.getMessage().contains("An account with this email already exists"));
     }
 }

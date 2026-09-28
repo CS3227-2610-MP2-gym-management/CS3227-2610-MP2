@@ -96,9 +96,7 @@ public final class SupabaseDataClient {
         try {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                String detail = errorDetail(response.body());
-                throw new IllegalStateException("Unable to " + operation + " (HTTP "
-                        + response.statusCode() + (detail.isBlank() ? "" : ": " + detail) + ")");
+                throw responseFailure(response.statusCode(), response.body(), operation, json);
             }
             if (response.body() == null || response.body().isBlank()) {
                 return json.createArrayNode();
@@ -120,13 +118,24 @@ public final class SupabaseDataClient {
         }
     }
 
-    private String errorDetail(String body) {
+    static RuntimeException responseFailure(int status, String body, String operation,
+            ObjectMapper mapper) {
+        JsonNode error = errorBody(body, mapper);
+        String message = error.path("message").asText();
+        if (status == 400 && "duplicate_email".equals(error.path("code").asText())
+                && !message.isBlank()) {
+            return new IllegalArgumentException(message);
+        }
+        String detail = message.isBlank() ? error.path("error_description").asText() : message;
+        return new IllegalStateException("Unable to " + operation + " (HTTP " + status
+                + (detail.isBlank() ? "" : ": " + detail) + ")");
+    }
+
+    private static JsonNode errorBody(String body, ObjectMapper mapper) {
         try {
-            JsonNode error = json.readTree(body);
-            String message = error.path("message").asText();
-            return message.isBlank() ? error.path("error_description").asText() : message;
+            return mapper.readTree(body);
         } catch (JsonProcessingException exception) {
-            return "";
+            return mapper.createObjectNode();
         }
     }
 }
