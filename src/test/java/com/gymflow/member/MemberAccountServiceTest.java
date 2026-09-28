@@ -36,8 +36,7 @@ class MemberAccountServiceTest {
         OwnerMemberService ownerMembers = new OwnerMemberService(database);
         Member alice = ownerMembers.createMember(request("alice@example.com", LocalDate.of(2026, 9, 1)), owner.id());
         Member bob = ownerMembers.createMember(request("bob@example.com", LocalDate.of(2026, 8, 1)), owner.id());
-        Member charlie = ownerMembers.createMember(
-                request("charlie@example.com", LocalDate.of(2026, 7, 1)), owner.id());
+        ownerMembers.createMember(request("charlie@example.com", LocalDate.of(2026, 7, 1)), owner.id());
         ownerMembers.addMembership(new AddMembershipRequest(alice.accountId(), LocalDate.of(2026, 10, 1),
                 LocalDate.of(2026, 10, 31), new BigDecimal("90.00"), PaymentMethod.CARD,
                 Instant.parse("2026-09-20T00:00:00Z"), "R-2"), owner.id());

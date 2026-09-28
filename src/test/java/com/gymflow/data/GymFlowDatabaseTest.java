@@ -167,36 +167,6 @@ class GymFlowDatabaseTest {
         }
     }
 
-    private static void createLegacyDatabase(Path file) throws Exception {
-        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file);
-                Statement statement = connection.createStatement()) {
-            statement.executeUpdate("""
-                    CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT, password_hash TEXT,
-                        password_salt TEXT, password_iterations INTEGER, role TEXT, is_active INTEGER,
-                        created_at TEXT)
-                    """);
-            statement.executeUpdate("""
-                    CREATE TABLE member_profiles (account_id INTEGER PRIMARY KEY, member_number TEXT,
-                        full_name TEXT, phone_number TEXT, date_of_birth TEXT)
-                    """);
-            statement.executeUpdate("""
-                    CREATE TABLE memberships (id INTEGER PRIMARY KEY, member_account_id INTEGER,
-                        start_date TEXT, expiry_date TEXT, is_active INTEGER)
-                    """);
-            statement.executeUpdate("""
-                    CREATE TABLE payments (id INTEGER PRIMARY KEY, membership_id INTEGER, amount_cents INTEGER,
-                        method TEXT, paid_at TEXT, reference TEXT, recorded_by_account_id INTEGER)
-                    """);
-            statement.executeUpdate("INSERT INTO accounts VALUES "
-                    + "(1, 'member@example.com', 'hash', 'salt', 1, 'MEMBER', 1, '2026-01-01T00:00:00Z')");
-            statement.executeUpdate("INSERT INTO member_profiles VALUES "
-                    + "(1, 'M000001', 'Member', '+65 8123 4567', NULL)");
-            statement.executeUpdate("INSERT INTO memberships VALUES (1, 1, '2026-01-01', '2026-01-31', 1)");
-            statement.executeUpdate("INSERT INTO payments VALUES "
-                    + "(1, 1, 5000, 'CARD', '2026-01-01T00:00:00Z', NULL, 1)");
-        }
-    }
-
     private static void createVersionTwoDatabase(Path file) throws Exception {
         try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + file);
                 Statement statement = connection.createStatement()) {
@@ -277,9 +247,4 @@ class GymFlowDatabaseTest {
         }
     }
 
-    private static String text(Statement statement, String sql) throws Exception {
-        try (ResultSet result = statement.executeQuery(sql)) {
-            return result.getString(1);
-        }
-    }
 }

@@ -363,7 +363,8 @@ final class MemberBodyMetricsView {
             XYChart.Series<String, Number> series = new XYChart.Series<>();
             trend.forEach(metric -> series.getData().add(new XYChart.Data<>(
                     CHART_DATE.format(metric.measurementDate()), metric.weightKilograms())));
-            chart.getData().setAll(series);
+            chart.getData().clear();
+            chart.getData().add(series);
             boolean visible = trend.size() > 1;
             chart.setVisible(visible);
             chart.setManaged(visible);
