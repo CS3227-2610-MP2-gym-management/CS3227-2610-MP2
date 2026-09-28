@@ -1,0 +1,63 @@
+# Production Deployment
+
+## Hosted environment
+
+The production-ready test environment is an isolated Supabase Free project:
+
+| Setting | Value |
+| --- | --- |
+| Organization | `GymFlow` |
+| Project | `GymFlow Production` |
+| Project reference | `ixbhtfqsznxteurqmguw` |
+| Region | Southeast Asia (Singapore) |
+| API URL | `https://ixbhtfqsznxteurqmguw.supabase.co` |
+
+The database password is held outside the repository. The CLI is linked through the developer's local Supabase
+profile; its access token and temporary connection details must not be copied into documentation or commits.
+
+## Deployed baseline
+
+The hosted database has migrations `20260928010000` through `20260928080000`. The `manage-member` Edge Function is
+deployed and requires a valid Owner session. Migration `20260928080000` adds a service-role-only operation for the
+one-time initial Owner bootstrap. It derives the email from the selected Auth identity and refuses to run unless the
+application account table is empty.
+
+The first active Owner Auth identity and GymFlow account have been provisioned. The Owner email and password are not
+stored in this repository. Additional Owners are intentionally unsupported until the controlled co-owner phase in
+the deployment plan replaces the single-Owner invariant together with its authorization and audit tests.
+
+Production Auth is configured with:
+
+- Public signup, anonymous sign-in, and manual identity linking disabled.
+- Email confirmation enabled.
+- A 12-character minimum password with lower-case, upper-case, digit, and symbol requirements.
+
+The default Supabase email service is not suitable for operational password recovery or invitations. Configure and
+test custom SMTP before onboarding real Members or relying on email recovery.
+
+## Release client configuration
+
+Production clients receive only the HTTPS API URL and publishable key. Start from
+`config/production.env.example`, obtain the project's current **publishable** key from **Project Settings > API
+Keys**, and set the three values in the launching process environment. Do not use either the secret key or the legacy
+`service_role` key in the desktop application.
+
+The publishable key is not an authorization secret. Database grants, Row Level Security, and the signed-in user's
+access token enforce access. Nevertheless, avoid printing the key unnecessarily and never print user access or
+refresh tokens.
+
+## Deployment verification
+
+Before and after a production deployment:
+
+1. Run `npm run supabase:reset`, `npm run supabase:test`, and `npm run supabase:lint` locally.
+2. Use `npx supabase db push --linked --dry-run` and review the exact migration list.
+3. Confirm the linked project reference is `ixbhtfqsznxteurqmguw` before a real push.
+4. Deploy only reviewed migrations and the required Edge Functions.
+5. Confirm public signup remains disabled and the protected function rejects signed-out requests.
+6. Run the Gradle verification suite with its cache outside the repository.
+7. Sign in with the production Owner account and confirm that the Owner dashboard loads.
+
+Never run `supabase db reset --linked`. Production test data and eventual real data must be removed only through an
+explicit, reviewed administrative procedure. Free projects can pause after inactivity and do not provide a
+production service-level agreement, so resume checks and manual logical backups are operational requirements.

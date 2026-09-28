@@ -46,6 +46,10 @@ The committed seed contains only fake `.test` users:
 These credentials are deliberately public development fixtures and must never be used in a hosted environment. The
 local Auth service rejects public signup, matching the intended production account-provisioning model.
 
+Hosted project details, release environment variables, deployment checks, and live-environment cautions are recorded
+in the [Production Deployment guide](ProductionDeployment.md). Production credentials and privileged keys remain
+outside the repository.
+
 ## Product and technology
 
 GymFlow is an online-first Java SE 25 desktop application for a small gym. The application uses shared Owner and

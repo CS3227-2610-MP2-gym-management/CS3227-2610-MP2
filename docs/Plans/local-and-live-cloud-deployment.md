@@ -270,6 +270,33 @@ Prevent local test actions from affecting the live environment.
 
 No workflow should run a linked remote database reset as a routine development action.
 
+## Phase 7A - Add controlled co-owner provisioning
+
+### Goal
+
+Allow the initial Owner to provision additional Owners for the real gym without exposing public Owner signup or
+granting Members any path to elevate their role. The single-Owner constraint remains in force until this phase is
+implemented and tested as one complete authorization change.
+
+### Steps
+
+1. Replace the single-Owner database constraint with explicit invariants that require at least one active Owner.
+2. Add an Owner-only protected operation for creating or inviting another Owner.
+3. Require recent re-authentication before adding, deactivating, or changing the role of an Owner.
+4. Prevent an Owner from demoting or deactivating the final active Owner.
+5. Record who initiated every Owner creation, activation, deactivation, and role change.
+6. Add an Owner-management screen that clearly distinguishes Owners from Members.
+7. Keep all Owner provisioning unavailable to signed-out users and Members.
+
+### Tests and gate
+
+- The initial Owner can provision a second Owner, who can sign in on a separate installation.
+- A Member cannot create, promote, update, or deactivate an Owner by modifying client requests.
+- The final active Owner cannot be demoted, deactivated, or deleted.
+- Concurrent Owner changes cannot leave the gym without an active Owner.
+- Owner-management audit records identify the actor, target, action, and timestamp.
+- Database, RLS, service, UI, and Checkstyle tests pass before the single-Owner constraint is removed from production.
+
 ## Phase 8 - Run live smoke and isolation tests
 
 ### Goal
