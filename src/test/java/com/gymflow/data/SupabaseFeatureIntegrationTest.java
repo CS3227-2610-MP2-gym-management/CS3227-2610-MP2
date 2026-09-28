@@ -121,14 +121,25 @@ class SupabaseFeatureIntegrationTest {
         assertFalse(memberVisits.currentState(member).checkedIn());
         memberVisits.checkIn(member);
         assertTrue(memberVisits.currentState(member).checkedIn());
-        memberVisits.checkOut(member);
+        var activeWorkout = workouts.history(member).stream()
+                .filter(item -> item.endedAt() == null).findFirst().orElseThrow();
+        activeWorkout = workouts.update(member, activeWorkout.id(), new SaveWorkoutRequest(
+                activeWorkout.startedAt(), null, "Navigation draft",
+                List.of(new WorkoutSetInput("Squat", 8, null, new BigDecimal("50")))));
+        assertEquals("Squat", workouts.history(member).stream()
+                .filter(item -> item.endedAt() == null).findFirst().orElseThrow()
+                .sets().getFirst().exerciseName());
+        workouts.checkOut(member, activeWorkout.id(), new SaveWorkoutRequest(
+                activeWorkout.startedAt(), null, activeWorkout.notes(),
+                activeWorkout.sets().stream().map(item -> new WorkoutSetInput(item.exerciseName(),
+                        item.repetitions(), item.durationSeconds(), item.resistanceKilograms())).toList()));
         assertFalse(memberVisits.currentState(member).checkedIn());
 
         var workout = workouts.create(member, new SaveWorkoutRequest(
                 Instant.now().minusSeconds(3600), Instant.now().minusSeconds(1800), "Cloud workout",
                 List.of(new WorkoutSetInput("Squat", 8, null, new BigDecimal("50")))));
         assertEquals(1, workout.sets().size());
-        assertEquals(1, workouts.history(member).size());
+        assertEquals(2, workouts.history(member).size());
         workout = workouts.update(member, workout.id(), new SaveWorkoutRequest(
                 Instant.now().minusSeconds(3600), Instant.now().minusSeconds(1200), "Updated workout",
                 List.of(new WorkoutSetInput("Plank", null, 60, null))));

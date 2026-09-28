@@ -52,6 +52,51 @@ The publishable key is not an authorization secret. Database grants, Row Level S
 access token enforce access. Nevertheless, avoid printing the key unnecessarily and never print user access or
 refresh tokens.
 
+## Test the live application from Windows
+
+Use this procedure when you only need to launch and test the already-deployed live version. It does not deploy
+migrations or change the hosted configuration. You need Java 25, the production publishable key, and your own
+provisioned GymFlow account. Ask the maintainer for the key and account access through an approved private channel;
+do not use a secret or `service_role` key.
+
+1. Open PowerShell in the repository root.
+2. Set the production client configuration for that PowerShell window. Replace only the placeholder on the final
+   line:
+
+   ```powershell
+   $env:GYMFLOW_ENV = "production"
+   $env:GYMFLOW_SUPABASE_URL = "https://ixbhtfqsznxteurqmguw.supabase.co"
+   $env:GYMFLOW_SUPABASE_PUBLISHABLE_KEY = "replace-with-publishable-key"
+   ```
+
+3. Confirm that the live backend and client safeguards are reachable:
+
+   ```powershell
+   .\gradlew.bat productionSmokeTest
+   ```
+
+4. Build the release JARs, then launch the Windows version from the same PowerShell window:
+
+   ```powershell
+   .\gradlew.bat releaseJars
+   java -jar .\release\GymFlow-windows-x64.jar
+   ```
+
+5. Sign in with your provisioned account. For the normal production smoke test, load the correct Home page and stop.
+   Do not create disposable records in production. If a broader multi-computer test is explicitly required, follow
+   [Temporary production reviewer access](#temporary-production-reviewer-access) before testing.
+6. After closing GymFlow, remove the values from the PowerShell window (or close the window):
+
+   ```powershell
+   Remove-Item Env:GYMFLOW_ENV
+   Remove-Item Env:GYMFLOW_SUPABASE_URL
+   Remove-Item Env:GYMFLOW_SUPABASE_PUBLISHABLE_KEY
+   ```
+
+Do not use `gradlew.bat runLocal` for this procedure: that task deliberately forces the loopback development backend.
+On Linux or macOS, export the same three variables, run the corresponding `./gradlew` commands, and launch the JAR
+matching the computer's operating system and processor architecture from `release/`.
+
 ## Deployment verification
 
 Before and after a production deployment:

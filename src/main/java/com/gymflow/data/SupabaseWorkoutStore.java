@@ -48,7 +48,12 @@ public final class SupabaseWorkoutStore {
 
     /** Replaces and closes an open Workout atomically. */
     public Workout checkOut(long memberId, long id, SaveWorkoutRequest request, Instant now) {
-        return save(id, memberId, request);
+        Map<String, Object> arguments = new LinkedHashMap<>();
+        arguments.put("p_workout_id", id);
+        arguments.put("p_notes", request.notes());
+        arguments.put("p_sets", request.sets().stream().map(this::set).toList());
+        long workoutId = client.rpc("check_out_member_workout", arguments).path("id").asLong();
+        return find(memberId, workoutId);
     }
 
     /** Deletes the Member's Workout. */
@@ -64,6 +69,10 @@ public final class SupabaseWorkoutStore {
         arguments.put("p_notes", request.notes());
         arguments.put("p_sets", request.sets().stream().map(this::set).toList());
         long workoutId = client.rpc("save_member_workout", arguments).path("id").asLong();
+        return find(memberId, workoutId);
+    }
+
+    private Workout find(long memberId, long workoutId) {
         JsonNode rows = client.get("workouts?select=" + FIELDS + "&id=eq." + workoutId
                 + "&member_account_id=eq." + memberId + "&limit=1");
         if (!rows.isArray() || rows.size() != 1) {
