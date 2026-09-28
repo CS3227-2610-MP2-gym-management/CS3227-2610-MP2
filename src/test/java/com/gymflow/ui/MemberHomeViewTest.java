@@ -2,6 +2,7 @@ package com.gymflow.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -64,6 +65,21 @@ class MemberHomeViewTest {
         MemberHomeView.membershipSummary(renewalNotice(), TODAY);
 
         assertFalse(history.active());
+    }
+
+    @Test
+    void disablesCheckInAndCheckOutWithoutCurrentMembership() {
+        assertTrue(MemberHomeView.checkInDisabled(false, false));
+        assertTrue(MemberHomeView.checkOutDisabled(true, false));
+        assertFalse(MemberHomeView.checkInDisabled(false, true));
+        assertFalse(MemberHomeView.checkOutDisabled(true, true));
+    }
+
+    @Test
+    void explainsWhyMembershipFeaturesAreDisabled() {
+        assertEquals("You do not have an active membership. "
+                + "Please renew your membership to access this feature.",
+                MemberHomeView.membershipRequiredMessage());
     }
 
     private static Membership membership(LocalDate start, LocalDate expiry, boolean active) {

@@ -28,6 +28,8 @@ class WorkoutServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-15T10:00:00Z");
     @TempDir Path directory;
     private Account member;
+    private Account owner;
+    private OwnerMemberService members;
     private WorkoutService workouts;
 
     @BeforeEach
@@ -35,8 +37,9 @@ class WorkoutServiceTest {
         GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
         database.initialize();
         AuthenticationService authentication = new AuthenticationService(database);
-        Account owner = authentication.createOwner("owner@example.com", "owner password".toCharArray());
-        new OwnerMemberService(database).createMember(new CreateMemberRequest("member@example.com",
+        owner = authentication.createOwner("owner@example.com", "owner password".toCharArray());
+        members = new OwnerMemberService(database);
+        members.createMember(new CreateMemberRequest("member@example.com",
                 "member password".toCharArray(), "Member Tan", "81234567", null,
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), new BigDecimal("50"),
                 PaymentMethod.CARD, NOW, ""), owner.id());
@@ -90,6 +93,19 @@ class WorkoutServiceTest {
 
         assertEquals(saved.startedAt(), updated.startedAt());
         assertEquals(saved.endedAt(), updated.endedAt());
+    }
+
+    @Test
+    void requiresCurrentMembershipOnlyWhenCreatingWorkout() {
+        Workout saved = workouts.create(member, request("2026-09-15T08:00:00Z", "2026-09-15T09:00:00Z"));
+        var membership = members.membershipHistory(member.id()).getFirst();
+        members.setMembershipActive(membership.id(), false, owner.id());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> workouts.create(member, request("2026-09-15T09:00:00Z", "2026-09-15T09:30:00Z")));
+        assertEquals(saved.id(), workouts.history(member).getFirst().id());
+        assertEquals(saved.id(), workouts.update(member, saved.id(),
+                request("2026-09-15T07:00:00Z", "2026-09-15T09:30:00Z")).id());
     }
 
     private static SaveWorkoutRequest request(String startedAt, String endedAt) {

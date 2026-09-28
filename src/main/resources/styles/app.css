@@ -203,6 +203,23 @@
     -fx-text-fill: #6b4500;
 }
 
+.feature-access-notice {
+    -fx-background-color: #fff4d9;
+    -fx-background-radius: 10px;
+    -fx-border-color: #d69e2e;
+    -fx-border-radius: 10px;
+    -fx-padding: 14px 16px;
+}
+
+.feature-access-notice-title {
+    -fx-text-fill: #6b4500;
+    -fx-font-weight: bold;
+}
+
+.feature-access-notice-message {
+    -fx-text-fill: #76520b;
+}
+
 .tab-pane .tab-header-area .tab-header-background {
     -fx-background-color: transparent;
 }
@@ -886,6 +903,16 @@
 
 .dark .renewal-notice .section-title,
 .dark .renewal-notice .detail-text {
+    -fx-text-fill: #fde68a;
+}
+
+.dark .feature-access-notice {
+    -fx-background-color: #493817;
+    -fx-border-color: #d69e2e;
+}
+
+.dark .feature-access-notice-title,
+.dark .feature-access-notice-message {
     -fx-text-fill: #fde68a;
 }
 

@@ -133,6 +133,11 @@ public final class MemberAccountService {
                         .orElseGet(() -> new MembershipNotice(MembershipNoticeState.RENEWAL_NEEDED, null)));
     }
 
+    /** Returns whether the authenticated Member has access today. */
+    public boolean hasCurrentMembership(Account actor) {
+        return membershipNotice(loadOverview(actor)).state() == MembershipNoticeState.ACTIVE;
+    }
+
     private static void requireMember(Account actor) {
         if (actor == null || actor.role() != Role.MEMBER || !actor.active()) {
             throw new IllegalArgumentException("An active Member account is required");

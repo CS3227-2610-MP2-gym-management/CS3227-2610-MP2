@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import com.gymflow.metric.BodyMetricService;
+import com.gymflow.member.MemberAccountService;
 import com.gymflow.model.Account;
 import com.gymflow.model.BodyMetric;
 import javafx.application.Platform;
@@ -38,10 +39,12 @@ final class MemberBodyMetricsView {
     private MemberBodyMetricsView() {
     }
 
-    static Parent create(BodyMetricService service, Account session, Consumer<Screen> navigate,
+    static Parent create(BodyMetricService service, MemberAccountService accounts, Account session,
+            Consumer<Screen> navigate,
             Runnable logout) {
         Label status = new Label("Loading body-mass readings…");
         status.getStyleClass().add("muted-text");
+        VBox membershipNotice = MemberHomeView.membershipRequiredNotice();
         Label latest = new Label("—");
         latest.getStyleClass().add("body-mass-latest");
         Label changeSummary = new Label();
@@ -58,6 +61,7 @@ final class MemberBodyMetricsView {
                 change.getControlNewText().matches("\\d*(\\.\\d{0,3})?") ? change : null));
         Button save = new Button("Save reading");
         save.getStyleClass().add("primary-button");
+        requireMembership(save, membershipNotice, accounts, session);
         ListView<BodyMetric> readings = UiComponents.cardList("No body-mass readings are recorded.",
                 MemberBodyMetricsView::card);
         ChartPanel chart = new ChartPanel();
@@ -83,12 +87,31 @@ final class MemberBodyMetricsView {
         history.getStyleClass().add("body-mass-history");
         VBox content = new VBox(20, UiComponents.header("Measurements",
                 "Track your weight over time", null),
+                membershipNotice,
                 editor(latest, latestDate, changeSummary, date, kilograms, save), UiComponents.card(chart),
                 UiComponents.card(history));
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));
         load.run();
         return MemberHomeView.shell(content, Screen.MEMBER_WORKOUTS, navigate, logout);
+    }
+
+    private static void requireMembership(Button button, VBox notice, MemberAccountService accounts,
+            Account session) {
+        button.setDisable(true);
+        Thread.startVirtualThread(() -> {
+            boolean current;
+            try {
+                current = accounts.hasCurrentMembership(session);
+            } catch (RuntimeException exception) {
+                current = false;
+            }
+            boolean enabled = current;
+            Platform.runLater(() -> {
+                button.setDisable(!enabled);
+                MemberHomeView.showMembershipNotice(notice, !enabled);
+            });
+        });
     }
 
     private static VBox editor(Label latest, Label latestDate, Label change, DatePicker date,

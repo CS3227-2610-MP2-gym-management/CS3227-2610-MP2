@@ -22,6 +22,7 @@ import com.gymflow.model.SaveWorkoutRequest;
 import com.gymflow.model.Workout;
 import com.gymflow.model.WorkoutSet;
 import com.gymflow.model.WorkoutSetInput;
+import com.gymflow.member.MemberAccountService;
 import com.gymflow.workout.WorkoutService;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -97,13 +98,16 @@ final class MemberWorkoutsView {
         return false;
     }
 
-    static Parent create(WorkoutService service, Account session, Consumer<Screen> navigate,
+    static Parent create(WorkoutService service, MemberAccountService accounts, Account session,
+            Consumer<Screen> navigate,
             Runnable logout) {
         Label status = new Label("Loading Workouts…");
         status.getStyleClass().add("muted-text");
+        VBox membershipNotice = MemberHomeView.membershipRequiredNotice();
         WorkoutCalendar calendar = new WorkoutCalendar(service, session, status);
         Button add = new Button("Record Workout");
         add.getStyleClass().add("primary-button");
+        requireMembership(add, membershipNotice, accounts, session);
         add.setOnAction(event -> form(add, service, session, null, calendar::load));
         Button bodyMass = new Button("Body mass");
         bodyMass.getStyleClass().add("secondary-button");
@@ -115,11 +119,30 @@ final class MemberWorkoutsView {
         HBox actions = new HBox(8, add, bodyMass);
         VBox content = new VBox(20,
                 UiComponents.header("Workouts", "Select a highlighted date to view its sessions", actions),
+                membershipNotice,
                 UiComponents.card(summary, calendar.view()));
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));
         calendar.load();
         return MemberHomeView.shell(content, Screen.MEMBER_WORKOUTS, navigate, logout);
+    }
+
+    private static void requireMembership(Button button, VBox notice, MemberAccountService accounts,
+            Account session) {
+        button.setDisable(true);
+        Thread.startVirtualThread(() -> {
+            boolean current;
+            try {
+                current = accounts.hasCurrentMembership(session);
+            } catch (RuntimeException exception) {
+                current = false;
+            }
+            boolean enabled = current;
+            Platform.runLater(() -> {
+                button.setDisable(!enabled);
+                MemberHomeView.showMembershipNotice(notice, !enabled);
+            });
+        });
     }
 
     private static VBox card(Workout workout) {

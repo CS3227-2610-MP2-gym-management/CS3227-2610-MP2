@@ -24,6 +24,8 @@ class BodyMetricServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-15T10:00:00Z");
     @TempDir Path directory;
     private Account member;
+    private Account owner;
+    private OwnerMemberService members;
     private BodyMetricService metrics;
 
     @BeforeEach
@@ -31,8 +33,9 @@ class BodyMetricServiceTest {
         GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
         database.initialize();
         AuthenticationService authentication = new AuthenticationService(database);
-        Account owner = authentication.createOwner("owner@example.com", "owner password".toCharArray());
-        new OwnerMemberService(database).createMember(new CreateMemberRequest("member@example.com",
+        owner = authentication.createOwner("owner@example.com", "owner password".toCharArray());
+        members = new OwnerMemberService(database);
+        members.createMember(new CreateMemberRequest("member@example.com",
                 "member password".toCharArray(), "Member Tan", "81234567", null,
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), new BigDecimal("50"),
                 PaymentMethod.CARD, NOW, ""), owner.id());
@@ -62,5 +65,18 @@ class BodyMetricServiceTest {
                 () -> metrics.create(member, LocalDate.of(2026, 9, 14), new BigDecimal("70.0001")));
         assertThrows(IllegalStateException.class,
                 () -> metrics.create(member, LocalDate.of(2026, 9, 15), new BigDecimal("71")));
+    }
+
+    @Test
+    void requiresCurrentMembershipOnlyWhenCreatingReading() {
+        var saved = metrics.create(member, LocalDate.of(2026, 9, 14), new BigDecimal("70"));
+        var membership = members.membershipHistory(member.id()).getFirst();
+        members.setMembershipActive(membership.id(), false, owner.id());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> metrics.create(member, LocalDate.of(2026, 9, 15), new BigDecimal("69")));
+        assertEquals(saved.id(), metrics.history(member).getFirst().id());
+        assertEquals(saved.id(), metrics.update(member, saved.id(), LocalDate.of(2026, 9, 13),
+                new BigDecimal("69.5")).id());
     }
 }

@@ -39,12 +39,13 @@ final class MemberHomeView {
         Label status = detail("Loading Workout state…");
         Button checkIn = new Button("Check in");
         Button checkOut = new Button("Check out");
+        VBox membershipNotice = membershipRequiredNotice();
         checkIn.setAccessibleText("Check in to start a Workout");
         checkOut.setAccessibleText("Check out and end the current Workout");
         VBox workspace = new VBox(12);
         Runnable[] refresh = new Runnable[1];
-        refresh[0] = () -> loadWorkout(visits, workouts, session, status, checkIn, checkOut, workspace,
-                refresh[0]);
+        refresh[0] = () -> loadWorkout(accounts, visits, workouts, session, status, checkIn, checkOut,
+                workspace, membershipNotice, refresh[0]);
         checkIn.setOnAction(event -> {
             if (confirm(checkIn, "Start Workout", "Confirming starts and records a Workout now.")) {
                 run(checkIn, checkOut, status, false, () -> visits.checkIn(session), refresh[0]);
@@ -62,7 +63,7 @@ final class MemberHomeView {
                 new HBox(10, checkIn, checkOut), workspace));
         main.setMaxWidth(700);
         VBox content = new VBox(20, UiComponents.header("Member Home", "Welcome to your GymFlow account", null),
-                main);
+                membershipNotice, main);
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));
         refresh[0].run();
@@ -70,17 +71,19 @@ final class MemberHomeView {
                 target -> saveBeforeNavigation(workspace, status, workouts, session, target, navigate), logout);
     }
 
-    private static void loadWorkout(MemberVisitService visits, WorkoutService workouts, Account session, Label status,
-            Button checkIn, Button checkOut, VBox workspace, Runnable refresh) {
+    private static void loadWorkout(MemberAccountService accounts, MemberVisitService visits,
+            WorkoutService workouts, Account session, Label status, Button checkIn, Button checkOut,
+            VBox workspace, VBox membershipNotice, Runnable refresh) {
         checkIn.setDisable(true);
         checkOut.setDisable(true);
         Thread.startVirtualThread(() -> {
             try {
                 visits.currentState(session);
+                boolean currentMembership = accounts.hasCurrentMembership(session);
                 Workout open = workouts.history(session).stream().filter(workout -> workout.endedAt() == null)
                         .findFirst().orElse(null);
                 Platform.runLater(() -> showWorkout(status, checkIn, checkOut, workspace, open, workouts, session,
-                        refresh));
+                        membershipNotice, currentMembership, refresh));
             } catch (RuntimeException exception) {
                 Platform.runLater(() -> status.setText("Unable to load Workout state."));
             }
@@ -88,11 +91,13 @@ final class MemberHomeView {
     }
 
     private static void showWorkout(Label status, Button checkIn, Button checkOut, VBox workspace, Workout open,
-            WorkoutService workouts, Account session, Runnable refresh) {
+            WorkoutService workouts, Account session, VBox membershipNotice, boolean currentMembership,
+            Runnable refresh) {
         boolean active = open != null;
         status.setText(active ? "You are currently checked in." : "You are currently checked out.");
-        checkIn.setDisable(active);
-        checkOut.setDisable(!active);
+        checkIn.setDisable(checkInDisabled(active, currentMembership));
+        checkOut.setDisable(checkOutDisabled(active, currentMembership));
+        showMembershipNotice(membershipNotice, !currentMembership);
         workspace.getChildren().clear();
         workspace.setUserData(null);
         if (active) {
@@ -186,6 +191,36 @@ final class MemberHomeView {
     static String renewalGuidance() {
         return "No current or upcoming Membership is recorded. "
                 + "Visit the gym in person to purchase or renew your Membership.";
+    }
+
+    static VBox membershipRequiredNotice() {
+        Label title = new Label("Active membership required");
+        title.getStyleClass().add("feature-access-notice-title");
+        Label message = new Label(membershipRequiredMessage());
+        message.getStyleClass().add("feature-access-notice-message");
+        message.setWrapText(true);
+        VBox notice = new VBox(4, title, message);
+        notice.getStyleClass().add("feature-access-notice");
+        showMembershipNotice(notice, false);
+        return notice;
+    }
+
+    static void showMembershipNotice(VBox notice, boolean show) {
+        notice.setVisible(show);
+        notice.setManaged(show);
+    }
+
+    static String membershipRequiredMessage() {
+        return "You do not have an active membership. "
+                + "Please renew your membership to access this feature.";
+    }
+
+    static boolean checkInDisabled(boolean activeWorkout, boolean currentMembership) {
+        return activeWorkout || !currentMembership;
+    }
+
+    static boolean checkOutDisabled(boolean activeWorkout, boolean currentMembership) {
+        return !activeWorkout || !currentMembership;
     }
 
     private static Label section(String value) {
