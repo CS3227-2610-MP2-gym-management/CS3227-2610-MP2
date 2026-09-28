@@ -315,10 +315,24 @@ Useful commands from the repository root are:
 
 Windows uses the equivalent commands through `gradlew.bat`. `runLocal` and `verifyLocal` require the local Supabase
 stack; privileged feature tests also require its Edge Function runtime. Production tasks require an HTTPS URL, a
-publishable key, and explicit project confirmation. Release tasks produce self-contained JARs for Windows
+publishable key, and explicit production environment selection. The migration-promotion script separately requires
+the exact project reference as confirmation. Release tasks produce self-contained JARs for Windows
 x64, Linux x64, macOS x64, and macOS ARM64. `Launcher` provides a plain Java entry point so packaged JARs can reach
 the bundled JavaFX runtime. `verifyReleaseJars` checks the stylesheet, SQLite service metadata, and matching native
 libraries.
+
+### Reviewer environment policy
+
+| Review need | Environment and account |
+| --- | --- |
+| Feature, authorization, or co-owner review | Local Supabase with the committed fake `.test` accounts |
+| Hosted multi-computer co-owner test | Prefer a fake-data staging project; if unavailable, use the controlled temporary production procedure below |
+| Production deployment smoke test | Retained production Owner, performed by the maintainer |
+
+Reviewers never receive the retained production Owner's credentials. A temporary production co-owner is a full
+administrator, not a limited test role. If such access is necessary, follow
+[Temporary production reviewer access](ProductionDeployment.md#temporary-production-reviewer-access) and deactivate
+the account when the agreed test window ends.
 
 Automated test responsibilities are grouped as follows:
 

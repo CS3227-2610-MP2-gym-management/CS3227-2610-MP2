@@ -292,10 +292,12 @@ Use local mode for disposable test data. Use production only for the short smoke
    and [Tracking Body Mass](#tracking-body-mass). Restart the app and confirm the same records remain.
 5. In a second app process, sign in as another test Member and confirm the first Member's profile, Workouts, and body
    mass are not visible.
-6. Follow [Managing Owners](#managing-owners) only when a real co-owner is required. Confirm a newly created co-owner
-   can sign in from another computer, an inactive Owner cannot sign in, and the final active Owner cannot be disabled.
-7. For production, sign in with the retained real Owner, load Owner Home, and stop. Create disposable production data
-   only when a reviewed cleanup and backup are ready.
+6. Follow [Managing Owners](#managing-owners) locally for normal review. Confirm a newly created co-owner can sign in
+   from another computer, an inactive Owner cannot sign in, and the final active Owner cannot be disabled.
+7. For a production smoke test, sign in with the retained real Owner, load Owner Home, and stop. A trusted developer
+   may test with a separate temporary production co-owner only by following
+   [Temporary production reviewer access](ProductionDeployment.md#temporary-production-reviewer-access), including
+   backup, full-access acknowledgement, a fixed test window, and deactivation afterward.
 
 Record the date, environment (`LOCAL DEVELOPMENT` or production), account role, and result for each check. Never put
 passwords, access tokens, database passwords, or secret keys in the test record.

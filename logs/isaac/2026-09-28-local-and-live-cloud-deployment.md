@@ -59,6 +59,12 @@ real Owner email is also omitted because it is not needed to reproduce the work.
     operational prerequisite before real Member onboarding or reliance on email recovery.
 17. Isaac requested a final documentation audit, clear testing references, and this comprehensive interaction log,
     including technical issues and decisions encountered along the way.
+18. While preparing the PR, Isaac asked how other developers could test without his personal production credentials.
+    The local committed `.test` accounts were confirmed as the normal review path, and a separate fake-data staging
+    project was recommended for hosted testing.
+19. Isaac chose to allow a trusted developer to test live co-owner behaviour through a temporary production account.
+    The guides were updated to require a separate reviewer identity, backup, full-access acknowledgement, a fixed test
+    window, secure credential delivery, and deactivation after review. His retained Owner credentials remain private.
 
 ## Platform and architecture decision
 

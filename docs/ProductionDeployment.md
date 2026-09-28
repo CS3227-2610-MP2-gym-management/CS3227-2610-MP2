@@ -79,6 +79,31 @@ production service-level agreement, so resume checks and manual logical backups 
 The final Phase 10 promotion check on 28 September 2026 reported no pending remote migrations. The production security
 smoke test and all four platform release-JAR validation tasks passed against migrations through `20260928092000`.
 
+## Temporary production reviewer access
+
+Local Supabase and its committed `.test` accounts remain the normal PR review environment. A trusted developer may be
+given a temporary production co-owner account only when a live multi-computer test is necessary and all of these
+safeguards are accepted:
+
+1. Confirm that production contains no personal Member data, or obtain explicit authorization for the reviewer to see
+   and administer all existing gym data. An Owner has full administrative access and can change other Owner accounts.
+2. Take and verify a logical backup before provisioning the reviewer.
+3. Create a separate account through GymFlow's `Owners` page using an email controlled by that reviewer and a unique
+   temporary password. Never share the retained Owner's password, session, or tokens.
+4. Send the temporary password through a secure channel separate from the email address. Do not place credentials in
+   the PR, issue tracker, chat transcript, screenshots, test report, or repository.
+5. Agree on the exact test window and allowed actions. Use unmistakably disposable records and avoid deleting or
+   changing retained production data.
+6. Have the reviewer sign in from a separate computer, create a disposable co-owner if that specific flow is under
+   review, and verify login, activation, deactivation, and final-active-Owner protection.
+7. When review ends, the retained Owner deactivates every temporary reviewer account and confirms that a fresh login
+   is rejected. Keep the Owner audit records. Removing Auth identities or dependent rows requires a separate reviewed
+   cleanup; do not delete them casually in the dashboard.
+
+Deactivation is the required access-removal step even if the reviewer account is kept for audit history. If the
+developer will be a real ongoing gym administrator, use their real individual account and leave it active only with
+the gym's approval.
+
 ## Live acceptance result
 
 Phase 8 production-readiness testing completed on 28 September 2026:
