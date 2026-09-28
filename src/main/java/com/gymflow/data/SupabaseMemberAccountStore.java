@@ -35,7 +35,7 @@ public final class SupabaseMemberAccountStore {
     /** Lists a Member's Membership history. */
     public List<Membership> membershipHistory(long accountId) {
         JsonNode rows = client.get("memberships?select=" + MEMBERSHIP_FIELDS
-                + "&member_account_id=eq." + accountId + "&order=start_date.desc");
+                + "&member_account_id=eq." + accountId + "&order=start_date.desc,id.desc");
         return StreamSupport.stream(rows.spliterator(), false)
                 .map(SupabaseRows::membership).toList();
     }

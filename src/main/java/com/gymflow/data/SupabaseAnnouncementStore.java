@@ -30,8 +30,9 @@ public final class SupabaseAnnouncementStore {
     /** Lists published or withdrawn announcements. */
     public List<Announcement> list(boolean withdrawn) {
         String filter = withdrawn ? "not.is.null" : "is.null";
+        String order = withdrawn ? "withdrawn_at.desc,id.desc" : "published_at.desc,id.desc";
         JsonNode rows = client.get("announcements?select=" + FIELDS
-                + "&withdrawn_at=" + filter + "&order=published_at.desc");
+                + "&withdrawn_at=" + filter + "&order=" + order);
         return StreamSupport.stream(rows.spliterator(), false)
                 .map(SupabaseRows::announcement).toList();
     }

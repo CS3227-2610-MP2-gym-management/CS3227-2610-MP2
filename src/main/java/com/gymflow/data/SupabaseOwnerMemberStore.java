@@ -68,7 +68,7 @@ public final class SupabaseOwnerMemberStore {
     public List<Member> search(String query) {
         String normalized = query.toLowerCase(Locale.ROOT);
         JsonNode rows = client.get("member_profiles?select=" + PROFILE_FIELDS
-                + "&order=full_name.asc");
+                + "&order=full_name.asc,member_number.asc");
         return StreamSupport.stream(rows.spliterator(), false).map(SupabaseRows::member)
                 .filter(member -> normalized.isEmpty() || contains(member.fullName(), normalized)
                         || contains(member.email(), normalized))
@@ -79,7 +79,7 @@ public final class SupabaseOwnerMemberStore {
     public List<MemberPayment> paymentHistory(long memberAccountId) {
         JsonNode rows = client.get("payments?select=" + PAYMENT_FIELDS
                 + ",memberships!inner(member_account_id)&memberships.member_account_id=eq."
-                + memberAccountId + "&order=paid_at.desc");
+                + memberAccountId + "&order=paid_at.desc,id.desc");
         return StreamSupport.stream(rows.spliterator(), false).map(SupabaseRows::payment).toList();
     }
 
@@ -88,7 +88,7 @@ public final class SupabaseOwnerMemberStore {
         String nested = "memberships!inner(start_date,expiry_date,member_account_id,"
                 + "member_profiles!inner(member_number,full_name,accounts!inner(email)))";
         JsonNode rows = client.get("payments?select=" + PAYMENT_FIELDS + "," + nested
-                + "&order=paid_at.desc");
+                + "&order=paid_at.desc,id.desc");
         String normalized = query.toLowerCase(Locale.ROOT);
         return StreamSupport.stream(rows.spliterator(), false).map(this::paymentOverview)
                 .filter(item -> normalized.isEmpty() || contains(item.memberName(), normalized)
@@ -111,7 +111,8 @@ public final class SupabaseOwnerMemberStore {
     /** Lists one Member's Membership history. */
     public List<Membership> membershipHistory(long memberAccountId) {
         JsonNode rows = client.get("memberships?select=" + MEMBERSHIP_FIELDS
-                + "&member_account_id=eq." + memberAccountId + "&order=start_date.desc");
+                + "&member_account_id=eq." + memberAccountId
+                + "&order=start_date.desc,id.desc");
         return StreamSupport.stream(rows.spliterator(), false)
                 .map(SupabaseRows::membership).toList();
     }
@@ -120,7 +121,7 @@ public final class SupabaseOwnerMemberStore {
     public List<MembershipOverview> searchMemberships(String query) {
         String nested = "member_profiles!inner(member_number,full_name,accounts!inner(email))";
         JsonNode rows = client.get("memberships?select=" + MEMBERSHIP_FIELDS + "," + nested
-                + "&order=start_date.desc");
+                + "&order=start_date.desc,id.desc");
         String normalized = query.toLowerCase(Locale.ROOT);
         return StreamSupport.stream(rows.spliterator(), false).map(this::membershipOverview)
                 .filter(item -> normalized.isEmpty() || contains(item.memberName(), normalized)

@@ -45,7 +45,7 @@ public final class SupabaseVisitStore {
     /** Lists one Member's Visit history. */
     public List<Visit> history(long memberId) {
         JsonNode rows = client.get("visits?select=" + FIELDS + "&member_account_id=eq."
-                + memberId + "&order=entered_at.desc");
+                + memberId + "&order=entered_at.desc,id.desc");
         return StreamSupport.stream(rows.spliterator(), false).map(SupabaseRows::visit).toList();
     }
 
@@ -53,7 +53,7 @@ public final class SupabaseVisitStore {
     public List<VisitOverview> search(String query, boolean currentlyVisitingOnly) {
         String current = currentlyVisitingOnly ? "&exited_at=is.null" : "";
         JsonNode rows = client.get("visits?select=" + OVERVIEW_FIELDS + current
-                + "&order=entered_at.desc");
+                + "&order=entered_at.desc,id.desc");
         String normalized = query.toLowerCase(Locale.ROOT);
         return StreamSupport.stream(rows.spliterator(), false)
                 .map(this::overview)

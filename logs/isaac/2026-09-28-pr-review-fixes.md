@@ -117,3 +117,19 @@ cloud integration test also attempts a second withdrawal and expects it to fail.
   original `withdrawn_at` value should remain unchanged.
 
 Java Checkstyle and regression tests passed. The database and cloud withdrawal cases require local Supabase.
+
+## Fix 7: Deterministic cloud ordering
+
+Supabase Member, Payment, Membership, Visit, Announcement, and Expense queries now include stable ID tie-breakers.
+Member lists use Member number ascending after name; date-ordered records use ID descending after their primary date.
+Withdrawn announcements now sort by withdrawal time and ID, matching the SQLite behavior, rather than by their old
+publication time. Expense ordering now uses expense date and ID consistently with SQLite.
+
+### Verification
+
+- Run `gradlew.bat checkstyleMain test` and the cloud integration test.
+- Create at least two records of each type with the same primary date or timestamp, refresh repeatedly, and confirm
+  the higher ID always appears first. For withdrawn announcements, confirm the most recently withdrawn appears first
+  even when it was originally published earlier.
+
+Java Checkstyle and regression tests passed.

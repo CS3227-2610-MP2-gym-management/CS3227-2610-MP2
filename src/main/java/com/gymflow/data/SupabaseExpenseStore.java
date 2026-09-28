@@ -39,7 +39,7 @@ public final class SupabaseExpenseStore {
     public List<Expense> list(ExpenseCategory category) {
         String filter = category == null ? "" : "&category=eq." + category.name();
         JsonNode rows = client.get("expenses?select=" + FIELDS + filter
-                + "&order=expense_date.desc,created_at.desc");
+                + "&order=expense_date.desc,id.desc");
         return StreamSupport.stream(rows.spliterator(), false)
                 .map(SupabaseRows::expense).toList();
     }
