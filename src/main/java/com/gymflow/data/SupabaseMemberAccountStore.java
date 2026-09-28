@@ -41,13 +41,12 @@ public final class SupabaseMemberAccountStore {
     }
 
     /** Updates the current Member's email and phone through the protected account function. */
-    public Member updateContact(long accountId, String email, String phoneNumber) {
+    public void updateContact(long accountId, String email, String phoneNumber) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("action", "update");
         body.put("member_account_id", accountId);
         body.put("email", email);
         body.put("phone_number", phoneNumber);
         client.function("manage-member", body);
-        return profile(accountId);
     }
 }

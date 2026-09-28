@@ -143,6 +143,58 @@ never accepts a database password or secret/service-role key.
 The legacy SQLite password implementation remains only for regression tests and legacy-data work. It is not used by
 the running application. The former local full reset is hidden because it cannot safely reset shared data.
 
+#### Forcing a Supabase session refresh after an Auth change
+
+Use a forced session refresh when server-side code changes a property that Supabase stores in the authenticated
+user's JWT. In GymFlow, the important example is the `manage-member` Edge Function changing the currently signed-in
+Member's email through `auth.admin.updateUserById`. The access token already held by the desktop application was
+issued before that change and may contain stale identity claims.
+
+Do **not** force a refresh after ordinary PostgreSQL/Data API changes such as editing a phone number, adding a
+Membership, or saving a Workout. Those values are not Auth token claims. Normal token-expiry handling is also
+automatic in `requireAccessToken()`.
+
+Use this order whenever the current user's Supabase Auth record is changed by an Edge Function or another
+administrator-backed operation:
+
+1. Complete the Auth-changing operation.
+2. Call `SupabaseAuthenticationService.refreshAccount()` immediately, before making another authenticated Data API
+   request.
+3. Only then reload the profile or other protected data.
+4. Keep or publish the `Account` returned by `refreshAccount()` if the calling layer stores its own Account snapshot.
+
+Copy this pattern:
+
+```java
+cloudAccounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+Account refreshedActor = cloudAuthentication.refreshAccount();
+Member updatedMember = cloudAccounts.profile(refreshedActor.id());
+```
+
+`refreshAccount()` is intentionally stronger than its name may suggest. It first exchanges the stored refresh token
+for a new access token, then reloads the `accounts` row, and finally replaces the authentication service's in-memory
+session. Calling `requireAccessToken()` is **not** an equivalent manual fix: it reuses a token that has not nearly
+expired, so its claims can remain stale.
+
+The order is important. This is wrong:
+
+```java
+cloudAccounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+Member updatedMember = cloudAccounts.profile(actor.id()); // May use the stale token.
+cloudAuthentication.refreshAccount();                    // Too late.
+```
+
+If `SupabaseFeatureIntegrationTest.ownerAndMemberFeaturesShareTheLocalCloudBackend()` fails on the contact-update
+line immediately after an email change, check these items in order:
+
+1. Confirm the Edge Function successfully changed both `auth.users.email` and `public.accounts.email`.
+2. Confirm `refreshAccount()` occurs before `profile()` or any other authenticated request.
+3. Confirm `refreshAccount()` still calls the refresh-token endpoint unconditionally; it must not only refresh when
+   the access token is close to expiry.
+4. Reset the local Supabase database, run the Edge Function runtime, set `GYMFLOW_LOCAL_INTEGRATION=true`, and rerun
+   `SupabaseFeatureIntegrationTest`.
+5. Never print access tokens, refresh tokens, passwords, or the service-role key while debugging.
+
 ### Members, Memberships, and Payments
 
 Member onboarding creates an account, generated Member number, profile, initial Membership, and Payment in one

@@ -106,7 +106,8 @@ public final class SupabaseAuthenticationService implements Authenticator, Acces
         if (active == null) {
             throw new IllegalStateException("Sign in before accessing GymFlow data");
         }
-        String accessToken = requireAccessToken();
+        refreshSession();
+        String accessToken = session.accessToken();
         Account account = loadAccount(active.authUserId(), accessToken)
                 .filter(Account::active)
                 .orElseThrow(() -> new IllegalStateException(

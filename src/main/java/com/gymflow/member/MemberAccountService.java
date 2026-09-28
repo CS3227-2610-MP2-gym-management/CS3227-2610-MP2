@@ -69,10 +69,9 @@ public final class MemberAccountService {
         if (cloudAccounts == null) {
             return accounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
         }
-        com.gymflow.model.Member member = cloudAccounts.updateContact(
-                actor.id(), normalizedEmail, normalizedPhone);
+        cloudAccounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
         cloudAuthentication.refreshAccount();
-        return member;
+        return cloudAccounts.profile(actor.id());
     }
 
     /** Replaces the authenticated Member's password after verifying the current password. */
