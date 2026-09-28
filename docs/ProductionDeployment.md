@@ -72,6 +72,9 @@ Never run `supabase db reset --linked`. Production test data and eventual real d
 explicit, reviewed administrative procedure. Free projects can pause after inactivity and do not provide a
 production service-level agreement, so resume checks and manual logical backups are operational requirements.
 
+The final Phase 10 promotion check on 28 September 2026 reported no pending remote migrations. The production security
+smoke test and all four platform release-JAR validation tasks passed against migrations through `20260928092000`.
+
 ## Live acceptance result
 
 Phase 8 production-readiness testing completed on 28 September 2026:
