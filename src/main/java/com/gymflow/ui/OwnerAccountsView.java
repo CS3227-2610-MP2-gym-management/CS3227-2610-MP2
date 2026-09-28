@@ -41,17 +41,20 @@ final class OwnerAccountsView {
         error.getStyleClass().add("dialog-error");
         UiComponents.preserveLabelHeight(error);
         Runnable[] refresh = new Runnable[1];
-        ListView<Account> list = ownerList(accounts, session, error, () -> refresh[0].run());
+        long[] rootOwnerId = {-1};
+        ListView<Account> list = ownerList(accounts, session, rootOwnerId,
+                error, () -> refresh[0].run());
         refresh[0] = () -> OwnerMembersView.run(null, accounts::listOwners,
                 result -> {
                     error.setText("");
+                    rootOwnerId[0] = result.isEmpty() ? -1 : result.getFirst().id();
                     list.getItems().setAll(result);
                 }, failure -> error.setText("Unable to access Owner accounts"));
         add.setOnAction(event -> showCreate(add, accounts, refresh[0]));
 
         VBox.setVgrow(list, Priority.ALWAYS);
         VBox content = new VBox(20,
-                UiComponents.header("Owners", "Provision and manage gym administrators", add),
+                UiComponents.header("Owners", "Provision and manage Owners", add),
                 error, list);
         content.setPadding(new Insets(36));
         root.setCenter(content);
@@ -60,24 +63,40 @@ final class OwnerAccountsView {
     }
 
     private static ListView<Account> ownerList(OwnerAccountService accounts, Account session,
-            Label error, Runnable refresh) {
+            long[] rootOwnerId, Label error, Runnable refresh) {
         return UiComponents.cardList("No Owner accounts found", owner -> {
             Label email = UiComponents.cardLabel(owner.email(), "record-title");
             Label status = UiComponents.cardLabel(owner.active() ? "ACTIVE" : "INACTIVE",
                     "record-meta");
-            Label note = UiComponents.cardLabel(owner.id() == session.id()
-                    ? "Current signed-in Owner" : "Gym administrator", "record-value");
+            Label note = UiComponents.cardLabel(ownerLabel(owner, session,
+                    rootOwnerId[0]), "record-value");
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
             Button active = new Button(owner.active() ? "Deactivate" : "Activate");
             active.getStyleClass().add(owner.active() ? "danger-button" : "secondary-button");
-            active.setDisable(owner.id() == session.id());
+            active.setDisable(!canSetActive(owner, session, rootOwnerId[0]));
             active.setOnAction(event -> showSetActive(active, accounts, owner, error, refresh));
             HBox heading = new HBox(12, email, spacer, active);
             VBox card = new VBox(6, heading, status, note);
             card.getStyleClass().add("record-card");
             return card;
         });
+    }
+
+    static boolean canSetActive(Account owner, Account session, long rootOwnerId) {
+        return owner.id() != rootOwnerId && owner.id() != session.id();
+    }
+
+    static String ownerLabel(Account owner, Account session, long rootOwnerId) {
+        boolean current = owner.id() == session.id();
+        boolean root = owner.id() == rootOwnerId;
+        if (current && root) {
+            return "Current signed-in Root Owner";
+        }
+        if (root) {
+            return "Root Owner";
+        }
+        return current ? "Current signed-in Owner" : "Owner";
     }
 
     private static void showCreate(Node ownerNode, OwnerAccountService accounts, Runnable refresh) {
