@@ -4,6 +4,7 @@ import {
   DUPLICATE_EMAIL_MESSAGE,
   isDuplicateEmailError,
   normalizeAccountEmail,
+  shouldUpdateLoginEmail,
 } from "./email-policy.mjs";
 
 type Payload = {
@@ -202,11 +203,14 @@ Deno.serve(async (request) => {
   if (availability.error) return json(500, { message: "Unable to verify email availability" });
   if (availability.conflict) return duplicateEmailError();
   const oldEmail = member.email;
-  const { error: authUpdateError } = await admin.auth.admin.updateUserById(member.auth_user_id, {
-    email,
-    email_confirm: true,
-  });
-  if (authUpdateError) return accountError(authUpdateError, "Unable to update Member login");
+  const emailChanged = shouldUpdateLoginEmail(oldEmail, email);
+  if (emailChanged) {
+    const { error: authUpdateError } = await admin.auth.admin.updateUserById(member.auth_user_id, {
+      email,
+      email_confirm: true,
+    });
+    if (authUpdateError) return accountError(authUpdateError, "Unable to update Member login");
+  }
 
   const { error: recordsUpdateError } = await admin.rpc("update_member_records", {
     p_member_account_id: memberId,
@@ -217,10 +221,12 @@ Deno.serve(async (request) => {
     p_date_of_birth: payload.date_of_birth ?? null,
   });
   if (recordsUpdateError) {
-    await admin.auth.admin.updateUserById(member.auth_user_id, {
-      email: oldEmail,
-      email_confirm: true,
-    });
+    if (emailChanged) {
+      await admin.auth.admin.updateUserById(member.auth_user_id, {
+        email: oldEmail,
+        email_confirm: true,
+      });
+    }
     return accountError(recordsUpdateError, "Unable to update Member account");
   }
   return json(200, { updated: true });

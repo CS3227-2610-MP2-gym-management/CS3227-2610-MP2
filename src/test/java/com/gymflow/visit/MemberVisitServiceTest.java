@@ -17,7 +17,6 @@ import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.member.CreateMemberRequest;
 import com.gymflow.member.OwnerMemberService;
 import com.gymflow.model.Account;
-import com.gymflow.model.Member;
 import com.gymflow.model.PaymentMethod;
 import com.gymflow.workout.WorkoutService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +37,7 @@ class MemberVisitServiceTest {
         Account owner = new AuthenticationService(database)
                 .createOwner("owner@example.com", "owner password".toCharArray());
         members = new OwnerMemberService(database);
-        Member member = members.createMember(request(), owner.id());
+        members.createMember(request(), owner.id());
         alice = new AuthenticationService(database)
                 .authenticate("alice@example.com", "member password".toCharArray()).orElseThrow();
         visits = new MemberVisitService(database, Clock.fixed(NOW, ZoneOffset.UTC));

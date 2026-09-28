@@ -116,10 +116,10 @@ public final class AppView {
                 : MemberMembershipView.create(memberAccounts, session, this::show, this::logout);
         case MEMBER_WORKOUTS -> !isMemberSession(session)
                 ? createLogin()
-                : MemberWorkoutsView.create(workouts, session, this::show, this::logout);
+                : MemberWorkoutsView.create(workouts, memberAccounts, session, this::show, this::logout);
         case MEMBER_BODY_METRICS -> !isMemberSession(session)
                 ? createLogin()
-                : MemberBodyMetricsView.create(bodyMetrics, session, this::show, this::logout);
+                : MemberBodyMetricsView.create(bodyMetrics, memberAccounts, session, this::show, this::logout);
         case MEMBER_ANNOUNCEMENTS -> !isMemberSession(session)
                 ? createLogin()
                 : MemberAnnouncementsView.create(announcements, this::show, this::logout);
@@ -130,7 +130,7 @@ public final class AppView {
     }
 
     static boolean isOwnerSession(Account account) {
-        return account != null && account.role() == Role.OWNER;
+        return account != null && account.role() == Role.OWNER && account.active();
     }
 
     static boolean isMemberSession(Account account) {

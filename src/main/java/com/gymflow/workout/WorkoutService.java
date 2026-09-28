@@ -1,14 +1,18 @@
 package com.gymflow.workout;
 
 import java.time.Clock;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 
 import com.gymflow.data.GymFlowDatabase;
+import com.gymflow.data.MemberAccountStore;
 import com.gymflow.data.WorkoutStore;
 import com.gymflow.data.SupabaseDataClient;
+import com.gymflow.data.SupabaseMemberAccountStore;
 import com.gymflow.data.SupabaseWorkoutStore;
 import com.gymflow.model.Account;
+import com.gymflow.model.MembershipStatus;
 import com.gymflow.model.Role;
 import com.gymflow.model.SaveWorkoutRequest;
 import com.gymflow.model.Workout;
@@ -19,6 +23,8 @@ public final class WorkoutService {
     private final WorkoutStore store;
     private final SupabaseWorkoutStore cloudStore;
     private final Clock clock;
+    private final MemberAccountStore memberAccounts;
+    private final SupabaseMemberAccountStore cloudMemberAccounts;
 
     /** Creates a service using the system clock. */
     public WorkoutService(GymFlowDatabase database) {
@@ -29,6 +35,8 @@ public final class WorkoutService {
     public WorkoutService(GymFlowDatabase database, Clock clock) {
         store = new WorkoutStore(Objects.requireNonNull(database));
         cloudStore = null;
+        memberAccounts = new MemberAccountStore(database);
+        cloudMemberAccounts = null;
         this.clock = Objects.requireNonNull(clock);
     }
 
@@ -36,7 +44,9 @@ public final class WorkoutService {
     public WorkoutService(SupabaseDataClient client) {
         store = null;
         cloudStore = new SupabaseWorkoutStore(Objects.requireNonNull(client));
-        clock = Clock.systemDefaultZone();
+        memberAccounts = null;
+        cloudMemberAccounts = new SupabaseMemberAccountStore(client);
+        clock = Clock.system(ZoneId.of("Asia/Singapore"));
     }
 
     /** Lists the Member's Workouts. */
@@ -48,6 +58,7 @@ public final class WorkoutService {
     /** Saves a new completed Workout. */
     public Workout create(Account actor, SaveWorkoutRequest request) {
         requireMember(actor);
+        requireCurrentMembership(actor);
         SaveWorkoutRequest validated = validate(request);
         return cloudStore == null
                 ? store.create(actor.id(), validated, clock.instant())
@@ -122,6 +133,16 @@ public final class WorkoutService {
     private static void requireMember(Account actor) {
         if (actor == null || actor.role() != Role.MEMBER || !actor.active()) {
             throw new IllegalArgumentException("An active Member account is required");
+        }
+    }
+
+    private void requireCurrentMembership(Account actor) {
+        boolean current = (cloudMemberAccounts == null
+                ? memberAccounts.membershipHistory(actor.id())
+                : cloudMemberAccounts.membershipHistory(actor.id())).stream()
+                .anyMatch(item -> item.status(java.time.LocalDate.now(clock)) == MembershipStatus.ACTIVE);
+        if (!current) {
+            throw new IllegalArgumentException("A current Membership is required to record a Workout");
         }
     }
 }

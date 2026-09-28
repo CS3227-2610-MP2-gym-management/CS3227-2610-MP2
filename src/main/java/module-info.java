@@ -6,13 +6,15 @@ module com.gymflow {
     requires java.net.http;
     requires java.prefs;
     requires java.sql;
+    requires static jdk.httpserver;
     requires transitive javafx.graphics;
     requires javafx.controls;
     requires org.xerial.sqlitejdbc;
-    requires com.fasterxml.jackson.databind;
+    requires transitive com.fasterxml.jackson.databind;
 
     exports com.gymflow.auth;
     exports com.gymflow.announcement;
+    exports com.gymflow.config;
     exports com.gymflow.data;
     exports com.gymflow.expense;
     exports com.gymflow.member;
@@ -20,4 +22,5 @@ module com.gymflow {
     exports com.gymflow.model;
     exports com.gymflow.ui to javafx.graphics;
     exports com.gymflow.visit;
+    exports com.gymflow.workout;
 }

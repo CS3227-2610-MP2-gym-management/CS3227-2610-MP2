@@ -72,6 +72,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    inputs.property("gymflowLocalIntegration", System.getenv("GYMFLOW_LOCAL_INTEGRATION") ?: "")
 }
 
 sourceSets {
@@ -102,7 +103,8 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 def isLoopbackHost = { String host ->
-    host != null && (host.equalsIgnoreCase("localhost") || host == "127.0.0.1" || host == "::1")
+    host != null && (host.equalsIgnoreCase("localhost") || host == "127.0.0.1"
+            || host == "::1" || host == "[::1]")
 }
 
 def requireProductionConfiguration = {

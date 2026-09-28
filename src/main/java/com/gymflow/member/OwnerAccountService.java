@@ -36,10 +36,10 @@ public final class OwnerAccountService {
 
     /** Creates another Owner after verifying the active Owner's current password. */
     public Account createOwner(String email, char[] password, char[] currentPassword) {
-        String normalizedEmail = AccountValidation.normalizeEmail(email);
-        AccountValidation.validatePassword(password);
-        requireCurrentPassword(currentPassword);
         try {
+            String normalizedEmail = AccountValidation.normalizeEmail(email);
+            AccountValidation.validatePassword(password);
+            requireCurrentPassword(currentPassword);
             JsonNode response = client.function("manage-member", Map.of(
                     "action", "create-owner",
                     "email", normalizedEmail,
@@ -58,11 +58,11 @@ public final class OwnerAccountService {
 
     /** Activates or deactivates another Owner after recent password verification. */
     public Account setActive(long ownerAccountId, boolean active, char[] currentPassword) {
-        if (ownerAccountId <= 0) {
-            throw new IllegalArgumentException("Owner account is required");
-        }
-        requireCurrentPassword(currentPassword);
         try {
+            if (ownerAccountId <= 0) {
+                throw new IllegalArgumentException("Owner account is required");
+            }
+            requireCurrentPassword(currentPassword);
             client.function("manage-member", Map.of(
                     "action", "set-owner-active",
                     "owner_account_id", ownerAccountId,

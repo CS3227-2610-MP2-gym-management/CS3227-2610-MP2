@@ -1,6 +1,7 @@
 package com.gymflow.member;
 
 import java.time.Clock;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -49,7 +50,7 @@ public final class MemberAccountService {
         cloudAccounts = new SupabaseMemberAccountStore(Objects.requireNonNull(client));
         accountStore = null;
         cloudAuthentication = Objects.requireNonNull(authentication);
-        clock = Clock.systemDefaultZone();
+        clock = Clock.system(ZoneId.of("Asia/Singapore"));
     }
 
     /** Loads the authenticated Member's profile and ordered Membership history. */
@@ -131,6 +132,11 @@ public final class MemberAccountService {
                         .findFirst()
                         .map(item -> new MembershipNotice(MembershipNoticeState.UPCOMING, item))
                         .orElseGet(() -> new MembershipNotice(MembershipNoticeState.RENEWAL_NEEDED, null)));
+    }
+
+    /** Returns whether the authenticated Member has access today. */
+    public boolean hasCurrentMembership(Account actor) {
+        return membershipNotice(loadOverview(actor)).state() == MembershipNoticeState.ACTIVE;
     }
 
     private static void requireMember(Account actor) {

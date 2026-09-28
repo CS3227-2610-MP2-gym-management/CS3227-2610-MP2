@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(20);
+select plan(21);
 
 select has_table('public', 'owner_account_audit', 'Owner audit table exists');
 select has_function('public', 'create_owner_record', array['uuid', 'bigint'],
@@ -63,6 +63,15 @@ select is((select count(*)::integer from public.owner_account_audit
   where action = 'CREATED'), 1, 'Owner creation is audited');
 
 set local role service_role;
+select throws_ok(
+  $$select public.set_owner_active(
+      1,
+      false,
+      (select id from public.accounts where email = 'second.owner.local@example.test')
+    )$$,
+  '22023', 'The Gym Administrator account cannot be activated or deactivated',
+  'another Owner cannot deactivate the Gym Administrator through the RPC'
+);
 select lives_ok(
   $$select public.set_owner_active(
       (select id from public.accounts where email = 'second.owner.local@example.test'),
@@ -85,12 +94,12 @@ select is((select count(*)::integer from public.owner_account_audit
   where action = 'DEACTIVATED'), 1, 'Owner deactivation is audited');
 select throws_ok(
   $$update public.accounts set is_active = false where id = 1$$,
-  'P0001', 'At least one active Owner is required',
+  '22023', 'The Gym Administrator account cannot be changed or deactivated',
   'the final active Owner cannot be deactivated'
 );
 select throws_ok(
   $$delete from public.accounts where id = 1$$,
-  'P0001', 'At least one active Owner is required',
+  '22023', 'The Gym Administrator account cannot be changed or deactivated',
   'the final active Owner cannot be deleted'
 );
 select is((select count(*)::integer from public.accounts

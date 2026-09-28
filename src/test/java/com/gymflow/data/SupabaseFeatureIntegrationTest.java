@@ -61,6 +61,9 @@ class SupabaseFeatureIntegrationTest {
         char[] currentOwnerPassword = "LocalOwner!2026".toCharArray();
         Account coOwner = ownerAccounts.createOwner("co.owner.local@example.test",
                 coOwnerPassword, currentOwnerPassword);
+        SupabaseAuthenticationService coOwnerSession = new SupabaseAuthenticationService(configuration);
+        coOwnerSession.authenticate("co.owner.local@example.test",
+                "LocalCoOwner!2026".toCharArray()).orElseThrow();
         assertTrue(new String(coOwnerPassword).chars().allMatch(value -> value == 0));
         assertTrue(new String(currentOwnerPassword).chars().allMatch(value -> value == 0));
         assertEquals(coOwner.id(), authentication.authenticate("co.owner.local@example.test",
@@ -73,6 +76,7 @@ class SupabaseFeatureIntegrationTest {
                 () -> ownerAccounts.setActive(owner.id(), false, selfChangePassword));
         assertTrue(new String(selfChangePassword).chars().allMatch(value -> value == 0));
         ownerAccounts.setActive(coOwner.id(), false, "LocalOwner!2026".toCharArray());
+        assertThrows(IllegalStateException.class, coOwnerSession::refreshAccount);
         assertFalse(authentication.authenticate("co.owner.local@example.test",
                 "LocalCoOwner!2026".toCharArray()).isPresent());
         authentication.authenticate("owner.local@example.test",
@@ -98,7 +102,7 @@ class SupabaseFeatureIntegrationTest {
         expenses.addExpense(new AddExpenseRequest(LocalDate.now(), new BigDecimal("12.50"),
                 PaymentMethod.CARD, ExpenseCategory.SUPPLIES, "Integration test"), owner.id());
         announcements.publish("Integration notice", "Visible from another login", owner.id());
-        assertEquals(2, members.searchMembers("").size());
+        assertEquals(memberCount, members.searchMembers("").size());
         assertEquals(0, new BigDecimal("12.50").compareTo(expenses.totalExpenses()));
 
         char[] initialPassword = "CloudMember!2026".toCharArray();
@@ -185,14 +189,14 @@ class SupabaseFeatureIntegrationTest {
         authentication.authenticate("owner.local@example.test",
                 "LocalOwner!2026".toCharArray()).orElseThrow();
         assertEquals(1, ownerVisits.visitHistory(member.id()).size());
-        assertEquals(3, members.searchMembers("").size());
-        assertEquals(2, members.searchMemberships("").size());
-        assertEquals(2, members.searchPayments("").size());
+        assertEquals(memberCount + 1, members.searchMembers("").size());
+        assertEquals(membershipCount + 2, members.searchMemberships("").size());
+        assertEquals(paymentCount + 2, members.searchPayments("").size());
         assertTrue(members.searchMembers("M0001").isEmpty());
         assertTrue(members.searchMemberships("M0001").isEmpty());
         assertTrue(members.searchPayments("M0001").isEmpty());
         assertTrue(ownerVisits.searchVisits("M0001", false).isEmpty());
-        assertEquals(3, members.ownerDashboard().totalMembers());
+        assertEquals(memberCount + 1, members.ownerDashboard().totalMembers());
         assertEquals(1, expenses.listExpensesByCategory(ExpenseCategory.SUPPLIES).size());
         var published = announcements.listPublished().get(0);
         announcements.withdraw(published.id(), owner.id());

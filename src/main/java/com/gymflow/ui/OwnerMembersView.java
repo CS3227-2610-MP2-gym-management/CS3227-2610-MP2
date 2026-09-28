@@ -773,7 +773,7 @@ final class OwnerMembersView {
     }
 
     private static String message(Throwable exception) {
-        return exception instanceof IllegalArgumentException
+        return exception instanceof IllegalArgumentException || exception instanceof IllegalStateException
                 ? exception.getMessage() : "Unable to access GymFlow data";
     }
 

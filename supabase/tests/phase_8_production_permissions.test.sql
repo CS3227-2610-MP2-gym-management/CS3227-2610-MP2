@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(6);
+select plan(9);
 
 select is(
   has_sequence_privilege('service_role', 'public.member_number_sequence', 'USAGE'),
@@ -28,6 +28,34 @@ select is(
   ),
   true,
   'protected Member creation runs with its function owner privileges'
+);
+
+select is(
+  (
+    select prosecdef
+      from pg_catalog.pg_proc
+     where oid = 'public.update_member_records(bigint,text,text,boolean,text,date)'::regprocedure
+  ),
+  true,
+  'protected Member profile updates run with the function owner privileges'
+);
+select is(
+  has_function_privilege(
+    'service_role',
+    'public.update_member_records(bigint,text,text,boolean,text,date)',
+    'EXECUTE'
+  ),
+  true,
+  'the protected server role can update Member profile records'
+);
+select is(
+  has_function_privilege(
+    'authenticated',
+    'public.update_member_records(bigint,text,text,boolean,text,date)',
+    'EXECUTE'
+  ),
+  false,
+  'desktop users cannot execute the protected Member profile update directly'
 );
 
 insert into auth.users (

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import com.gymflow.metric.BodyMetricService;
+import com.gymflow.member.MemberAccountService;
 import com.gymflow.model.Account;
 import com.gymflow.model.BodyMetric;
 import javafx.application.Platform;
@@ -38,10 +39,12 @@ final class MemberBodyMetricsView {
     private MemberBodyMetricsView() {
     }
 
-    static Parent create(BodyMetricService service, Account session, Consumer<Screen> navigate,
+    static Parent create(BodyMetricService service, MemberAccountService accounts, Account session,
+            Consumer<Screen> navigate,
             Runnable logout) {
         Label status = new Label("Loading body-mass readings…");
         status.getStyleClass().add("muted-text");
+        VBox membershipNotice = MemberHomeView.membershipRequiredNotice();
         Label latest = new Label("—");
         latest.getStyleClass().add("body-mass-latest");
         Label changeSummary = new Label();
@@ -58,6 +61,7 @@ final class MemberBodyMetricsView {
                 change.getControlNewText().matches("\\d*(\\.\\d{0,3})?") ? change : null));
         Button save = new Button("Save reading");
         save.getStyleClass().add("primary-button");
+        requireMembership(save, membershipNotice, accounts, session);
         ListView<BodyMetric> readings = UiComponents.cardList("No body-mass readings are recorded.",
                 MemberBodyMetricsView::card);
         ChartPanel chart = new ChartPanel();
@@ -71,7 +75,7 @@ final class MemberBodyMetricsView {
                 Platform.runLater(() -> status.setText("Unable to load body-mass readings."));
             }
         });
-        save.setOnAction(event -> save(service, session, date, kilograms, editor, load));
+        save.setOnAction(event -> save(service, session, date, kilograms, save, editor, load));
         readings.setOnMouseClicked(event -> {
             BodyMetric selected = readings.getSelectionModel().getSelectedItem();
             if (selected != null) {
@@ -83,12 +87,31 @@ final class MemberBodyMetricsView {
         history.getStyleClass().add("body-mass-history");
         VBox content = new VBox(20, UiComponents.header("Measurements",
                 "Track your weight over time", null),
+                membershipNotice,
                 editor(latest, latestDate, changeSummary, date, kilograms, save), UiComponents.card(chart),
                 UiComponents.card(history));
         content.getStyleClass().add("page-content");
         content.setPadding(new Insets(36));
         load.run();
         return MemberHomeView.shell(content, Screen.MEMBER_WORKOUTS, navigate, logout);
+    }
+
+    private static void requireMembership(Button button, VBox notice, MemberAccountService accounts,
+            Account session) {
+        button.setDisable(true);
+        Thread.startVirtualThread(() -> {
+            boolean current;
+            try {
+                current = accounts.hasCurrentMembership(session);
+            } catch (RuntimeException exception) {
+                current = false;
+            }
+            boolean enabled = current;
+            Platform.runLater(() -> {
+                button.setDisable(!enabled);
+                MemberHomeView.showMembershipNotice(notice, !enabled);
+            });
+        });
     }
 
     private static VBox editor(Label latest, Label latestDate, Label change, DatePicker date,
@@ -142,32 +165,31 @@ final class MemberBodyMetricsView {
         if (history.isEmpty()) {
             change.setText("Add your first measurement to begin tracking.");
         }
-        editor.setExisting(history.stream().filter(metric -> metric.measurementDate().equals(LocalDate.now()))
-                .findFirst().orElse(null));
         chart.show(history);
         status.setText(history.isEmpty() ? "Add your first reading above."
                 : "Select a past reading to edit or delete it.");
     }
 
     private static void save(BodyMetricService service, Account session, DatePicker date,
-            TextField kilograms, EditorState editor, Runnable reload) {
+            TextField kilograms, Button save, EditorState editor, Runnable reload) {
         try {
+            LocalDate selectedDate = date.getValue();
             BigDecimal mass = value(kilograms);
-            BodyMetric existing = editor.existing();
             editor.setTouched(true);
+            save.setDisable(true);
             Thread.startVirtualThread(() -> {
                 try {
-                    if (existing == null) {
-                        service.create(session, date.getValue(), mass);
-                    } else {
-                        service.update(session, existing.id(), date.getValue(), mass);
-                    }
+                    service.save(session, selectedDate, mass);
                     Platform.runLater(() -> {
                         editor.setTouched(false);
+                        save.setDisable(false);
                         reload.run();
                     });
                 } catch (RuntimeException exception) {
-                    Platform.runLater(() -> error(exception));
+                    Platform.runLater(() -> {
+                        save.setDisable(false);
+                        error(exception);
+                    });
                 }
             });
         } catch (RuntimeException exception) {
@@ -341,7 +363,8 @@ final class MemberBodyMetricsView {
             XYChart.Series<String, Number> series = new XYChart.Series<>();
             trend.forEach(metric -> series.getData().add(new XYChart.Data<>(
                     CHART_DATE.format(metric.measurementDate()), metric.weightKilograms())));
-            chart.getData().setAll(series);
+            chart.getData().clear();
+            chart.getData().add(series);
             boolean visible = trend.size() > 1;
             chart.setVisible(visible);
             chart.setManaged(visible);
@@ -375,16 +398,7 @@ final class MemberBodyMetricsView {
     }
 
     private static final class EditorState {
-        private BodyMetric existing;
         private boolean touched;
-
-        BodyMetric existing() {
-            return existing;
-        }
-
-        void setExisting(BodyMetric value) {
-            existing = value;
-        }
 
         boolean touched() {
             return touched;

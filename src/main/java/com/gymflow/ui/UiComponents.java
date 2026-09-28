@@ -11,6 +11,8 @@ import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
@@ -80,11 +82,11 @@ final class UiComponents {
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
-        Button logout = new Button("Return to Login");
+        Button logout = new Button("Logout");
         logout.setMaxWidth(Double.MAX_VALUE);
         logout.getStyleClass().add("logout-button");
-        logout.setOnAction(event -> returnToLogin.run());
-        logout.setAccessibleText("Return to the login preview screen");
+        logout.setOnAction(event -> confirmLogout(logout, returnToLogin));
+        logout.setAccessibleText("Logout of GymFlow");
 
         VBox sidebar = new VBox(12, brand, roleLabel, navigation, spacer);
         if (resetGymFlow != null) {
@@ -99,6 +101,29 @@ final class UiComponents {
         sidebar.setPrefWidth(230);
         sidebar.setMinWidth(210);
         return sidebar;
+    }
+
+    private static void confirmLogout(Node owner, Runnable logout) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Confirm Logout");
+        Label title = new Label("Logout of GymFlow?");
+        title.getStyleClass().add("dialog-title");
+        preserveLabelHeight(title);
+        Label message = new Label("You will return to the login screen and need to sign in again.");
+        message.getStyleClass().add("dialog-subtitle");
+        message.setWrapText(true);
+        VBox content = new VBox(10, title, message);
+        content.getStyleClass().add("dialog-content");
+        dialog.getDialogPane().setContent(content);
+
+        ButtonType logoutType = new ButtonType("Logout", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, logoutType);
+        styleDialog(dialog, owner, "logout-dialog", false);
+        Button confirm = (Button) dialog.getDialogPane().lookupButton(logoutType);
+        confirm.getStyleClass().add("danger-button");
+        if (dialog.showAndWait().orElse(ButtonType.CANCEL) == logoutType) {
+            logout.run();
+        }
     }
 
     static VBox card(Node... content) {

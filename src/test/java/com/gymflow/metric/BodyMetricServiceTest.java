@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import com.gymflow.auth.AuthenticationService;
@@ -24,6 +25,8 @@ class BodyMetricServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-15T10:00:00Z");
     @TempDir Path directory;
     private Account member;
+    private Account owner;
+    private OwnerMemberService members;
     private BodyMetricService metrics;
 
     @BeforeEach
@@ -31,8 +34,9 @@ class BodyMetricServiceTest {
         GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
         database.initialize();
         AuthenticationService authentication = new AuthenticationService(database);
-        Account owner = authentication.createOwner("owner@example.com", "owner password".toCharArray());
-        new OwnerMemberService(database).createMember(new CreateMemberRequest("member@example.com",
+        owner = authentication.createOwner("owner@example.com", "owner password".toCharArray());
+        members = new OwnerMemberService(database);
+        members.createMember(new CreateMemberRequest("member@example.com",
                 "member password".toCharArray(), "Member Tan", "81234567", null,
                 LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), new BigDecimal("50"),
                 PaymentMethod.CARD, NOW, ""), owner.id());
@@ -51,6 +55,18 @@ class BodyMetricServiceTest {
     }
 
     @Test
+    void savesTodayThenPastAndUpdatesOnlyTheSelectedDate() {
+        var today = metrics.save(member, LocalDate.of(2026, 9, 15), new BigDecimal("69.9"));
+        var past = metrics.save(member, LocalDate.of(2026, 9, 14), new BigDecimal("70.5"));
+        var correctedPast = metrics.save(member, LocalDate.of(2026, 9, 14), new BigDecimal("70.25"));
+
+        assertEquals(past.id(), correctedPast.id());
+        assertEquals(2, metrics.history(member).size());
+        assertEquals(today.id(), metrics.history(member).getFirst().id());
+        assertEquals(new BigDecimal("70.250"), metrics.history(member).get(1).weightKilograms());
+    }
+
+    @Test
     void rejectsInvalidDatesWeightsAndDuplicateDates() {
         metrics.create(member, LocalDate.of(2026, 9, 15), new BigDecimal("70"));
 
@@ -62,5 +78,36 @@ class BodyMetricServiceTest {
                 () -> metrics.create(member, LocalDate.of(2026, 9, 14), new BigDecimal("70.0001")));
         assertThrows(IllegalStateException.class,
                 () -> metrics.create(member, LocalDate.of(2026, 9, 15), new BigDecimal("71")));
+    }
+
+    @Test
+    void requiresCurrentMembershipOnlyWhenCreatingReading() {
+        var saved = metrics.create(member, LocalDate.of(2026, 9, 14), new BigDecimal("70"));
+        var membership = members.membershipHistory(member.id()).getFirst();
+        members.setMembershipActive(membership.id(), false, owner.id());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> metrics.create(member, LocalDate.of(2026, 9, 15), new BigDecimal("69")));
+        assertEquals(saved.id(), metrics.history(member).getFirst().id());
+        assertEquals(saved.id(), metrics.update(member, saved.id(), LocalDate.of(2026, 9, 13),
+                new BigDecimal("69.5")).id());
+    }
+
+    @Test
+    void singaporeCalendarDateControlsMembershipExpiryAndMeasurementDate() {
+        GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
+        BodyMetricService singapore = new BodyMetricService(database,
+                Clock.fixed(Instant.parse("2026-09-30T16:00:00Z"),
+                        ZoneId.of("Asia/Singapore")));
+        assertThrows(IllegalArgumentException.class,
+                () -> singapore.create(member, LocalDate.of(2026, 9, 30),
+                        new BigDecimal("70")));
+    }
+
+    @Test
+    void rejectsMassThatOverflowsStoredGrams() {
+        assertThrows(IllegalArgumentException.class,
+                () -> metrics.create(member, LocalDate.of(2026, 9, 14),
+                        new BigDecimal("9223372036854776")));
     }
 }

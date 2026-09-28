@@ -26,7 +26,7 @@ Product website: [GymFlow on GitHub Pages](https://cs3227-2610-mp2-gym-managemen
 ## Owner and Member login
 
 Every installation opens on the same sign-in screen. Owners and Members use credentials provisioned for the shared
-gym. GymFlow loads the authenticated account's role and opens the corresponding dashboard. Use `Return to Login` in
+gym. GymFlow loads the authenticated account's role and opens the corresponding dashboard. Use `Logout` in
 the sidebar to end the current session.
 
 Authentication and shared feature data are provided by Supabase Auth, PostgreSQL, the Data API, and protected Edge
@@ -98,15 +98,52 @@ In a third Terminal window, launch GymFlow:
 
 The seeded local test accounts are:
 
+A fresh clone does not need a `data/gymflow.db` file or a first-run Owner signup. `npm run supabase:reset` creates the
+local Supabase database and seeds these accounts. Start the app and sign in as the seeded Owner; create additional
+Owners from the `Owners` page after signing in.
+
 | Role | Email | Password |
 | --- | --- | --- |
 | Owner | `owner.local@example.test` | `LocalOwner!2026` |
-| Member | `member.a.local@example.test` | `LocalMemberA!2026` |
+| Member A | `member.a.local@example.test` | `LocalMemberA!2026` |
+| Member B | `member.b.local@example.test` | `LocalMemberB!2026` |
+
+For a first-time walkthrough, sign in as the seeded Owner, create a separate co-owner, then create a Member and
+test the Member experience. Follow the ordered [User Guide walkthrough](docs/UserGuide.md#step-by-step-local-walkthrough)
+for each feature in order.
+
+### When database migrations must run
+
+A migration is a one-time database upgrade instruction, such as adding a table, security rule, or operation used by
+new application code. It is not something to run whenever GymFlow starts. Supabase records each applied migration
+and applies only newer pending files.
+
+- After creating or pulling files under `supabase/migrations/`, rebuild the disposable local database with
+  `npm run supabase:reset`, then run the automated local checks below.
+- Before releasing application code that depends on a new migration, compare and apply the hosted project's pending
+  migrations by following the guarded [Deployment verification](docs/ProductionDeployment.md#deployment-verification)
+  procedure.
+- If only Java or UI code changed and it does not depend on a database change, no migration deployment is needed.
+- If `supabase/functions/` changed, deploy the affected Edge Function before releasing dependent application code.
+
+Use this release order whenever database or Edge Function behavior changed:
+
+```text
+database migrations -> Edge Functions -> smoke test -> release JARs
+```
+
+Releasing the JAR first can produce generic errors such as `Unable to access GymFlow data` when the application calls
+a database operation that has not been deployed yet.
 
 ### Live production - Windows
 
-You need the production publishable key and your own provisioned GymFlow account from the maintainer. In PowerShell,
+Contact Telegram `@ITZXITZX` for the production Supabase publishable key if needed. The shared test co-owner account
+is `test@example.com` with password `Test1234567890!`. Use it only for the brief sign-in and Owner Home smoke test;
+the local walkthrough is for creating and changing disposable records. In PowerShell,
 replace the key placeholder, verify the connection, build, and launch from the same window:
+
+This section launches an already-deployed version. It does not apply migrations or deploy Edge Functions. A
+maintainer must complete the deployment verification procedure first whenever backend code has changed.
 
 ```powershell
 $env:GYMFLOW_ENV = "production"
@@ -128,7 +165,9 @@ Remove-Item Env:GYMFLOW_SUPABASE_PUBLISHABLE_KEY
 
 ### Live production - macOS
 
-You need the production publishable key and your own provisioned GymFlow account from the maintainer. In Terminal,
+Contact Telegram `@ITZXITZX` for the production Supabase publishable key if needed. The shared test co-owner account
+is `test@example.com` with password `Test1234567890!`. Use it only for the brief sign-in and Owner Home smoke test.
+In Terminal,
 replace the key placeholder, verify the connection, build, and launch from the same window:
 
 ```shell
@@ -147,20 +186,44 @@ that the correct Home page loads, and stop. After closing GymFlow, close Termina
 unset GYMFLOW_ENV GYMFLOW_SUPABASE_URL GYMFLOW_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Never put production keys or account credentials in a tracked file, and never use a secret or legacy `service_role`
-key. `runLocal` intentionally cannot launch the live version. See the
+Never put production keys, personal account credentials, or session tokens in a tracked file, and never use a secret
+or legacy `service_role` key. The shared test credential above is public and must not protect real gym data. `runLocal`
+intentionally cannot launch the live version. See the
 [Production Deployment guide](docs/ProductionDeployment.md#test-the-live-application-from-windows) for safeguards
 and temporary reviewer access.
 
 ## Automated local checks
 
-```shell
-npm run supabase:test
-npm run supabase:lint
-./gradlew verifyLocal
+For the full local test suite on Windows, start Docker Desktop and run these commands from the repository root in
+Git Bash. The reset replaces the local Supabase database with the committed seed data.
+
+```bash
+npm install
+export GRADLE_USER_HOME="$(cygpath -w "$HOME/.gradle")"
+export GYMFLOW_ENV=local
+unset GYMFLOW_SUPABASE_URL
+npm run supabase:start
+npm run supabase:reset
 ```
 
-On Windows, use `.\gradlew.bat verifyLocal`. The complete role and feature sequence is in the
-[User Guide manual acceptance checklist](docs/UserGuide.md#manual-acceptance-checklist).
+Keep Supabase running. In a second Git Bash window, start the Edge Function runtime:
+
+```bash
+npm run supabase:functions
+```
+
+Then run the checks in the first window:
+
+```bash
+npm run supabase:test
+npm run supabase:lint
+npm run test:edge-functions
+npm run test:scripts
+GYMFLOW_LOCAL_INTEGRATION=true ./gradlew verifyLocal
+```
+
+`verifyLocal` runs the Java tests, Checkstyle, rendered JavaFX UI tests, and release JAR verification. The rendered
+tests need an active desktop session. The complete role and feature sequence is in the
+[User Guide local walkthrough](docs/UserGuide.md#step-by-step-local-walkthrough).
 
 GitHub Actions deploys the product website from `site/` and runs a scheduled availability check against the live URL.

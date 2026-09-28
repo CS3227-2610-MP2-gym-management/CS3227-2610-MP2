@@ -48,6 +48,15 @@ public final class SupabaseDataClient {
                 .build(), "save GymFlow data");
     }
 
+    /** Inserts a row or updates the row selected by the requested conflict target. */
+    public JsonNode upsert(String path, Object body) {
+        return send(builder("/rest/v1/" + path)
+                .header("Content-Type", "application/json")
+                .header("Prefer", "resolution=merge-duplicates,return=representation")
+                .POST(HttpRequest.BodyPublishers.ofString(write(body)))
+                .build(), "save GymFlow data");
+    }
+
     /** Updates matching rows and returns their new representations. */
     public JsonNode patch(String path, Object body) {
         return send(builder("/rest/v1/" + path)
@@ -101,7 +110,11 @@ public final class SupabaseDataClient {
             if (response.body() == null || response.body().isBlank()) {
                 return json.createArrayNode();
             }
-            return json.readTree(response.body());
+            try {
+                return json.readTree(response.body());
+            } catch (JsonProcessingException exception) {
+                throw new IllegalStateException("GymFlow returned an invalid response", exception);
+            }
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to connect to GymFlow", exception);
         } catch (InterruptedException exception) {
@@ -126,9 +139,7 @@ public final class SupabaseDataClient {
                 && !message.isBlank()) {
             return new IllegalArgumentException(message);
         }
-        String detail = message.isBlank() ? error.path("error_description").asText() : message;
-        return new IllegalStateException("Unable to " + operation + " (HTTP " + status
-                + (detail.isBlank() ? "" : ": " + detail) + ")");
+        return new IllegalStateException("Unable to " + operation + " (HTTP " + status + ")");
     }
 
     private static JsonNode errorBody(String body, ObjectMapper mapper) {
