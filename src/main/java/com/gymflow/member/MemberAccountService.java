@@ -62,16 +62,33 @@ public final class MemberAccountService {
     }
 
     /** Updates the authenticated Member's self-service contact details. */
-    public com.gymflow.model.Member updateContact(Account actor, String email, String phoneNumber) {
-        requireMember(actor);
-        String normalizedEmail = AccountValidation.normalizeEmail(email);
-        String normalizedPhone = AccountValidation.normalizePhone(phoneNumber);
-        if (cloudAccounts == null) {
-            return accounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+    public com.gymflow.model.Member updateContact(Account actor, String email, String phoneNumber,
+            char[] currentPassword) {
+        try {
+            requireMember(actor);
+            String normalizedEmail = AccountValidation.normalizeEmail(email);
+            String normalizedPhone = AccountValidation.normalizePhone(phoneNumber);
+            if (cloudAccounts == null) {
+                var stored = accountStore.findById(actor.id())
+                        .filter(item -> item.account().role() == Role.MEMBER && item.account().active())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "An active Member account is required"));
+                if (!passwords.verify(currentPassword, stored.password())) {
+                    throw new IllegalArgumentException("Current password is incorrect");
+                }
+                return accounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+            }
+            if (cloudAuthentication.authenticate(actor.email(), copy(currentPassword)).isEmpty()) {
+                throw new IllegalArgumentException("Current password is incorrect");
+            }
+            cloudAccounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
+            if (cloudAuthentication.authenticate(normalizedEmail, copy(currentPassword)).isEmpty()) {
+                throw new IllegalStateException("Sign in again after changing your email address");
+            }
+            return cloudAccounts.profile(actor.id());
+        } finally {
+            clear(currentPassword);
         }
-        cloudAccounts.updateContact(actor.id(), normalizedEmail, normalizedPhone);
-        cloudAuthentication.refreshAccount();
-        return cloudAccounts.profile(actor.id());
     }
 
     /** Replaces the authenticated Member's password after verifying the current password. */
@@ -126,5 +143,9 @@ public final class MemberAccountService {
         if (password != null) {
             Arrays.fill(password, '\0');
         }
+    }
+
+    private static char[] copy(char[] password) {
+        return password == null ? null : Arrays.copyOf(password, password.length);
     }
 }

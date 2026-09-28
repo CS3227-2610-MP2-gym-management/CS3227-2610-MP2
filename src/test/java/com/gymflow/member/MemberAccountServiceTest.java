@@ -77,7 +77,10 @@ class MemberAccountServiceTest {
         Account actor = authentication.authenticate("alice@example.com", "member password".toCharArray()).orElseThrow();
         MemberAccountService service = new MemberAccountService(database);
 
-        Member updated = service.updateContact(actor, "  ALICE.NEW@EXAMPLE.COM ", "+65 8123-4567");
+        char[] contactPassword = "member password".toCharArray();
+        Member updated = service.updateContact(actor, "  ALICE.NEW@EXAMPLE.COM ",
+                "+65 8123-4567", contactPassword);
+        assertArrayEquals(new char[contactPassword.length], contactPassword);
         assertEquals("alice.new@example.com", updated.email());
         assertEquals("+65 8123 4567", updated.phoneNumber());
         assertEquals(alice.memberNumber(), updated.memberNumber());
@@ -95,7 +98,8 @@ class MemberAccountServiceTest {
         assertTrue(authentication.authenticate("alice.new@example.com", "a secure replacement password".toCharArray())
                 .isPresent());
         assertThrows(IllegalArgumentException.class,
-                () -> service.updateContact(actor, "bob@example.com", "81234567"));
+                () -> service.updateContact(actor, "bob@example.com", "81234567",
+                        "member password".toCharArray()));
     }
 
     @Test

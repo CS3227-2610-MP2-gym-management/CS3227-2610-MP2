@@ -48,6 +48,9 @@ jobs:
           distribution: temurin
           java-version: "25"
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Check and package
         run: ${{ matrix.gradle }} --no-daemon clean check ${{ matrix.release-task }}
 
@@ -71,6 +74,9 @@ jobs:
           distribution: temurin
           java-version: "25"
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v1
         with:
@@ -87,7 +93,7 @@ jobs:
       - name: Run cloud integration tests
         env:
           GYMFLOW_LOCAL_INTEGRATION: "true"
-        run: ./gradlew --no-daemon test
+        run: ./gradlew --no-daemon test --stacktrace --info
 
       - name: Stop local Supabase
         if: always()
