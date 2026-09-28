@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(16);
 
 insert into public.memberships (
   id, member_account_id, start_date, expiry_date
@@ -13,20 +13,29 @@ insert into public.memberships (
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
 
+select has_function('public', 'member_check_in', array[]::text[],
+  'Member check-in accepts no client timestamp');
+select has_function('public', 'member_check_out', array[]::text[],
+  'Member check-out accepts no client timestamp');
+select hasnt_function('public', 'member_check_in', array['timestamp with time zone'],
+  'Timestamped Member check-in is unavailable');
+select hasnt_function('public', 'member_check_out', array['timestamp with time zone'],
+  'Timestamped Member check-out is unavailable');
+
 select lives_ok(
-  $$select public.member_check_in(now() - interval '1 hour')$$,
+  $$select public.member_check_in()$$,
   'Member A can check in with an active Membership'
 );
 select is((select count(*)::integer from public.visits), 1,
   'Member A can see their open Visit');
 select throws_ok(
-  $$select public.member_check_in(now())$$,
+  $$select public.member_check_in()$$,
   '23505',
   null,
   'Member A cannot have two open Visits'
 );
 select lives_ok(
-  $$select public.member_check_out(now())$$,
+  $$select public.member_check_out()$$,
   'Member A can check out their open Visit'
 );
 select is((select count(*)::integer from public.visits where exited_at is null), 0,
@@ -39,7 +48,7 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000003
 select is((select count(*)::integer from public.visits), 0,
   'Member B cannot see Member A Visits');
 select throws_ok(
-  $$select public.member_check_in(now())$$,
+  $$select public.member_check_in()$$,
   '23514',
   null,
   'Member B cannot check in without an active Membership'
@@ -76,7 +85,7 @@ reset role;
 set local role anon;
 select set_config('request.jwt.claim.sub', '', true);
 select throws_ok(
-  $$select public.member_check_in(now())$$,
+  $$select public.member_check_in()$$,
   '42501',
   null,
   'Unauthenticated users cannot call Visit operations'

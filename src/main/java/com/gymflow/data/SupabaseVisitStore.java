@@ -34,12 +34,12 @@ public final class SupabaseVisitStore {
 
     /** Checks in the current Member through the protected database operation. */
     public Visit checkIn(long memberId, LocalDate date, Instant now) {
-        return SupabaseRows.visit(client.rpc("member_check_in", Map.of("p_entered_at", now.toString())));
+        return SupabaseRows.visit(client.rpc("member_check_in", Map.of()));
     }
 
     /** Checks out the current Member through the protected database operation. */
     public Visit checkOut(long memberId, Instant now) {
-        return SupabaseRows.visit(client.rpc("member_check_out", Map.of("p_exited_at", now.toString())));
+        return SupabaseRows.visit(client.rpc("member_check_out", Map.of()));
     }
 
     /** Lists one Member's Visit history. */
