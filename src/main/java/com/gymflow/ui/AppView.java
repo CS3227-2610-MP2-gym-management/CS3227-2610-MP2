@@ -130,7 +130,7 @@ public final class AppView {
     }
 
     static boolean isOwnerSession(Account account) {
-        return account != null && account.role() == Role.OWNER;
+        return account != null && account.role() == Role.OWNER && account.active();
     }
 
     static boolean isMemberSession(Account account) {

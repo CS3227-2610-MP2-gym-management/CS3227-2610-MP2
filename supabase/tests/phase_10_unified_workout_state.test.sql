@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(14);
 
 delete from public.workouts where member_account_id = 2;
 delete from public.visits where member_account_id = 2;
@@ -25,6 +25,12 @@ select is((select count(*)::integer from public.visits where exited_at is null),
   'Check-in retains the compatibility Visit');
 select is((select count(*)::integer from public.workouts where ended_at is null), 1,
   'Check-in creates the open Workout restored by Home');
+select throws_ok(
+  $$select public.member_check_in()$$,
+  '23505', null,
+  'a second check-in cannot create another open session');
+select is((select count(*)::integer from public.visits where exited_at is null), 1,
+  'rejected check-in leaves one open Visit');
 
 select lives_ok(
   $$select public.save_member_workout(
@@ -38,6 +44,18 @@ select lives_ok(
 );
 select is((select count(*)::integer from public.workout_sets), 1,
   'The saved exercise remains attached to the open Workout');
+select throws_ok(
+  $$select public.check_out_member_workout(
+      (select id from public.workouts where ended_at is null),
+      'Invalid checkout',
+      '[{"exercise_name":"","repetitions":8}]'
+    )$$,
+  '23514', null,
+  'invalid replacement sets roll back the checkout');
+select is((select count(*)::integer from public.workouts where ended_at is null), 1,
+  'failed checkout leaves the Workout open');
+select is((select count(*)::integer from public.visits where exited_at is null), 1,
+  'failed checkout leaves the Visit open');
 
 select lives_ok(
   $$select public.check_out_member_workout(
@@ -51,6 +69,13 @@ select is((select count(*)::integer from public.workouts where ended_at is null)
   'Check-out closes the Workout');
 select is((select count(*)::integer from public.visits where exited_at is null), 0,
   'Check-out also closes the compatibility Visit');
+select throws_ok(
+  $$select public.check_out_member_workout(
+      (select id from public.workouts limit 1),
+      'Again', '[]'
+    )$$,
+  '23514', null,
+  'a second checkout cannot close the same Workout');
 
 reset role;
 select * from finish();

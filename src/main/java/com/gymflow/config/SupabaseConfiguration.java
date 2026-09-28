@@ -62,6 +62,6 @@ public record SupabaseConfiguration(RuntimeEnvironment environment, URI url,
     private static boolean isLoopbackHost(String host) {
         return host != null && ("localhost".equalsIgnoreCase(host)
                 || "127.0.0.1".equals(host)
-                || "::1".equals(host));
+                || "::1".equals(host) || "[::1]".equals(host));
     }
 }

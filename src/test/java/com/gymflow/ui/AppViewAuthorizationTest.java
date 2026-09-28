@@ -17,9 +17,12 @@ class AppViewAuthorizationTest {
     void allowsOnlyAnOwnerSessionToOpenOwnerScreens() {
         Account owner = new Account(1, "owner@example.com", Role.OWNER, true, CREATED_AT, CREATED_AT);
         Account member = new Account(2, "member@example.com", Role.MEMBER, true, CREATED_AT, CREATED_AT);
+        Account inactiveOwner = new Account(3, "inactive@example.com", Role.OWNER, false,
+                CREATED_AT, CREATED_AT);
 
         assertTrue(AppView.isOwnerSession(owner));
         assertFalse(AppView.isOwnerSession(member));
+        assertFalse(AppView.isOwnerSession(inactiveOwner));
         assertFalse(AppView.isOwnerSession(null));
     }
 

@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -18,6 +19,8 @@ import com.gymflow.auth.AuthenticationService;
 import com.gymflow.data.GymFlowDatabase;
 import com.gymflow.model.Account;
 import com.gymflow.model.Member;
+import com.gymflow.model.MemberOverview;
+import com.gymflow.model.Membership;
 import com.gymflow.model.MembershipNoticeState;
 import com.gymflow.model.PaymentMethod;
 import org.junit.jupiter.api.Test;
@@ -62,6 +65,24 @@ class MemberAccountServiceTest {
                 service.membershipNotice(service.loadOverview(charlieActor)).state());
         assertThrows(IllegalArgumentException.class, () -> service.loadOverview(owner));
         assertEquals(bob.accountId(), ownerMembers.searchMembers("bob").getFirst().accountId());
+    }
+
+    @Test
+    void membershipNoticeUsesSingaporeDateAcrossUtcMidnight() {
+        GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
+        database.initialize();
+        Instant boundary = Instant.parse("2026-09-30T16:00:00Z");
+        MemberAccountService service = new MemberAccountService(database,
+                Clock.fixed(boundary, ZoneId.of("Asia/Singapore")));
+        Membership expired = new Membership(1, 2, LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 30), true, boundary, boundary);
+        Membership upcoming = new Membership(2, 2, LocalDate.of(2026, 10, 2),
+                LocalDate.of(2026, 10, 31), true, boundary, boundary);
+        MemberOverview overview = new MemberOverview(null, List.of(expired, upcoming));
+
+        assertEquals(LocalDate.of(2026, 10, 1), service.today());
+        assertEquals(MembershipNoticeState.UPCOMING, service.membershipNotice(overview).state());
+        assertEquals(upcoming, service.membershipNotice(overview).membership());
     }
 
     @Test

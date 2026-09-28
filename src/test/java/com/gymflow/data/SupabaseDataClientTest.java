@@ -21,7 +21,15 @@ class SupabaseDataClientTest {
         assertInstanceOf(IllegalArgumentException.class, duplicate);
         assertEquals("An account with this email already exists", duplicate.getMessage());
         assertInstanceOf(IllegalStateException.class, unknown);
-        assertEquals("Unable to complete the GymFlow account operation (HTTP 400: database internals)",
+        assertEquals("Unable to complete the GymFlow account operation (HTTP 400)",
                 unknown.getMessage());
+    }
+
+    @Test
+    void malformedServerErrorsDoNotExposeTheirContents() {
+        RuntimeException failure = SupabaseDataClient.responseFailure(500,
+                "SQL error at /private/database/path", "load GymFlow data", new ObjectMapper());
+        assertInstanceOf(IllegalStateException.class, failure);
+        assertEquals("Unable to load GymFlow data (HTTP 500)", failure.getMessage());
     }
 }

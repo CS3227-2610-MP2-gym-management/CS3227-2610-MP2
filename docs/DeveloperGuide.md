@@ -24,6 +24,8 @@ npm run supabase:stop
 `npm run supabase:reset` is a guarded local-only command: it supplies `--local`, rejects extra CLI arguments, and
 refuses a production environment or non-loopback configured URL. Use `gradlew.bat runLocal` to launch the application
 against the same loopback backend and `gradlew.bat verifyLocal` for the complete local Java verification workflow.
+The complete Windows Git Bash test procedure, including database, Edge Function, script, integration, UI, and packaging
+checks, is in [Automated local checks](../README.md#automated-local-checks).
 
 The local services use these default addresses:
 

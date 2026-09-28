@@ -1,6 +1,7 @@
 package com.gymflow.workout;
 
 import java.time.Clock;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,7 +46,7 @@ public final class WorkoutService {
         cloudStore = new SupabaseWorkoutStore(Objects.requireNonNull(client));
         memberAccounts = null;
         cloudMemberAccounts = new SupabaseMemberAccountStore(client);
-        clock = Clock.systemDefaultZone();
+        clock = Clock.system(ZoneId.of("Asia/Singapore"));
     }
 
     /** Lists the Member's Workouts. */

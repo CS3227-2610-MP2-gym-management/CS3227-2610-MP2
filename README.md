@@ -180,13 +180,36 @@ and temporary reviewer access.
 
 ## Automated local checks
 
-```shell
-npm run supabase:test
-npm run supabase:lint
-./gradlew verifyLocal
+For the full local test suite on Windows, start Docker Desktop and run these commands from the repository root in
+Git Bash. The reset replaces the local Supabase database with the committed seed data.
+
+```bash
+npm install
+export GRADLE_USER_HOME="$(cygpath -w "$HOME/.gradle")"
+export GYMFLOW_ENV=local
+unset GYMFLOW_SUPABASE_URL
+npm run supabase:start
+npm run supabase:reset
 ```
 
-On Windows, use `.\gradlew.bat verifyLocal`. The complete role and feature sequence is in the
+Keep Supabase running. In a second Git Bash window, start the Edge Function runtime:
+
+```bash
+npm run supabase:functions
+```
+
+Then run the checks in the first window:
+
+```bash
+npm run supabase:test
+npm run supabase:lint
+npm run test:edge-functions
+npm run test:scripts
+GYMFLOW_LOCAL_INTEGRATION=true ./gradlew verifyLocal
+```
+
+`verifyLocal` runs the Java tests, Checkstyle, rendered JavaFX UI tests, and release JAR verification. The rendered
+tests need an active desktop session. The complete role and feature sequence is in the
 [User Guide manual acceptance checklist](docs/UserGuide.md#manual-acceptance-checklist).
 
 GitHub Actions deploys the product website from `site/` and runs a scheduled availability check against the live URL.

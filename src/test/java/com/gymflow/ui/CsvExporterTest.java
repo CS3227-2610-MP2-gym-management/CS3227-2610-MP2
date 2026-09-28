@@ -94,4 +94,22 @@ class CsvExporterTest {
         assertEquals(Path.of("members.csv"), CsvExporter.csvPath(Path.of("members")));
         assertEquals(Path.of("members.CSV"), CsvExporter.csvPath(Path.of("members.CSV")));
     }
+
+    @Test
+    void writesHeaderOnlyForAnEmptyMemberExport() throws IOException {
+        Path file = temporaryDirectory.resolve("empty.csv");
+        CsvExporter.writeMembers(file, List.of());
+        assertEquals("Member Number,Full Name,Email,Phone Number,Date of Birth\r\n",
+                Files.readString(file, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void protectsEveryExportedMemberTextFieldFromFormulas() throws IOException {
+        Path file = temporaryDirectory.resolve("formulas.csv");
+        Member member = new Member(1, "=ID", "+NAME", "-EMAIL", "@PHONE", null);
+        CsvExporter.writeMembers(file, List.of(member));
+        assertEquals("Member Number,Full Name,Email,Phone Number,Date of Birth\r\n"
+                + "'=ID,'-EMAIL,'+NAME,'@PHONE,\r\n",
+                Files.readString(file, StandardCharsets.UTF_8));
+    }
 }

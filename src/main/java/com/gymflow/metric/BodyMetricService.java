@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 
@@ -46,7 +47,7 @@ public final class BodyMetricService {
         cloudStore = new SupabaseBodyMetricStore(Objects.requireNonNull(client));
         memberAccounts = null;
         cloudMemberAccounts = new SupabaseMemberAccountStore(client);
-        clock = Clock.systemDefaultZone();
+        clock = Clock.system(ZoneId.of("Asia/Singapore"));
     }
 
     /** Lists the authenticated Member's readings. */

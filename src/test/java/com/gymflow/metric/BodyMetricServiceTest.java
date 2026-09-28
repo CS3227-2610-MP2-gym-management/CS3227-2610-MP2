@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 import com.gymflow.auth.AuthenticationService;
@@ -90,5 +91,23 @@ class BodyMetricServiceTest {
         assertEquals(saved.id(), metrics.history(member).getFirst().id());
         assertEquals(saved.id(), metrics.update(member, saved.id(), LocalDate.of(2026, 9, 13),
                 new BigDecimal("69.5")).id());
+    }
+
+    @Test
+    void singaporeCalendarDateControlsMembershipExpiryAndMeasurementDate() {
+        GymFlowDatabase database = new GymFlowDatabase(directory.resolve("gymflow.db"));
+        BodyMetricService singapore = new BodyMetricService(database,
+                Clock.fixed(Instant.parse("2026-09-30T16:00:00Z"),
+                        ZoneId.of("Asia/Singapore")));
+        assertThrows(IllegalArgumentException.class,
+                () -> singapore.create(member, LocalDate.of(2026, 9, 30),
+                        new BigDecimal("70")));
+    }
+
+    @Test
+    void rejectsMassThatOverflowsStoredGrams() {
+        assertThrows(IllegalArgumentException.class,
+                () -> metrics.create(member, LocalDate.of(2026, 9, 14),
+                        new BigDecimal("9223372036854776")));
     }
 }

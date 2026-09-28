@@ -110,7 +110,11 @@ public final class SupabaseDataClient {
             if (response.body() == null || response.body().isBlank()) {
                 return json.createArrayNode();
             }
-            return json.readTree(response.body());
+            try {
+                return json.readTree(response.body());
+            } catch (JsonProcessingException exception) {
+                throw new IllegalStateException("GymFlow returned an invalid response", exception);
+            }
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to connect to GymFlow", exception);
         } catch (InterruptedException exception) {
@@ -135,9 +139,7 @@ public final class SupabaseDataClient {
                 && !message.isBlank()) {
             return new IllegalArgumentException(message);
         }
-        String detail = message.isBlank() ? error.path("error_description").asText() : message;
-        return new IllegalStateException("Unable to " + operation + " (HTTP " + status
-                + (detail.isBlank() ? "" : ": " + detail) + ")");
+        return new IllegalStateException("Unable to " + operation + " (HTTP " + status + ")");
     }
 
     private static JsonNode errorBody(String body, ObjectMapper mapper) {

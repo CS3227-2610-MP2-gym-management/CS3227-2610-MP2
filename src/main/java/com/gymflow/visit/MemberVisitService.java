@@ -2,6 +2,7 @@ package com.gymflow.visit;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Objects;
 
 import com.gymflow.data.GymFlowDatabase;
@@ -35,7 +36,7 @@ public final class MemberVisitService {
     public MemberVisitService(SupabaseDataClient client) {
         visits = null;
         cloudVisits = new SupabaseVisitStore(Objects.requireNonNull(client));
-        clock = Clock.systemDefaultZone();
+        clock = Clock.system(ZoneId.of("Asia/Singapore"));
     }
 
     /** Returns whether this active Member currently has an open Visit. */

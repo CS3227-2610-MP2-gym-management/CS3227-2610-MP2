@@ -69,4 +69,27 @@ class SupabaseConfigurationTest {
                         "GYMFLOW_SUPABASE_URL", "https:gymflow",
                         "GYMFLOW_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_example")));
     }
+
+    @Test
+    void acceptsOnlyLoopbackHostsForLocalConfiguration() {
+        for (String host : new String[] {"localhost", "127.0.0.1", "[::1]"}) {
+            SupabaseConfiguration configuration = new SupabaseConfiguration(
+                    RuntimeEnvironment.LOCAL, URI.create("http://" + host + ":54321"), "key");
+            assertEquals(host, configuration.url().getHost());
+        }
+        assertThrows(IllegalArgumentException.class,
+                () -> new SupabaseConfiguration(RuntimeEnvironment.LOCAL,
+                        URI.create("https://example.com"), "key"));
+    }
+
+    @Test
+    void rejectsUnknownEnvironmentAndMissingPublishableKey() {
+        assertThrows(IllegalStateException.class,
+                () -> SupabaseConfiguration.load(Map.of("GYMFLOW_ENV", "staging")));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SupabaseConfiguration(RuntimeEnvironment.PRODUCTION,
+                        URI.create("https://gymflow.example.com"), " "));
+        assertEquals(RuntimeEnvironment.PRODUCTION,
+                RuntimeEnvironment.parse(" Production "));
+    }
 }
