@@ -64,8 +64,8 @@ Changing the theme does not affect gym records or other installations of the app
 
 Owner Home displays the total number of registered Members, the number of Members with a currently valid active
 Membership, the current visitor count, all recorded income and expenses, and their calculated net. Financial values
-are displayed in SGD and cover all records currently stored in GymFlow. The Member overview lists the five most
-recently created Members with their most relevant Membership period and its derived status.
+are displayed in SGD and cover all records currently stored in GymFlow. The six summary cards resize and wrap with
+the available window width.
 
 Select `Members` to open Member management, `Memberships` to review all purchased Membership periods, `Finances` to
 review membership income and operating expenses, `Visits` to review attendance, or `Announcements` to manage gym
