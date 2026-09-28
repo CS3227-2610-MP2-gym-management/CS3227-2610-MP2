@@ -167,7 +167,7 @@ Before and after a production deployment:
 Always deploy in this order: database migrations, Edge Functions, smoke test, and release JARs. This prevents a new
 desktop build from calling a table, column, or PostgreSQL function that the hosted database does not have yet.
 
-Use the [User Guide manual acceptance checklist](UserGuide.md#manual-acceptance-checklist) for role and feature checks.
+Use the [User Guide local walkthrough](UserGuide.md#step-by-step-local-walkthrough) for role and feature checks.
 Run its full disposable-data sequence locally; in production, use the retained real Owner for the minimal dashboard
 smoke check unless a backup and reviewed cleanup procedure are ready.
 

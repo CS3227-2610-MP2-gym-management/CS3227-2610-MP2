@@ -3,6 +3,9 @@
 GymFlow is a JavaFX desktop application for managing a small gym. This guide describes only features present in the
 current release.
 
+To try every feature with disposable data, start with the [local walkthrough](#step-by-step-local-walkthrough).
+To check the hosted application, use the [production smoke test](#production-smoke-test).
+
 ## Requirements
 
 - Java SE 25
@@ -11,14 +14,16 @@ current release.
 
 ## Starting GymFlow
 
-Download the JAR matching your operating system and processor architecture, then run it from a terminal:
+For an already configured installation, download the JAR matching your operating system and processor architecture,
+then run it from a terminal:
 
 ```shell
 java -jar GymFlow-macos-arm64.jar
 ```
 
 Replace the filename with the JAR downloaded for your platform. The application requires access to its configured
-GymFlow backend to sign in.
+GymFlow backend to sign in. If you are starting from this repository, follow the local or production instructions
+below to configure that connection first.
 
 GymFlow also creates rotating diagnostic files named `gymflow-0.log` through `gymflow-2.log` in the local
 `data/logs/` directory. If the application exits unexpectedly, include these files when reporting the problem. They
@@ -32,9 +37,17 @@ Every installation opens on the same GymFlow sign-in screen.
 2. Enter the account password.
 3. Select `Sign In`.
 
+![GymFlow local sign-in screen](assets/signin_page.png)
+
 After authentication, GymFlow loads the account's role and opens Owner Home or Member Home. Invalid credentials
 display `Invalid email or password` without identifying which value was incorrect. A backend outage displays a
 connection error instead.
+
+Owner's Hompage:
+![Owner's Homepage](assets/owner_home_page.png)
+
+Mmeber's Homepage:
+![Member's Homepage](assets/member_home_page.png)
 
 ## Owner login and logout
 
@@ -45,6 +58,8 @@ Select `Logout` in the Owner sidebar and confirm the dialog to clear the current
 Open `Owners` from the Owner sidebar to view every gym administrator. Select `Add Owner`, enter the co-owner's real
 email address and a temporary password, then enter your own current password to authorize the change. Send the
 temporary password to the co-owner through a secure channel separate from their username.
+
+![Owner's owners page](assets/owner_owners_page.png)
 
 An email address can belong to only one GymFlow account, without regard to capitalization or surrounding spaces. An
 email already used by a Member cannot be reused for an Owner, and an Owner email cannot be reused for a Member.
@@ -87,6 +102,8 @@ internal database IDs.
 2. Enter the Member email, initial password, profile information, membership dates, and payment information.
 3. Re-enter the initial password and select `Create Member`.
 
+![Create Member Pop up](assets/owner_create_member.png)
+
 The password must contain 12–128 characters. GymFlow currently supports Singapore phone numbers only: enter eight
 digits beginning with `3`, `6`, `8`, or `9`; the fixed `+65` prefix is stored automatically. Date of birth is optional,
 but a supplied date must show that the Member is at least 12 years old. Membership expiry cannot precede its start, and
@@ -108,6 +125,8 @@ Select `Edit` on the profile page to update email, full name, phone number, and 
 keeps payment history visible but read-only. Select `Cancel` to discard changes or `Save Changes` to persist them.
 Phone numbers and dates of birth follow the same validation rules as creation. The Member number cannot be changed. A
 validation failure remains on the edit page for correction.
+
+![Edit Member's page](assets/owner_edit_member_page.png)
 
 ### Resetting a Member password
 
@@ -171,6 +190,8 @@ text. Select a card to read the complete announcement. Published cards also prov
 From a published announcement's detail page, select `Withdraw` and confirm to stop displaying it to Members. Withdrawn
 notices remain available to the Owner as read-only history. Announcements cannot be edited or permanently deleted;
 publish a replacement when a notice needs correction.
+
+![Owner's announcements page](assets/owner_announcements_page.png)
 
 Members open `Announcements` from the left sidebar to view currently published notices, newest first. The cards have
 a consistent size with a single-line, ellipsized title; the page uses only its normal vertical scroll. Select an
@@ -244,66 +265,97 @@ The former installation-wide `Reset GymFlow` action is unavailable. GymFlow now 
 one computer could affect every Owner and Member. Production deletion or restoration must be server-authorized,
 explicitly scoped, backed up, and tested separately.
 
-## Testing from source
+## Step-by-step local walkthrough
 
-For a complete local test, start Docker Desktop and run:
+Use this sequence for a complete feature test. Local data is disposable; `npm run supabase:reset` replaces it with the
+committed seed. Run commands from the repository root. Install Java 25, Node.js/npm, and Docker Desktop first.
 
-```shell
-npm install
-npm run supabase:start
-```
+1. Start Docker Desktop. In terminal 1, run `npm install`, `npm run supabase:start`, then
+   `npm run supabase:reset`. Keep the local backend running.
+2. In terminal 2, run `npm run supabase:functions` and leave it running.
+3. In terminal 3, run `./gradlew runLocal` (Windows: `.\gradlew.bat runLocal`). Confirm the sign-in screen shows
+   `LOCAL DEVELOPMENT`. A fresh clone has no `data/gymflow.db` requirement: step 1 created and seeded the local
+   Supabase database. Sign in with the seeded Owner below; there is no first-run Owner creation screen. To create
+   another Owner, use the `Owners` page after signing in.
 
-Keep the Edge Function runtime open in a second terminal:
+| Seeded role | Email | Password |
+| --- | --- | --- |
+| Owner | `owner.local@example.test` | `LocalOwner!2026` |
+| Member A | `member.a.local@example.test` | `LocalMemberA!2026` |
+| Member B | `member.b.local@example.test` | `LocalMemberB!2026` |
 
-```shell
-npm run supabase:functions
-```
+4. Sign in as the seeded Owner. Check the six [Owner Home](#owner-home) summaries. Toggle the theme and confirm it
+   remains selected after restarting the app.
+5. Open `Owners` and create a co-owner with email `owner.tour@example.test` and password `OwnerTour!2026`.
+   Enter the seeded Owner password to authorize creation. Log out, sign in as the new co-owner, then log
+   out and return to the seeded Owner. Test deactivation and reactivation of the new co-owner; verify deactivation
+   blocks a fresh sign-in. The seeded Owner cannot deactivate itself or the last active Owner. See
+   [Managing Owners](#managing-owners).
+   ![Updated Owners page](assets/owner_owners_page_updated.png)
+6. Open `Members` and create a Member with email `member.tour@example.test`, password `MemberTour!2026`, valid
+   profile details, a Membership covering today, and a positive payment. Do not reuse the seeded Member emails.
+   Check search, the Member profile and edit form, and `Export CSV`. Reset this Member's password to
+   `MemberReset!2026`; use that password when signing in later. See [Managing Members](#managing-members).
 
-Then launch GymFlow from a third terminal:
+   Result:
+   ![Members page](assets/owner_members_page.png)
+7. From that Member profile, add a future nonoverlapping Membership and payment. Check `Memberships` search and
+   statuses. Test deactivation and reactivation on the future period. On `Finances`, check the new income, search and
+   CSV export, then add an expense and filter by category. See [Managing Memberships](#managing-memberships) and
+   [Managing Finances](#managing-finances).
 
-```shell
-./gradlew runLocal
-```
+   Membership page:
+   ![Memberships page](assets/owner_memberships_page.png)
 
-On Windows, use `gradlew.bat runLocal` for the final command. Local mode shows a `LOCAL DEVELOPMENT` badge and uses
-only the local test database. It never writes to the hosted production database.
+   Finances page:
+   ![Finances page](assets/owner_finances_page.png)
 
-Run automated checks:
+8. Publish an announcement and open its detail. Log out, sign in as the new Member, and confirm it appears. Log out
+   and sign in as Owner to withdraw it. Sign in as the Member again, select `Refresh`, and confirm it disappears.
+   See [Managing Announcements](#managing-announcements).
 
-```shell
-npm run supabase:test
-npm run supabase:lint
-./gradlew verifyLocal
-```
+   Member's view of announcements published:
+   ![Member Announcements page](assets/member_announcements_page.png)
 
-Run rendered Member-page layout checks on a desktop display:
+9. As the new Member, check Home, `My Membership`, and profile. Check in, add a Workout note, exercise, and sets,
+   navigate away and back to confirm the draft remains. After at least one minute, check out. Review the completed
+   Workout on its calendar date and edit its notes or sets. See [Member dashboard](#member-dashboard) and
+   [Managing Workouts](#managing-workouts).
+10. Open `Workouts` > `Body mass`; save today's reading, add a past reading through `Change date`, and try the chart
+    ranges and history edit. Check in again, then sign in as Owner in a second app process. Under `Visits`, confirm
+    the Member appears in `Currently Visiting`. After the Member checks out, review `All Visits`, search for that
+    Member, correct a Visit with a reason, and export CSV. See
+    [Tracking Body Mass](#tracking-body-mass) and [Reviewing Visits](#reviewing-visits).
 
-```shell
-./gradlew renderedUiTest
-```
+    Body Mass Tracking:
+    ![Body Mass Tracking](assets/member_body_mass_tracking.png)
 
-Production smoke tests and release builds require the production URL, publishable key, and explicit production
-environment selection. Follow [Production Deployment: Deployment verification](ProductionDeployment.md#deployment-verification)
-instead of placing those values in a tracked file.
+11. Restart GymFlow and sign in as the new Member to confirm the records persist. In a second app process, sign in as
+    seeded Member B; verify the new Member's profile, Workouts, and measurements are absent. Log out from each role and
+    confirm the logout dialog.
 
-## Manual acceptance checklist
+For the no-Membership state, create another Member whose Membership has already expired, or deactivate a current
+Membership and ensure that Member has no other current or upcoming period. Home and `My Membership` should show renewal
+guidance and block check-in. Reset the local database to repeat the walkthrough from the original seed.
 
-Use local mode for disposable test data. Use production only for the short smoke checks marked below.
+### Automated local checks
 
-1. Follow [Starting GymFlow](#starting-gymflow) and confirm the sign-in screen appears without an Owner-setup screen.
-2. Follow [Signing in](#signing-in) once as an Owner and once as a Member. Confirm each role opens only its own pages.
-3. As an Owner, follow [Managing Members](#managing-members) and [Managing Memberships](#managing-memberships) to
-   create a test Member with one current and one future Membership.
-4. Sign in as that Member and verify [Member dashboard](#member-dashboard), [Managing Workouts](#managing-workouts),
-   and [Tracking Body Mass](#tracking-body-mass). Restart the app and confirm the same records remain.
-5. In a second app process, sign in as another test Member and confirm the first Member's profile, Workouts, and body
-   mass are not visible.
-6. Follow [Managing Owners](#managing-owners) locally for normal review. Confirm a newly created co-owner can sign in
-   from another computer, an inactive Owner cannot sign in, and the final active Owner cannot be disabled.
-7. For a production smoke test, sign in with the retained real Owner, load Owner Home, and stop. A trusted developer
-   may test with a separate temporary production co-owner only by following
-   [Temporary production reviewer access](ProductionDeployment.md#temporary-production-reviewer-access), including
-   backup, full-access acknowledgement, a fixed test window, and deactivation afterward.
+With the local backend and Edge Function running, run `npm run supabase:test`, `npm run supabase:lint`, and
+`./gradlew verifyLocal` (Windows: `.\gradlew.bat verifyLocal`). `verifyLocal` includes Java tests, Checkstyle,
+rendered UI checks, and release JAR verification; it needs an active desktop session.
 
-Record the date, environment (`LOCAL DEVELOPMENT` or production), account role, and result for each check. Never put
-passwords, access tokens, database passwords, or secret keys in the test record.
+## Production smoke test
+
+Production is shared. Test sign-in and Owner Home only; use the local walkthrough for changes to records. Contact
+Telegram `@ITZXITZX` for the Supabase **publishable** key if needed. The shared test co-owner account is:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Production test co-owner | `test@example.com` | `Test1234567890!` |
+
+The shared credential is public; it must not be used to protect real gym data. If it no longer works, request a
+current test account from the maintainer. Set `GYMFLOW_ENV=production`,
+`GYMFLOW_SUPABASE_URL=https://ixbhtfqsznxteurqmguw.supabase.co`, and `GYMFLOW_SUPABASE_PUBLISHABLE_KEY` in the
+launching terminal. Follow the exact [README Windows or macOS commands](../README.md#live-production---windows),
+sign in, confirm Owner Home loads, then close the app and clear the variables. A production Member account is not
+prepublished; test Member flows locally. Never use a secret or legacy `service_role` key in the desktop app.

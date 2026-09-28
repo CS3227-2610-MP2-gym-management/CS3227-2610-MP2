@@ -414,7 +414,7 @@ desktop display. It is run explicitly on a supported local desktop before handof
 theme contrast, native launch, and interaction flows remain manual-test concerns.
 Release verification should cover the universal sign-in screen, Owner and Member role routing, each Owner page,
 invalid input retention, shared persistence after restart, cross-Member isolation, and the matching JAR on each
-supported platform. Use the [User Guide manual acceptance checklist](UserGuide.md#manual-acceptance-checklist) for the
+supported platform. Use the [User Guide local walkthrough](UserGuide.md#step-by-step-local-walkthrough) for the
 UI sequence and the [Production Deployment guide](ProductionDeployment.md#deployment-verification) for promotion.
 
 The **Tests** GitHub Actions workflow runs `check` and the matching release task across Windows, Linux, Intel macOS,
