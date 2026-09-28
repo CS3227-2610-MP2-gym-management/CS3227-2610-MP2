@@ -21,6 +21,10 @@ npm run supabase:lint
 npm run supabase:stop
 ```
 
+`npm run supabase:reset` is a guarded local-only command: it supplies `--local`, rejects extra CLI arguments, and
+refuses a production environment or non-loopback configured URL. Use `gradlew.bat runLocal` to launch the application
+against the same loopback backend and `gradlew.bat verifyLocal` for the complete local Java verification workflow.
+
 The local services use these default addresses:
 
 | Service | Address |

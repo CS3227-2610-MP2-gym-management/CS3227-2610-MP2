@@ -6,10 +6,11 @@
     "supabase:start": "supabase start",
     "supabase:functions": "supabase functions serve manage-member",
     "supabase:status": "supabase status",
-    "supabase:reset": "supabase db reset",
+    "supabase:reset": "node scripts/reset-local-supabase.mjs",
     "supabase:stop": "supabase stop",
     "supabase:test": "supabase test db",
-    "supabase:lint": "supabase db lint --local --schema public --level warning --fail-on warning"
+    "supabase:lint": "supabase db lint --local --schema public --level warning --fail-on warning",
+    "supabase:push:production": "node scripts/push-production.mjs"
   },
   "devDependencies": {
     "supabase": "2.118.0"

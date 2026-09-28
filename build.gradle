@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 plugins {
     id "application"
     id "checkstyle"
@@ -10,6 +12,8 @@ version = "0.1.0"
 def javafxVersion = "25.0.2"
 def sqliteVersion = "3.53.4.0"
 def jacksonVersion = "2.20.0"
+def localSupabaseUrl = "http://127.0.0.1:54321"
+def localPublishableKey = "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
 def releaseTargets = [
         WindowsX64: [classifier: "win", fileName: "GymFlow-windows-x64.jar",
                      sqliteNative: "org/sqlite/native/Windows/x86_64/"],
@@ -97,6 +101,63 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 25
 }
 
+def isLoopbackHost = { String host ->
+    host != null && (host.equalsIgnoreCase("localhost") || host == "127.0.0.1" || host == "::1")
+}
+
+def requireProductionConfiguration = {
+    def selectedEnvironment = System.getenv("GYMFLOW_ENV")
+    def configuredUrl = System.getenv("GYMFLOW_SUPABASE_URL")
+    def publishableKey = System.getenv("GYMFLOW_SUPABASE_PUBLISHABLE_KEY")
+    if (!"production".equalsIgnoreCase(selectedEnvironment)) {
+        throw new GradleException("Production tasks require GYMFLOW_ENV=production")
+    }
+    if (configuredUrl == null || configuredUrl.isBlank()) {
+        throw new GradleException("Production tasks require GYMFLOW_SUPABASE_URL")
+    }
+    def uri = URI.create(configuredUrl)
+    if (!"https".equalsIgnoreCase(uri.scheme) || uri.host == null || isLoopbackHost(uri.host)) {
+        throw new GradleException("Production tasks require a non-loopback HTTPS Supabase URL")
+    }
+    if (publishableKey == null || !publishableKey.startsWith("sb_publishable_")) {
+        throw new GradleException("Production tasks require a Supabase publishable key")
+    }
+    [url: configuredUrl, key: publishableKey]
+}
+
+tasks.named("run", JavaExec) {
+    environment "GYMFLOW_ENV", "local"
+    environment "GYMFLOW_SUPABASE_URL", localSupabaseUrl
+    environment "GYMFLOW_SUPABASE_PUBLISHABLE_KEY", localPublishableKey
+    doFirst {
+        def selectedEnvironment = System.getenv("GYMFLOW_ENV")
+        if (selectedEnvironment != null && !selectedEnvironment.isBlank()
+                && !"local".equalsIgnoreCase(selectedEnvironment)) {
+            throw new GradleException("runLocal refuses a non-local GYMFLOW_ENV")
+        }
+        def configuredUrl = System.getenv("GYMFLOW_SUPABASE_URL")
+        if (configuredUrl != null && !configuredUrl.isBlank()
+                && !isLoopbackHost(URI.create(configuredUrl).host)) {
+            throw new GradleException("runLocal refuses a non-loopback Supabase URL")
+        }
+    }
+}
+
+tasks.register("runLocal") {
+    group = "application"
+    description = "Runs GymFlow against the loopback Supabase development stack."
+    dependsOn tasks.named("run")
+}
+
+def verifyProductionConfiguration = tasks.register("verifyProductionConfiguration") {
+    group = "verification"
+    description = "Rejects unsafe or incomplete production client configuration."
+    doLast {
+        def configuration = requireProductionConfiguration()
+        logger.lifecycle("Production target verified: ${URI.create(configuration.url).host}")
+    }
+}
+
 releaseTargets.each { target, details ->
     tasks.register("release${target}", Jar) {
         group = "distribution"
@@ -148,6 +209,60 @@ def verifyReleaseJars = tasks.register("verifyReleaseJars") {
 
 tasks.register("releaseJars") {
     group = "distribution"
-    description = "Builds and verifies executable JARs for all supported platforms."
-    dependsOn verifyReleaseJars
+    description = "Builds production executable JARs after validating production configuration."
+    dependsOn verifyProductionConfiguration, verifyReleaseJars
+}
+
+verifyReleaseJars.configure {
+    mustRunAfter verifyProductionConfiguration
+}
+
+tasks.register("verifyLocal") {
+    group = "verification"
+    description = "Runs all local Java, UI, style, and release-structure checks."
+    dependsOn check, renderedUiTest, verifyReleaseJars
+}
+
+tasks.register("productionSmokeTest") {
+    group = "verification"
+    description = "Checks production Auth and anonymous-access safeguards without user credentials."
+    dependsOn verifyProductionConfiguration
+    doLast {
+        def configuration = requireProductionConfiguration()
+        def request = { String path, String method, String body ->
+            HttpURLConnection connection = (HttpURLConnection) new URL(configuration.url + path)
+                    .openConnection()
+            connection.requestMethod = method
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 10_000
+            connection.setRequestProperty("apikey", configuration.key)
+            if (body != null) {
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.outputStream.withCloseable { stream ->
+                    stream.write(body.getBytes("UTF-8"))
+                }
+            }
+            def status = connection.responseCode
+            def stream = status >= 400 ? connection.errorStream : connection.inputStream
+            def responseBody = stream == null ? "" : stream.getText("UTF-8")
+            connection.disconnect()
+            [status: status, body: responseBody]
+        }
+
+        def settings = request("/auth/v1/settings", "GET", null)
+        if (settings.status != 200
+                || new JsonSlurper().parseText(settings.body).disable_signup != true) {
+            throw new GradleException("Production public signup is not disabled")
+        }
+        def accounts = request("/rest/v1/accounts?select=id", "GET", null)
+        if (!(accounts.status in [401, 403])) {
+            throw new GradleException("Anonymous account access was not rejected")
+        }
+        def memberFunction = request("/functions/v1/manage-member", "POST", "{}")
+        if (!(memberFunction.status in [401, 403])) {
+            throw new GradleException("Protected account management accepted an anonymous request")
+        }
+        logger.lifecycle("Production smoke checks passed for ${URI.create(configuration.url).host}")
+    }
 }

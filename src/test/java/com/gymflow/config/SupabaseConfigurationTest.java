@@ -37,9 +37,36 @@ class SupabaseConfigurationTest {
         SupabaseConfiguration configuration = SupabaseConfiguration.load(Map.of(
                 "GYMFLOW_ENV", "production",
                 "GYMFLOW_SUPABASE_URL", "https://gymflow.example.com",
-                "GYMFLOW_SUPABASE_PUBLISHABLE_KEY", "publishable"));
+                "GYMFLOW_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_example"));
 
         assertEquals(RuntimeEnvironment.PRODUCTION, configuration.environment());
         assertEquals(URI.create("https://gymflow.example.com"), configuration.url());
+    }
+
+    @Test
+    void localRejectsAHostedEndpoint() {
+        assertThrows(IllegalArgumentException.class,
+                () -> SupabaseConfiguration.load(Map.of(
+                        "GYMFLOW_ENV", "local",
+                        "GYMFLOW_SUPABASE_URL", "https://gymflow.example.com",
+                        "GYMFLOW_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_example")));
+    }
+
+    @Test
+    void productionRejectsPrivilegedKeys() {
+        assertThrows(IllegalArgumentException.class,
+                () -> SupabaseConfiguration.load(Map.of(
+                        "GYMFLOW_ENV", "production",
+                        "GYMFLOW_SUPABASE_URL", "https://gymflow.example.com",
+                        "GYMFLOW_SUPABASE_PUBLISHABLE_KEY", "sb_secret_example")));
+    }
+
+    @Test
+    void productionRejectsAnEndpointWithoutAHost() {
+        assertThrows(IllegalArgumentException.class,
+                () -> SupabaseConfiguration.load(Map.of(
+                        "GYMFLOW_ENV", "production",
+                        "GYMFLOW_SUPABASE_URL", "https:gymflow",
+                        "GYMFLOW_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_example")));
     }
 }

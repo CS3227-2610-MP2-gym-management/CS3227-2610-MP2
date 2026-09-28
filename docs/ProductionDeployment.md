@@ -51,11 +51,15 @@ refresh tokens.
 Before and after a production deployment:
 
 1. Run `npm run supabase:reset`, `npm run supabase:test`, and `npm run supabase:lint` locally.
-2. Use `npx supabase db push --linked --dry-run` and review the exact migration list.
-3. Confirm the linked project reference is `ixbhtfqsznxteurqmguw` before a real push.
-4. Deploy only reviewed migrations and the required Edge Functions.
-5. Confirm public signup remains disabled and the protected function rejects signed-out requests.
-6. Run the Gradle verification suite with its cache outside the repository.
+2. Run `gradlew.bat verifyLocal` with both Gradle cache locations outside the repository.
+3. Set `GYMFLOW_CONFIRM_PRODUCTION_PROJECT=ixbhtfqsznxteurqmguw` only after checking the displayed target, then use
+   `npm run supabase:push:production`. The guarded command verifies the linked project, performs a dry run, creates a
+   timestamped logical backup, and only then applies migrations.
+4. Keep backups under `work/production-backups` on encrypted storage. They contain Auth and application data, are
+   ignored by Git, and must not be uploaded or committed.
+5. Deploy only reviewed Edge Functions.
+6. Set the production client variables, run `gradlew.bat productionSmokeTest`, and then run
+   `gradlew.bat releaseJars`. Both commands reject missing, loopback, insecure, or privileged-key configuration.
 7. Sign in with the production Owner account and confirm that the Owner dashboard loads.
 
 Never run `supabase db reset --linked`. Production test data and eventual real data must be removed only through an

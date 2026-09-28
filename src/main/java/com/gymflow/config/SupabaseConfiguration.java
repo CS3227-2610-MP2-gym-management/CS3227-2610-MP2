@@ -17,14 +17,21 @@ public record SupabaseConfiguration(RuntimeEnvironment environment, URI url,
         if (publishableKey == null || publishableKey.isBlank()) {
             throw new IllegalArgumentException("A Supabase publishable key is required");
         }
-        if (environment == RuntimeEnvironment.PRODUCTION) {
+        String host = url.getHost();
+        if (environment == RuntimeEnvironment.LOCAL) {
+            if (!isLoopbackHost(host)) {
+                throw new IllegalArgumentException("Local Supabase must use a loopback endpoint");
+            }
+        } else {
             if (!"https".equalsIgnoreCase(url.getScheme())) {
                 throw new IllegalArgumentException("Production Supabase must use HTTPS");
             }
-            String host = url.getHost();
-            if (host == null || "localhost".equalsIgnoreCase(host)
-                    || "127.0.0.1".equals(host)) {
+            if (host == null || isLoopbackHost(host)) {
                 throw new IllegalArgumentException("Production Supabase cannot use a local endpoint");
+            }
+            if (!publishableKey.startsWith("sb_publishable_")) {
+                throw new IllegalArgumentException(
+                        "Production requires a Supabase publishable key");
             }
         }
     }
@@ -50,5 +57,11 @@ public record SupabaseConfiguration(RuntimeEnvironment environment, URI url,
 
     private static String defaultIfBlank(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static boolean isLoopbackHost(String host) {
+        return host != null && ("localhost".equalsIgnoreCase(host)
+                || "127.0.0.1".equals(host)
+                || "::1".equals(host));
     }
 }
