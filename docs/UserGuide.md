@@ -7,6 +7,7 @@ current release.
 
 - Java SE 25
 - A supported Windows x64, Linux x64, macOS x64, or macOS ARM64 computer
+- Internet access to the configured GymFlow service
 
 ## Starting GymFlow
 
@@ -231,27 +232,42 @@ weight and select `Save reading` for the usual daily update. Choose `Change date
 past reading; it opens the calendar directly. Select an item in Weight history to edit or delete it. Each Member can
 have one positive body-mass reading per date.
 
-## Resetting GymFlow
+## Shared-data safety
 
-The former installation-wide `Reset GymFlow` action is unavailable while GymFlow moves to shared cloud data. A local
-factory reset would not safely represent deletion for every connected installation. Any future live-data deletion
-workflow must be server-authorized, explicitly scoped, backed up, and tested separately.
+The former installation-wide `Reset GymFlow` action is unavailable. GymFlow now uses shared cloud data, so a reset on
+one computer could affect every Owner and Member. Production deletion or restoration must be server-authorized,
+explicitly scoped, backed up, and tested separately.
 
 ## Testing from source
 
-Run the application:
+For a complete local test, start Docker Desktop and run:
 
 ```shell
 npm install
 npm run supabase:start
-npm run supabase:functions
-./gradlew run
 ```
+
+Keep the Edge Function runtime open in a second terminal:
+
+```shell
+npm run supabase:functions
+```
+
+Then launch GymFlow from a third terminal:
+
+```shell
+./gradlew runLocal
+```
+
+On Windows, use `gradlew.bat runLocal` for the final command. Local mode shows a `LOCAL DEVELOPMENT` badge and uses
+only the local test database. It never writes to the hosted production database.
 
 Run automated checks:
 
 ```shell
-./gradlew clean check
+npm run supabase:test
+npm run supabase:lint
+./gradlew verifyLocal
 ```
 
 Run rendered Member-page layout checks on a desktop display:
@@ -260,8 +276,26 @@ Run rendered Member-page layout checks on a desktop display:
 ./gradlew renderedUiTest
 ```
 
-Build all supported release JARs:
+Production smoke tests and release builds require the production URL, publishable key, and explicit production
+environment selection. Follow [Production Deployment: Deployment verification](ProductionDeployment.md#deployment-verification)
+instead of placing those values in a tracked file.
 
-```shell
-./gradlew releaseJars
-```
+## Manual acceptance checklist
+
+Use local mode for disposable test data. Use production only for the short smoke checks marked below.
+
+1. Follow [Starting GymFlow](#starting-gymflow) and confirm the sign-in screen appears without an Owner-setup screen.
+2. Follow [Signing in](#signing-in) once as an Owner and once as a Member. Confirm each role opens only its own pages.
+3. As an Owner, follow [Managing Members](#managing-members) and [Managing Memberships](#managing-memberships) to
+   create a test Member with one current and one future Membership.
+4. Sign in as that Member and verify [Member dashboard](#member-dashboard), [Managing Workouts](#managing-workouts),
+   and [Tracking Body Mass](#tracking-body-mass). Restart the app and confirm the same records remain.
+5. In a second app process, sign in as another test Member and confirm the first Member's profile, Workouts, and body
+   mass are not visible.
+6. Follow [Managing Owners](#managing-owners) only when a real co-owner is required. Confirm a newly created co-owner
+   can sign in from another computer, an inactive Owner cannot sign in, and the final active Owner cannot be disabled.
+7. For production, sign in with the retained real Owner, load Owner Home, and stop. Create disposable production data
+   only when a reviewed cleanup and backup are ready.
+
+Record the date, environment (`LOCAL DEVELOPMENT` or production), account role, and result for each check. Never put
+passwords, access tokens, database passwords, or secret keys in the test record.

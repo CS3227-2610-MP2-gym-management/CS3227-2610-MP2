@@ -3,8 +3,9 @@
 GymFlow is a JavaFX desktop application for a small gym. It provides separate experiences for gym owners and gym
 members.
 
-The current version supports shared Owner and Member sign-in, Member onboarding and profiles, Membership periods,
-income and expenses, Visit oversight and correction, gym announcements, and guarded factory reset. Members can check in to start a Workout, edit notes and exercises, check out, and review completed Workouts. Owners can export the currently
+The current version supports shared Owner and Member sign-in, co-owner provisioning, Member onboarding and profiles,
+Membership periods, income and expenses, Visit oversight and correction, and gym announcements. Members can check in
+to start a Workout, edit notes and exercises, check out, and review completed Workouts. Owners can export the currently
 displayed Member, Income Payment, and Visit records as CSV files.
 
 Use the theme control at the top of the window to switch between light and dark mode. GymFlow remembers the selected
@@ -29,15 +30,15 @@ gym. GymFlow loads the authenticated account's role and opens the corresponding 
 the sidebar to end the current session.
 
 Authentication and shared feature data are provided by Supabase Auth, PostgreSQL, the Data API, and protected Edge
-Functions. SQLite remains only for legacy-data migration and isolated regression tests; the running application does
+Functions. SQLite remains only for legacy-data reference and isolated regression tests; the running application does
 not read or write `data/gymflow.db`.
 
 Basic diagnostic monitoring writes rotating files under `data/logs/gymflow-0.log` through
 `data/logs/gymflow-2.log`. These
 files record startup and sanitized unexpected-error types, not passwords or form contents, and are ignored by Git.
 
-The former installation-wide `Reset GymFlow` action is unavailable during cloud migration because deleting one local
-installation must not erase or desynchronize shared gym data.
+The former installation-wide `Reset GymFlow` action is unavailable because one local installation must not erase
+shared gym data. Production deletion and restoration require an explicitly scoped, backed-up administrative process.
 
 ## Requirements
 
@@ -47,16 +48,30 @@ installation must not erase or desynchronize shared gym data.
 ## Run locally
 
 ```shell
-./gradlew run
+npm install
+npm run supabase:start
 ```
 
-On Windows, start Docker Desktop, run `npm install` and `npm run supabase:start`, then keep
-`npm run supabase:functions` running in a second terminal while using `gradlew.bat run`.
+Keep the Edge Function runtime open in a second terminal:
+
+```shell
+npm run supabase:functions
+```
+
+Then launch GymFlow from a third terminal:
+
+```shell
+./gradlew runLocal
+```
+
+On Windows, use `gradlew.bat runLocal` for the final command.
 
 ## Test
 
 ```shell
-./gradlew clean check
+npm run supabase:test
+npm run supabase:lint
+./gradlew verifyLocal
 ```
 
 ## Build platform JARs
@@ -64,6 +79,9 @@ On Windows, start Docker Desktop, run `npm install` and `npm run supabase:start`
 ```shell
 ./gradlew releaseJars
 ```
+
+`releaseJars` is a production task. It requires the HTTPS production URL, publishable key, and explicit production
+environment selection described in the [Production Deployment guide](docs/ProductionDeployment.md).
 
 The generated Windows x64, Linux x64, macOS x64, and macOS ARM64 JARs are placed in `release/`. Run the JAR matching
 the operating system and processor architecture:

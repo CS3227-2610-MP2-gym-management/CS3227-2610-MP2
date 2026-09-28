@@ -22,8 +22,8 @@ version-controlled database migrations. The live desktop application will allow 
 with credentials created through a controlled process. A newly downloaded copy of GymFlow will no longer assume that
 it must create a new Owner.
 
-SQLite will remain available temporarily as the source for legacy-data migration and existing regression tests. It
-will not be maintained as a permanent alternative production backend.
+SQLite remains available for existing regression tests and read-only legacy reference. The retained dataset was
+confirmed to be demo-only, so no import is planned. SQLite is not a production backend.
 
 ## Target architecture
 

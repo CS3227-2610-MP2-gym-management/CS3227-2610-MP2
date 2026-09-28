@@ -68,6 +68,10 @@ Before and after a production deployment:
    `gradlew.bat releaseJars`. Both commands reject missing, loopback, insecure, or privileged-key configuration.
 7. Sign in with the production Owner account and confirm that the Owner dashboard loads.
 
+Use the [User Guide manual acceptance checklist](UserGuide.md#manual-acceptance-checklist) for role and feature checks.
+Run its full disposable-data sequence locally; in production, use the retained real Owner for the minimal dashboard
+smoke check unless a backup and reviewed cleanup procedure are ready.
+
 Never run `supabase db reset --linked`. Production test data and eventual real data must be removed only through an
 explicit, reviewed administrative procedure. Free projects can pause after inactivity and do not provide a
 production service-level agreement, so resume checks and manual logical backups are operational requirements.
