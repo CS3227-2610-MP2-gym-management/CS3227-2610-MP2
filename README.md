@@ -44,29 +44,115 @@ shared gym data. Production deletion and restoration require an explicitly scope
 
 - Java SE 25
 - Docker Desktop for the local Supabase development backend
+- Node.js and npm
 
-## Run locally
+## Quick-start testing
+
+Run commands from the repository root. Local mode uses disposable seeded data and displays a `LOCAL DEVELOPMENT`
+badge. Live mode connects to the shared production database, so restrict it to the sign-in and Home-page smoke test
+unless a broader test has been approved.
+
+### Local development - Windows
+
+Start Docker Desktop, then open PowerShell:
+
+```powershell
+npm install
+npm run supabase:start
+npm run supabase:reset
+```
+
+Keep that backend running. In a second PowerShell window, run the Edge Function:
+
+```powershell
+npm run supabase:functions
+```
+
+In a third PowerShell window, launch GymFlow:
+
+```powershell
+.\gradlew.bat runLocal
+```
+
+### Local development - macOS
+
+Start Docker Desktop, then open Terminal:
 
 ```shell
 npm install
 npm run supabase:start
+npm run supabase:reset
 ```
 
-Keep the Edge Function runtime open in a second terminal:
+Keep that backend running. In a second Terminal window, run the Edge Function:
 
 ```shell
 npm run supabase:functions
 ```
 
-Then launch GymFlow from a third terminal:
+In a third Terminal window, launch GymFlow:
 
 ```shell
 ./gradlew runLocal
 ```
 
-On Windows, use `gradlew.bat runLocal` for the final command.
+The seeded local test accounts are:
 
-## Test
+| Role | Email | Password |
+| --- | --- | --- |
+| Owner | `owner.local@example.test` | `LocalOwner!2026` |
+| Member | `member.a.local@example.test` | `LocalMemberA!2026` |
+
+### Live production - Windows
+
+You need the production publishable key and your own provisioned GymFlow account from the maintainer. In PowerShell,
+replace the key placeholder, verify the connection, build, and launch from the same window:
+
+```powershell
+$env:GYMFLOW_ENV = "production"
+$env:GYMFLOW_SUPABASE_URL = "https://ixbhtfqsznxteurqmguw.supabase.co"
+$env:GYMFLOW_SUPABASE_PUBLISHABLE_KEY = "replace-with-publishable-key"
+.\gradlew.bat productionSmokeTest
+.\gradlew.bat releaseJars
+java -jar .\release\GymFlow-windows-x64.jar
+```
+
+Sign in, confirm that the correct Home page loads, and stop. After closing GymFlow, close PowerShell or clear the
+configuration:
+
+```powershell
+Remove-Item Env:GYMFLOW_ENV
+Remove-Item Env:GYMFLOW_SUPABASE_URL
+Remove-Item Env:GYMFLOW_SUPABASE_PUBLISHABLE_KEY
+```
+
+### Live production - macOS
+
+You need the production publishable key and your own provisioned GymFlow account from the maintainer. In Terminal,
+replace the key placeholder, verify the connection, build, and launch from the same window:
+
+```shell
+export GYMFLOW_ENV=production
+export GYMFLOW_SUPABASE_URL=https://ixbhtfqsznxteurqmguw.supabase.co
+export GYMFLOW_SUPABASE_PUBLISHABLE_KEY=replace-with-publishable-key
+./gradlew productionSmokeTest
+./gradlew releaseJars
+java -jar release/GymFlow-macos-arm64.jar
+```
+
+The example is for Apple silicon. On an Intel Mac, launch `release/GymFlow-macos-x64.jar` instead. Sign in, confirm
+that the correct Home page loads, and stop. After closing GymFlow, close Terminal or run:
+
+```shell
+unset GYMFLOW_ENV GYMFLOW_SUPABASE_URL GYMFLOW_SUPABASE_PUBLISHABLE_KEY
+```
+
+Never put production keys or account credentials in a tracked file, and never use a secret or legacy `service_role`
+key. `runLocal` intentionally cannot launch the live version. See the
+[Production Deployment guide](docs/ProductionDeployment.md#test-the-live-application-from-windows) for safeguards
+and temporary reviewer access.
+
+## Automated local checks
 
 ```shell
 npm run supabase:test
@@ -74,20 +160,7 @@ npm run supabase:lint
 ./gradlew verifyLocal
 ```
 
-## Build platform JARs
-
-```shell
-./gradlew releaseJars
-```
-
-`releaseJars` is a production task. It requires the HTTPS production URL, publishable key, and explicit production
-environment selection described in the [Production Deployment guide](docs/ProductionDeployment.md).
-
-The generated Windows x64, Linux x64, macOS x64, and macOS ARM64 JARs are placed in `release/`. Run the JAR matching
-the operating system and processor architecture:
-
-```shell
-java -jar release/GymFlow-macos-arm64.jar
-```
+On Windows, use `.\gradlew.bat verifyLocal`. The complete role and feature sequence is in the
+[User Guide manual acceptance checklist](docs/UserGuide.md#manual-acceptance-checklist).
 
 GitHub Actions deploys the product website from `site/` and runs a scheduled availability check against the live URL.
