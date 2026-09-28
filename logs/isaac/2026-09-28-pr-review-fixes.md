@@ -1,7 +1,7 @@
 # PR Review Fixes
 
 **Date:** 28 September 2026  
-**Status:** In progress  
+**Status:** Completed; Supabase execution pending Docker or CI
 **Branch:** `feature/itzxitzx-deploy-for-production`
 
 ## Fix 1: Server-owned Member Visit timestamps
@@ -133,3 +133,34 @@ publication time. Expense ordering now uses expense date and ID consistently wit
   even when it was originally published earlier.
 
 Java Checkstyle and regression tests passed.
+
+## Fix 8: Exercise Supabase behavior in CI
+
+The Tests workflow now has a separate Ubuntu Supabase integration job. It installs the pinned repository-compatible
+CLI, starts the local Docker stack, resets it through every migration and the seed, runs all pgTAP database tests,
+and then runs the Java tests with cloud integration enabled. An `always()` cleanup step stops the stack even after a
+failure. The existing four-platform Java and release-JAR matrix remains unchanged.
+
+### Verification
+
+- Push the branch and confirm the `supabase-integration` job appears alongside all four matrix jobs.
+- Inspect its log to confirm every migration through `20260928096000` applies, every `supabase/tests` file passes,
+  and `SupabaseAuthenticationIntegrationTest` plus `SupabaseFeatureIntegrationTest` execute rather than skip.
+- Confirm cleanup runs on both success and a deliberately failing test branch.
+
+The full local Gradle `check` task passed, including Checkstyle for main, test, and rendered UI sources. The Supabase
+job itself could not be reproduced in this session because Docker Desktop's Linux engine was not running; the new CI
+job is the independent verification gate for all database and cloud behavior.
+
+## Commit sequence
+
+| Fix | Commit | Outcome |
+| --- | --- | --- |
+| 1 | `8f8e008` | Server-owned Member Visit timestamps |
+| 2 | `2450c93` | Protected Membership reactivation |
+| 3 | `a548a2b` | Rejection of unchanged Visit corrections |
+| 4 | `fc1e489` | Authentication refresh after Member email updates |
+| 5 | `b8043e1` | Name-or-email-only cloud search |
+| 6 | `b394e6d` | Protected one-time announcement withdrawal |
+| 7 | `c28926a` | Deterministic cloud query ordering |
+| 8 | Final commit in this sequence | Supabase database and Java integration coverage in CI |
