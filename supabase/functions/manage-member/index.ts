@@ -179,7 +179,7 @@ Deno.serve(async (request) => {
     p_phone_number: payload.phone_number,
     p_update_identity: actor.role === "OWNER",
     p_full_name: payload.full_name ?? "",
-    p_date_of_birth: payload.date_of_birth,
+    p_date_of_birth: payload.date_of_birth ?? null,
   });
   if (recordsUpdateError) {
     await admin.auth.admin.updateUserById(member.auth_user_id, {
