@@ -17,13 +17,15 @@ profile; its access token and temporary connection details must not be copied in
 
 ## Deployed baseline
 
-The hosted database has migrations `20260928010000` through `20260928091000`. The `manage-member` Edge Function is
+The hosted database has migrations `20260928010000` through `20260928092000`. The `manage-member` Edge Function is
 deployed and requires a valid session. Migration `20260928080000` adds a service-role-only operation for the one-time
 initial Owner bootstrap. It derives the email from the selected Auth identity and refuses to run unless the
 application account table is empty. Migration `20260928090000` adds protected co-owner creation and activation,
 current-password re-authentication, active-Owner invariants, and Owner-account audit records.
 Migration `20260928091000` gives only the protected server role access to allocate Member numbers; desktop and
-signed-out callers retain no direct sequence access.
+signed-out callers retain no direct sequence access. Migration `20260928092000` runs the service-role-only atomic
+Member creation operation with its function owner's privileges, without granting direct table writes to the server
+role or desktop clients.
 
 The first active Owner Auth identity and GymFlow account have been provisioned. The Owner email and password are not
 stored in this repository. That Owner can use the application's `Owners` page to provision co-owners. The new Owner's
