@@ -31,9 +31,8 @@ change.
 
 Claims were checked against package scripts, current source and guide labels, merged git history, the Pages workflow
 that uploads `site/`, and the uptime workflow URL. Script tests and the complete Gradle check passed; HTML, CSS,
-Markdown links, anchors, screenshots, commit references, and whitespace were also checked. Dylan should visually
-review the website at desktop and mobile widths and review the combined reflection and walkthrough; Isaac should
-review his attributed reflection and contribution record before submission.
+Markdown links, anchors, screenshots, commit references, and whitespace were also checked. Dylan reviewed the website,
+combined reflection, and walkthrough; Dylan and Isaac reviewed their attributed reflection and contribution records.
 
 ## Agent workflow
 

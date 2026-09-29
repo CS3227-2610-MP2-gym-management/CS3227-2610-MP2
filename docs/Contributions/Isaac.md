@@ -1,7 +1,7 @@
 # Isaac's Contribution Record
 
 This record summarizes Isaac's contributions using merged pull requests, commits, his reflection, and the reviewed
-interaction summaries under [`logs/isaac`](../../logs/isaac/). Isaac should review the wording before submission.
+interaction summaries under [`logs/isaac`](../../logs/isaac/).
 
 ## Completed work
 

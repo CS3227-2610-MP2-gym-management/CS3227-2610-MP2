@@ -3,7 +3,7 @@
 This is the canonical team reflection submitted for GymFlow. The individual source reflections remain available for
 traceability: [Dylan's reflection](reflections/dylan/Reflections.md) and
 [Isaac's reflection](reflections/isaac/Reflection.md). Each section below preserves its author's decisions, evidence,
-limitations, and learning; Isaac should review his attributed section before final submission.
+limitations, and learning. Both authors reviewed their attributed sections.
 
 ## Team synthesis
 
