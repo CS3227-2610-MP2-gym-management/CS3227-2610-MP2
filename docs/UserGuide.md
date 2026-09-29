@@ -3,16 +3,80 @@
 GymFlow is a JavaFX desktop application for managing a small gym. This guide describes only features present in the
 current release.
 
-To try every feature with disposable data, start with the [local walkthrough](#step-by-step-local-walkthrough).
+To start from a fresh clone, follow the [quick start](#fresh-clone-quick-start), then use the
+[local walkthrough](#step-by-step-local-walkthrough) to try every feature with disposable data.
 To check the hosted application, use the [production smoke test](#production-smoke-test).
 
-## Requirements
+## Fresh-clone quick start
 
-- Java SE 25
-- A supported Windows x64, Linux x64, macOS x64, or macOS ARM64 computer
-- Internet access to the configured GymFlow service
+Install Java SE 25, Node.js/npm, Git, and Docker Desktop. The JDK architecture must match the computer: use an ARM64
+JDK on Apple Silicon and an x64 JDK on Intel Macs or x64 Windows/Linux. On macOS/Linux, compare `uname -m` with
+`java -XshowSettings:properties -version 2>&1 | grep os.arch`. On Windows PowerShell, compare
+`$env:PROCESSOR_ARCHITECTURE` with `java -XshowSettings:properties -version 2>&1 | Select-String os.arch`.
 
-## Starting GymFlow
+Run the following from three terminals.
+
+### macOS and Linux
+
+Terminal 1:
+
+```shell
+git clone https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2.git
+cd CS3227-2610-MP2
+npm install
+npm run supabase:start
+npm run supabase:reset
+```
+
+Terminal 2, from the same repository:
+
+```shell
+npm run supabase:functions
+```
+
+Terminal 3, from the same repository:
+
+```shell
+./gradlew runLocal --no-watch-fs
+```
+
+### Windows PowerShell
+
+Terminal 1:
+
+```powershell
+git clone https://github.com/CS3227-2610-MP2-gym-management/CS3227-2610-MP2.git
+cd CS3227-2610-MP2
+npm install
+npm run supabase:start
+npm run supabase:reset
+```
+
+Terminal 2, from the same repository:
+
+```powershell
+npm run supabase:functions
+```
+
+Terminal 3, from the same repository:
+
+```powershell
+.\gradlew.bat runLocal --no-watch-fs
+```
+
+Docker Desktop must remain running, and the Edge Function command in terminal 2 must remain active while GymFlow is
+used. Sign in with one of the seeded accounts:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Owner | `owner.local@example.test` | `LocalOwner!2026` |
+| Member A | `member.a.local@example.test` | `LocalMemberA!2026` |
+| Member B | `member.b.local@example.test` | `LocalMemberB!2026` |
+
+When finished, close GymFlow, stop terminal 2 with Ctrl+C, and run `npm run supabase:stop`. Running
+`npm run supabase:reset` later discards local changes and restores the committed seed.
+
+## Starting a release JAR
 
 For an already configured installation, download the JAR matching your operating system and processor architecture,
 then run it from a terminal:
@@ -21,9 +85,19 @@ then run it from a terminal:
 java -jar GymFlow-macos-arm64.jar
 ```
 
-Replace the filename with the JAR downloaded for your platform. The application requires access to its configured
-GymFlow backend to sign in. If you are starting from this repository, follow the local or production instructions
-below to configure that connection first.
+Replace the filename with the JAR downloaded for your platform. A release JAR is a desktop client, not a standalone
+database: it still requires a configured and reachable Supabase backend. For an assessor or developer starting from
+the repository, the disposable local environment above is the recommended configuration. An unconfigured JAR cannot
+sign in, and GymFlow has no public signup or first-launch Owner-creation flow.
+
+There are two ways to provide that backend:
+
+- **Disposable local review:** install Node/npm and Docker Desktop, run local Supabase and the Edge Function as shown
+  above, then launch the JAR. The JAR defaults to the local loopback configuration when `GYMFLOW_ENV` is unset.
+- **Hosted production:** Docker and Node/npm are not required on the user's computer. Install Java 25 and launch the
+  JAR from a terminal configured with `GYMFLOW_ENV=production`, `GYMFLOW_SUPABASE_URL`, and the non-secret
+  `GYMFLOW_SUPABASE_PUBLISHABLE_KEY`. The maintainer must deploy and verify the backend first; follow the
+  [production instructions](#production-smoke-test). Do not place a secret or legacy `service_role` key in the app.
 
 GymFlow also creates rotating diagnostic files named `gymflow-0.log` through `gymflow-2.log` in the local
 `data/logs/` directory. If the application exits unexpectedly, include these files when reporting the problem. They
@@ -43,10 +117,12 @@ After authentication, GymFlow loads the account's role and opens Owner Home or M
 display `Invalid email or password` without identifying which value was incorrect. A backend outage displays a
 connection error instead.
 
-Owner's Hompage:
+Owner's Homepage:
+
 ![Owner's Homepage](assets/owner_home_page.png)
 
-Mmeber's Homepage:
+Member's Homepage:
+
 ![Member's Homepage](assets/member_home_page.png)
 
 ## Owner login and logout
@@ -267,22 +343,15 @@ explicitly scoped, backed up, and tested separately.
 
 ## Step-by-step local walkthrough
 
-Use this sequence for a complete feature test. Local data is disposable; `npm run supabase:reset` replaces it with the
-committed seed. Run commands from the repository root. Install Java 25, Node.js/npm, and Docker Desktop first.
+Use this sequence for a complete feature test after completing the [fresh-clone quick start](#fresh-clone-quick-start).
+Local data is disposable; `npm run supabase:reset` replaces it with the committed seed.
 
-1. Start Docker Desktop. In terminal 1, run `npm install`, `npm run supabase:start`, then
-   `npm run supabase:reset`. Keep the local backend running.
-2. In terminal 2, run `npm run supabase:functions` and leave it running.
-3. In terminal 3, run `./gradlew runLocal` (Windows: `.\gradlew.bat runLocal`). Confirm the sign-in screen shows
+1. Confirm Docker Desktop and local Supabase are running.
+2. Confirm `npm run supabase:functions` remains running in its own terminal.
+3. Run `./gradlew runLocal --no-watch-fs` (Windows: `.\gradlew.bat runLocal --no-watch-fs`). Confirm the sign-in screen shows
    `LOCAL DEVELOPMENT`. A fresh clone has no `data/gymflow.db` requirement: step 1 created and seeded the local
    Supabase database. Sign in with the seeded Owner below; there is no first-run Owner creation screen. To create
    another Owner, use the `Owners` page after signing in.
-
-| Seeded role | Email | Password |
-| --- | --- | --- |
-| Owner | `owner.local@example.test` | `LocalOwner!2026` |
-| Member A | `member.a.local@example.test` | `LocalMemberA!2026` |
-| Member B | `member.b.local@example.test` | `LocalMemberB!2026` |
 
 4. Sign in as the seeded Owner. Check the six [Owner Home](#owner-home) summaries. Toggle the theme and confirm it
    remains selected after restarting the app.

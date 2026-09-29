@@ -43,8 +43,13 @@ shared gym data. Production deletion and restoration require an explicitly scope
 ## Requirements
 
 - Java SE 25
-- Docker Desktop for the local Supabase development backend
-- Node.js and npm
+- Docker Desktop for the disposable local Supabase development backend only
+- Node.js and npm for local development and repository scripts only
+
+Users connecting a release JAR to the already-deployed hosted backend do not run Docker or Node/npm. They need Java
+25 and the production environment variables described under [Live production](#live-production---windows), including
+the Supabase URL and publishable key. Without production configuration, the application defaults to the local
+loopback backend and therefore requires the local stack below.
 
 ## Quick-start testing
 

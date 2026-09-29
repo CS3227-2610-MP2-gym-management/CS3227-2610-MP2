@@ -17,12 +17,12 @@ feature is merged.
 | Member password reset   | Owner-authorized credential replacement, later migrated from local PBKDF2 to protected Supabase Auth           | `65871d7`, PR #5                       |
 | Visit correction        | Owner correction of Visit timestamps with latest reason and responsible Owner                                     | `2b7c76a`, PR #6                       |
 | Payments overview       | Read-only global Payment ledger with Member search and Membership links                                           | `596ac0d`, PR #6                       |
-| Owner overview          | Live Member, Membership, all-time financial, visitor, and recent-Member summaries                                 | `3a26cb7`, PR #6                       |
+| Owner overview          | Six live Member, Membership, all-time financial, and visitor summary cards                                         | `3a26cb7`, `7d92d21`, PRs #6 and #18  |
 | Expense management      | Immutable operating Expenses, category filtering, Finances tabs, and all-time net summary                         | `091d31b`, `593b36a`, `ad3b355`, PR #7 |
 | Announcement management | Owner publication, withdrawal, active notices, and retained history                                               | `e1603c8`, PR #8                       |
 | Application themes      | Persistent light/dark mode across screens and dialogs                                                             | `32faa8f`, PR #9                       |
 | Record-card interface   | Virtualized, responsive card lists replacing dense tables across Owner and Member screens                         | `d802479`, `c0c0380`, PR #9            |
-| CSV export              | Safe current-view exports for Members, Income Payments, and Visits                                                 | O-P2-01 feature commit                 |
+| CSV export              | Safe current-view exports for Members, Income Payments, and Visits                                                 | `7bd4afc`, PR #10                      |
 
 ## Team-level engineering
 
@@ -30,10 +30,11 @@ feature is merged.
 | ---------------------- | ----------------------------------------------------------------------------- | -------------------------- |
 | Build and packaging    | Java 25 Gradle build and four platform-specific JavaFX JARs                   | `adfd335`, `871ea27`       |
 | Continuous integration | Cross-platform checks and JAR artifacts plus CodeQL workflow                  | `adfd335`                  |
-| Shared persistence     | SQLite initialization, centralized schema, account storage, atomic reset      | `871ea27`                  |
+| Original persistence  | Initial SQLite schema, account storage, and atomic reset before the later Supabase migration | `871ea27`       |
 | Automated testing      | Authentication, password hashing, persistence, rollback, and packaging checks | `871ea27`                  |
 | Agentic SE             | Superpowers planning/TDD workflow and Ponytail Full review                    | Dylan logs and reflections |
 
-## Planned team-level work
+## Documentation practice
 
-- Documentation and AI-log updates in every feature branch
+Feature work was accompanied by User/Developer Guide updates, contribution evidence, and reviewed AI interaction
+summaries under [`logs/dylan`](../../logs/dylan/).

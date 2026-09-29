@@ -9,6 +9,13 @@ or later and Docker Desktop before using it. Then install the pinned CLI depende
 npm install
 ```
 
+These tools are prerequisites for the disposable local development environment, not for an end user connecting a
+release JAR to the deployed hosted backend. A hosted user needs a matching-architecture Java 25 JDK and the three
+runtime variables `GYMFLOW_ENV=production`, `GYMFLOW_SUPABASE_URL`, and
+`GYMFLOW_SUPABASE_PUBLISHABLE_KEY`. The maintainer must deploy and verify the hosted database and Edge Function before
+distributing that configuration. Without those variables, GymFlow intentionally defaults to the loopback backend and
+therefore needs Docker, local Supabase, and the locally served Edge Function.
+
 Use the following commands from the repository root:
 
 ```text

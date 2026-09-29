@@ -72,6 +72,14 @@ article, .steps {
 }
 article { padding: 26px; }
 article p { margin: 0; color: var(--muted); }
+.card-label {
+  margin-bottom: 8px;
+  color: #1f5ac5;
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
 .split h2 { margin-bottom: 18px; }
 .steps { padding: 12px 28px; }
@@ -91,6 +99,7 @@ article p { margin: 0; color: var(--muted); }
 code { border-radius: 6px; background: #e9edf5; padding: 2px 6px; color: #34405a; }
 .compact { margin-bottom: 28px; }
 .doc-links a { color: #1f5ac5; font-weight: 700; }
+.text-link { color: #1f5ac5; font-weight: 700; }
 footer {
   display: flex;
   justify-content: space-between;
@@ -103,6 +112,7 @@ footer {
   :root { --ink: #edf2fa; --muted: #abb7cc; --paper: #0d1626; --card: #162237; --line: #30415c; }
   code { background: #26344b; color: #e6edf8; }
   .steps span { background: #263b60; color: #a9c7ff; }
+  .card-label, .text-link, .doc-links a { color: #8cb5ff; }
 }
 
 @media (max-width: 820px) {
