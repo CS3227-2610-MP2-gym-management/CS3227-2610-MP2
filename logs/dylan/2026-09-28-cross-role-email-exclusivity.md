@@ -24,7 +24,6 @@ Ensure that one normalized email identifies one GymFlow account with one permane
 
 ## Verification
 
-- Pending Dylan review.
 - `npm run test:edge-functions` passed both email-policy tests.
 - `deno check` passed for the protected `manage-member` function.
 - `SupabaseDataClientTest` verifies that duplicate-email validation is displayed while unknown HTTP errors remain

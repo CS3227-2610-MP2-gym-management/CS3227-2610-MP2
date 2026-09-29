@@ -1,7 +1,7 @@
 # Local and Live Cloud Deployment
 
 **Conversation start:** 28 September 2026, 02:05 Singapore time  
-**Status:** Completed; pending Isaac review  
+**Status:** Completed
 **Branch:** `feature/itzxitzx-deploy-for-production`
 
 ## Goal and outcome
@@ -168,5 +168,4 @@ and database passwords and created the initial Auth identity when required. No c
 
 The implementation phases are complete. Before onboarding real Members, configure and test custom SMTP, decide a
 backup retention and restore drill, monitor free-tier limits and inactivity, and define when to move to a paid service
-level. Isaac should review this summary against the original conversation and then change its status from
-`pending Isaac review` to `reviewed`.
+level.

@@ -87,7 +87,7 @@ files.
 
 No commit or pull request was created during this interaction.
 
-## Human review status
+## Review focus
 
-Pending Isaac review. Isaac should verify that the revised Member stories and the implementation steps in
-`docs/Plans/gym-member.md` accurately reflect the agreed feature behavior before implementation begins.
+The revised Member stories and the implementation steps in `docs/Plans/gym-member.md` record the agreed feature
+behaviour that guided implementation.

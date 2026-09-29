@@ -440,7 +440,7 @@ OpenAI Codex assists with requirements refinement, planning, implementation, tes
 documentation. Superpowers supplies structured brainstorming, planning, TDD, debugging, and verification workflows;
 Ponytail reviews changes for unnecessary code and speculative abstractions. Humans retain responsibility for scope,
 design approval, manual acceptance, generated-summary verification, commits, and merges. Interaction summaries live
-under `logs/<member>/` and remain marked pending until the named member reviews them.
+under `logs/<member>/` and must be checked against the original interactions before submission.
 
 ## Extension points
 

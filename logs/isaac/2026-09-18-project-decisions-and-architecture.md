@@ -99,7 +99,7 @@ agents implementing the complete GymFlow backlog.
 - `README.md`
 - `logs/isaac/2026-09-18-project-decisions-and-architecture.md`
 
-## Human review status
+## Review focus
 
-Pending Isaac review. Isaac should confirm that the recorded registration and first-activation lifecycle matches the
-team's intent, especially whether pending Members may log in and the final account-status representation.
+The recorded registration and first-activation lifecycle identifies the open questions considered by the team,
+including whether pending Members may log in and the final account-status representation.
